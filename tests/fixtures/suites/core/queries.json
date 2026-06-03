@@ -1,0 +1,14 @@
+[
+  { "query": "un gioco cooperativo, in cui si gioca tutti insieme contro il gioco", "tags": ["Cooperativo"] },
+  { "query": "un gioco di piazzamento lavoratori", "tags": ["Piazzamento lavoratori"] },
+  { "query": "un gioco fantasy", "tags": ["Fantasy"] },
+  { "query": "un gioco di narrazione e storytelling", "tags": ["Storytelling"] },
+  { "query": "un gioco da tavolo con tante miniature", "tags": ["Miniature"] },
+  { "query": "un gioco che si può giocare anche da soli, in solitario", "tags": ["Solitario"] },
+  { "query": "un gioco di esplorazione e avventura", "tags": ["Esplorazione"] },
+  { "query": "un gioco di aste e offerte", "tags": ["Aste"] },
+  { "query": "un gioco di combattimento", "tags": ["Combattimento"] },
+  { "query": "un gioco di gestione economica e di risorse", "tags": ["Economia"] },
+  { "query": "un gioco ambientato nel mondo antico, in Grecia o a Roma", "tags": ["Antichità"] },
+  { "query": "un gioco di piazzamento tessere", "tags": ["Piazzamento Tessere"] }
+]

@@ -1,0 +1,20 @@
+# --- API ---
+fastapi
+uvicorn[standard]
+pydantic-settings
+
+# --- RAG / LangChain (only the packages we actually use) ---
+langchain-core
+langchain-ollama      # embeddings + LLM via Ollama
+langchain-qdrant      # Qdrant vector store
+qdrant-client
+
+# --- HTTP ---
+httpx                 # client toward the PrestaShop endpoint
+
+# --- WebEnricher: online search (fallback) ---
+ddgs                  # DuckDuckGo search (free, no API key); swappable with Tavily/Brave
+trafilatura           # clean text extraction from pages (no nav/boilerplate)
+
+# --- Dev / test ---
+pytest                # enricher unit tests (in isolation, no Ollama/Qdrant)

@@ -1,0 +1,194 @@
+"""WebEnricher: fills the missing info via online search (FALLBACK, hybrid).
+
+It activates ONLY if gaps remain (`game.missing_info`, populated by the CuratorEnricher):
+"online only once the local sources are exhausted". Process = mini-RAG with verification
+(see docs):
+
+    clean name → generic search → ranking by reliability (whitelist + LLM judgment)
+    → fetch with UA → the LLM extracts ONLY from the text, with a verbatim quote
+    → validation (is the quote really in the text?) → applies it with provenance.
+
+HYBRID: the whitelist (`settings.web_trusted_domains`, updatable data) gives priority to
+known-good domains; for UNKNOWN domains the LLM judgment decides (relevance/seriousness).
+⚠️ Zero hallucinations: we keep only what is quoted and verified in the source text.
+
+Note: the prompts and the appended output block are intentionally in Italian — system
+behavior over an Italian catalog, so they are not translated.
+"""
+
+import json
+
+from langchain_ollama import ChatOllama
+
+from app.config import settings
+from app.core.enrichment_store import EnrichmentStore
+from app.core.web_search import DdgsSearch, SearchResult, WebSearchProvider, fetch_clean
+from app.ingestion.enricher.base import Enricher
+from app.models import GameDoc
+
+# separators with which catalog names attach the marketing ("X - Gioco da Tavolo...")
+_NAME_SEPARATORS = (" - ", " – ", " | ", " — ")
+
+
+class WebEnricher(Enricher):
+    def __init__(self, search: WebSearchProvider | None = None, model: str | None = None,
+                 base_url: str | None = None, max_sources: int | None = None,
+                 store: EnrichmentStore | None = None):
+        self.search_provider = search or DdgsSearch()
+        self.max_sources = max_sources or settings.web_max_sources
+        self.trusted = set(settings.web_trusted_domains)
+        self.blocked = set(settings.web_blocked_domains)
+        self.store = store                      # optional: page cache + provenance
+        self.model = model or settings.llm_model
+        self._llm = ChatOllama(
+            model=self.model,
+            base_url=base_url or settings.ollama_url,
+            format="json", temperature=0,
+        )
+
+    def _fetch(self, url: str) -> str:
+        """Cached fetch: if the page is already in the store it is not re-downloaded."""
+        if self.store:
+            cached = self.store.get_page(url)
+            if cached is not None:
+                return cached
+        text = fetch_clean(url)
+        if self.store and text:
+            self.store.save_page(url, 200, text)
+        return text
+
+    # ---- discovery helpers ----
+
+    @staticmethod
+    def _clean_name(name: str) -> str:
+        """Strips the marketing from the catalog name: 'Viticulture Essential - Gioco...' → 'Viticulture Essential'."""
+        for sep in _NAME_SEPARATORS:
+            if sep in name:
+                name = name.split(sep, 1)[0]
+        return name.strip()
+
+    def _query(self, name: str) -> str:
+        return f"{self._clean_name(name)} gioco da tavolo recensione"
+
+    def _ranked(self, results: list[SearchResult]) -> list[SearchResult]:
+        """Discards blocklisted domains; whitelist first (order preserved), then the unknown ones."""
+        results = [r for r in results if r.domain not in self.blocked]
+        trusted = [r for r in results if r.domain in self.trusted]
+        others = [r for r in results if r.domain not in self.trusted]
+        return trusted + others
+
+    # ---- judgment + extraction (a single LLM round per source) ----
+
+    def _prompt(self, name: str, missing: list[str], text: str) -> str:
+        aspects = ", ".join(missing)
+        return f"""Sei un redattore di giochi da tavolo. Ricevi il TESTO di una pagina web
+e devi giudicarla ed estrarne informazioni sul gioco "{name}".
+
+Regole rigide (zero invenzioni):
+- Estrai un'informazione SOLO se è ESPLICITA nel testo. Per ognuna fornisci una CITAZIONE
+  verbatim (`quote`) copiata ESATTAMENTE dal testo (serve a verificarti).
+- Se un'informazione non c'è, NON includerla. Mai dedurre o usare conoscenza tua.
+- `is_this_game`: il testo parla DAVVERO del gioco "{name}" (non un omonimo/altro gioco)?
+- `is_serious`: è una recensione/scheda informativa (non un mero elenco prodotti di un negozio)?
+
+Estrai SOLO queste informazioni mancanti, se presenti: {aspects}.
+
+Rispondi SOLO con JSON valido in questo formato:
+{{"is_this_game": true/false, "is_serious": true/false,
+  "found": {{"<info>": {{"value": "...", "quote": "...verbatim dal testo..."}}}}}}
+
+TESTO:
+{text}
+"""
+
+    @staticmethod
+    def _normalize(s: str) -> str:
+        return " ".join(s.lower().split())
+
+    def _run_llm(self, name: str, missing: list[str], text: str) -> dict | None:
+        """Calls the LLM and parses the raw JSON. `None` if the output is not valid JSON.
+        The eval tests use it to inspect judgment and extraction separately; the filtering
+        (relevance, seriousness, verified quote) is applied by `_judge_extract`."""
+        try:
+            raw = self._llm.invoke(self._prompt(name, missing, text)).content
+            return json.loads(raw)
+        except Exception:
+            return None
+
+    def _judge_extract(self, name: str, missing: list[str], text: str) -> dict:
+        """One LLM round: judgment + quoted extraction. Keeps only the info whose quote is
+        verifiable in the text (anti-hallucination). Returns {info: {"value","quote"}}.
+        {} if not relevant / not serious / parse failed."""
+        data = self._run_llm(name, missing, text)
+        if data is None:
+            return {}
+        if not data.get("is_this_game") or not data.get("is_serious"):
+            return {}
+        norm_text = self._normalize(text)
+        verified = {}
+        for info, payload in (data.get("found") or {}).items():
+            if info not in missing or not isinstance(payload, dict):
+                continue
+            value = (payload.get("value") or "").strip()
+            quote = (payload.get("quote") or "").strip()
+            # the quote MUST appear in the source text, otherwise it is fabricated → discard
+            if value and quote and self._normalize(quote) in norm_text:
+                verified[info] = {"value": value, "quote": quote}
+        return verified
+
+    # ---- API ----
+
+    def assess(self, game: GameDoc) -> dict:
+        """Returns {"facts": {info: [{"value","source"}...]}, "sources": [url...]} (inspectable)."""
+        missing = list(game.missing_info)
+        if not missing:
+            return {"facts": {}, "sources": []}
+
+        results = self._ranked(self.search_provider.search(self._query(game.original.name),
+                                                            settings.web_max_results))
+        facts: dict[str, list[dict]] = {}
+        sources: list[str] = []
+        fetched = 0
+        for r in results:
+            if fetched >= self.max_sources or not missing:
+                break
+            text = self._fetch(r.url)
+            if not text:
+                continue
+            fetched += 1
+            found = self._judge_extract(game.original.name, missing, text)
+            if not found:
+                continue
+            sources.append(r.url)
+            for info, payload in found.items():
+                facts.setdefault(info, []).append({"value": payload["value"], "source": r.domain})
+                if self.store:                  # durable provenance (→ source scoreboard)
+                    self.store.save_extraction(
+                        game.id_product, info, payload["value"], payload["quote"],
+                        r.url, r.domain, self.model,
+                    )
+        return {"facts": facts, "sources": sources}
+
+    def enrich(self, game: GameDoc) -> GameDoc:
+        if not game.missing_info:
+            return game
+        a = self.assess(game)
+        facts = a["facts"]
+        if not facts:
+            return game  # nothing verified online → we don't touch the data
+
+        # text block with provenance, appended to the description (enters the embed_text)
+        lines = []
+        for info, entries in facts.items():
+            value = entries[0]["value"]               # first source (whitelist has priority)
+            srcs = ", ".join(sorted({e["source"] for e in entries}))
+            lines.append(f"{info}: {value} (fonte: {srcs})")
+        block = "Informazioni da recensioni online — " + "; ".join(lines) + "."
+
+        e = game.enriched
+        new_desc = (e.description + "\n" + block).strip() if e.description else block
+        new_missing = [m for m in game.missing_info if m not in facts]
+        return game.model_copy(update={
+            "enriched": e.model_copy(update={"description": new_desc}),
+            "missing_info": new_missing,
+        })

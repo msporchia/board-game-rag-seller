@@ -1,0 +1,487 @@
+{
+ "1": [
+  "Combattimento",
+  "Cooperativo",
+  "Esplorazione",
+  "Fantasy",
+  "Gestione della Mano",
+  "Lancio di dadi",
+  "Miniature",
+  "Dungeon Crawler"
+ ],
+ "2": [
+  "Antichità",
+  "Gestione della Mano",
+  "Lancio di dadi",
+  "Mitologia",
+  "Piazzamento lavoratori",
+  "Maggioranze",
+  "Costruzione territorio",
+  "Solitario",
+  "Gestione Conflitti con le carte",
+  "Forza Giocatori variabile"
+ ],
+ "160": [
+  "Astratto",
+  "Gestione della Mano",
+  "Oriente"
+ ],
+ "41": [
+  "Humor",
+  "Storytelling",
+  "Votazione",
+  "Corse",
+  "Carte",
+  "Party Game"
+ ],
+ "3": [
+  "Animali",
+  "Collezione Set",
+  "Cooperativo",
+  "Gestione della Mano",
+  "Viaggio",
+  "Medico",
+  "Solitario",
+  "Contratti",
+  "Set-up Variabile",
+  "Eventi",
+  "Commercio / Scambi",
+  "Simulazione",
+  "Forza Giocatori variabile"
+ ],
+ "4": [
+  "Combattimento",
+  "Cooperativo",
+  "Esplorazione",
+  "Fantasy",
+  "Gestione della Mano",
+  "Lancio di dadi",
+  "Miniature",
+  "Mitologia",
+  "Puzzle",
+  "Mistero",
+  "Traditore",
+  "Horror",
+  "Romanzo",
+  "Avventura",
+  "Mappa modulare",
+  "Solitario",
+  "Role Play",
+  "Scenario / Missioni / Campagne",
+  "Forza Giocatori variabile"
+ ],
+ "6": [
+  "Fantascienza",
+  "Film e serie TV",
+  "Lancio di dadi",
+  "Miniature",
+  "Wargame",
+  "Forza Giocatori variabile"
+ ],
+ "7": [
+  "Animali",
+  "Piazzamento lavoratori",
+  "Piazzamento Tessere",
+  "Maggioranze",
+  "Preistoria",
+  "Ambiente",
+  "Bonus a fine partita",
+  "Forza Giocatori variabile"
+ ],
+ "8": [
+  "Combattimento",
+  "Esplorazione",
+  "Fantasy",
+  "Lancio di dadi"
+ ],
+ "9": [
+  "Economia",
+  "Esplorazione",
+  "Fantascienza",
+  "Lancio di dadi",
+  "Raccolta e Consegna",
+  "Spazio",
+  "Trasporti",
+  "Set-up Variabile"
+ ],
+ "10": [
+  "Cooperativo",
+  "Esplorazione",
+  "Fantascienza",
+  "Lancio di dadi",
+  "Piazzamento lavoratori",
+  "Spazio",
+  "Storytelling",
+  "Legacy",
+  "Avventura",
+  "Mappa modulare",
+  "Solitario",
+  "Scenario / Missioni / Campagne",
+  "Forza Giocatori variabile"
+ ],
+ "11": [
+  "Combattimento",
+  "Cooperativo",
+  "Fantasy",
+  "Lancio di dadi",
+  "Miniature",
+  "Storytelling",
+  "Guerra Mondiale",
+  "Horror",
+  "Avventura",
+  "Costruzione Mazzo",
+  "Forza Giocatori variabile"
+ ],
+ "12": [
+  "Civilizzazione",
+  "Economia",
+  "Fantascienza",
+  "Spazio",
+  "Costruzione territorio",
+  "Mappa modulare",
+  "Solitario",
+  "Set-up Variabile",
+  "Rendite",
+  "Bonus a fine partita",
+  "Costruzione percorsi",
+  "Forza Giocatori variabile"
+ ],
+ "13": [
+  "Collezione Set",
+  "Gestione della Mano",
+  "Navi",
+  "Treni",
+  "Costruzione percorsi"
+ ],
+ "16": [
+  "Combattimento",
+  "Fantascienza",
+  "Gestione della Mano",
+  "Lancio di dadi"
+ ],
+ "18": [
+  "Animali",
+  "Deck, Bag, and Pool Building",
+  "Economia",
+  "Piazzamento lavoratori",
+  "Piazzamento Tessere",
+  "Mappa modulare",
+  "Contratti",
+  "Set-up Variabile",
+  "Forza Giocatori variabile"
+ ],
+ "19": [
+  "Collezione Set",
+  "Combattimento",
+  "Esplorazione",
+  "Fantasy",
+  "Gestione della Mano",
+  "Lancio di dadi",
+  "Piazzamento lavoratori",
+  "Storytelling",
+  "Sfida la fortuna",
+  "Avventura",
+  "Contratti",
+  "Scenario / Missioni / Campagne",
+  "Bonus a fine partita",
+  "Costruzione percorsi",
+  "Punti Movimento",
+  "Forza Giocatori variabile"
+ ],
+ "20": [
+  "Antichità",
+  "Collezione Set",
+  "Lancio di dadi",
+  "Piazzamento lavoratori",
+  "Preistoria"
+ ],
+ "21": [
+  "Civilizzazione",
+  "Economia",
+  "Fantascienza",
+  "Gestione della Mano",
+  "Piazzamento Tessere",
+  "Spazio",
+  "Costruzione territorio",
+  "Industria",
+  "Ambiente",
+  "Solitario",
+  "Contratti",
+  "Set-up Variabile",
+  "Rendite",
+  "Bonus a fine partita",
+  "Forza Giocatori variabile"
+ ],
+ "22": [
+  "Aste",
+  "Coltivazione",
+  "Economia",
+  "Gestione della Mano",
+  "Piazzamento lavoratori",
+  "Corse",
+  "Solitario",
+  "Contratti"
+ ],
+ "24": [
+  "Civilizzazione",
+  "Economia",
+  "Fantasy",
+  "Costruzione territorio",
+  "Set-up Variabile",
+  "Rendite",
+  "Bonus a fine partita",
+  "Costruzione percorsi",
+  "Forza Giocatori variabile"
+ ],
+ "25": [
+  "Animali",
+  "Aste",
+  "Civilizzazione",
+  "Economia",
+  "Carte",
+  "Eliminazione giocatori",
+  "Rendite",
+  "Eventi"
+ ],
+ "27": [
+  "Animali",
+  "Deck, Bag, and Pool Building",
+  "Fantasy",
+  "Sfida la fortuna",
+  "Avventura",
+  "Set-up Variabile",
+  "Eliminazione giocatori",
+  "Bonus a fine partita",
+  "Punti Movimento"
+ ],
+ "28": [
+  "Combattimento",
+  "Esplorazione",
+  "Fantasy",
+  "Lancio di dadi",
+  "Avventura",
+  "Espansione",
+  "Role Play",
+  "Forza Giocatori variabile"
+ ],
+ "29": [
+  "Animali",
+  "Coltivazione",
+  "Economia",
+  "Gestione della Mano",
+  "Piazzamento lavoratori",
+  "Solitario",
+  "Gioco a Squadre",
+  "Forza Giocatori variabile"
+ ],
+ "30": [
+  "Antichità",
+  "Aste",
+  "Economia",
+  "Maggioranze"
+ ],
+ "31": [
+  "Aste",
+  "Azioni simultanee",
+  "Bluff",
+  "Fantasy",
+  "Gestione della Mano",
+  "Politica",
+  "Negoziazione",
+  "Romanzo",
+  "Wargame",
+  "Eliminazione giocatori",
+  "Rendite",
+  "Eventi",
+  "Gestione Conflitti con le carte",
+  "Forza Giocatori variabile",
+  "Alleanze"
+ ],
+ "32": [
+  "Piazzamento Tessere",
+  "Tempo Reale"
+ ],
+ "33": [
+  "Deck, Bag, and Pool Building",
+  "Gestione della Mano"
+ ],
+ "34": [
+  "Medioevo",
+  "Piazzamento Tessere",
+  "Maggioranze",
+  "Costruzione territorio",
+  "Costruzione percorsi"
+ ],
+ "35": [
+  "Combattimento",
+  "Esplorazione",
+  "Fantasy",
+  "Lancio di dadi",
+  "Miniature",
+  "Movimento pedine"
+ ],
+ "36": [
+  "Coltivazione",
+  "Costruzione",
+  "Economia",
+  "Strategia"
+ ],
+ "37": [
+  "Destrezza",
+  "Tempo Reale",
+  "Riconoscimento Schemi",
+  "Carte",
+  "Bambini"
+ ],
+ "38": [
+  "Aste",
+  "Collezione Set",
+  "Piazzamento lavoratori",
+  "Politica",
+  "Negoziazione",
+  "Maggioranze",
+  "Piazzamento segreto unità"
+ ],
+ "39": [
+  "Coltivazione",
+  "Lancio di dadi",
+  "Medioevo",
+  "Piazzamento lavoratori",
+  "Piazzamento Tessere",
+  "Puzzle",
+  "Industria",
+  "Espansione",
+  "Solitario",
+  "Rendite",
+  "Costruzione percorsi"
+ ],
+ "40": [
+  "Collezione Set",
+  "Gestione della Mano",
+  "Treni",
+  "Sfida la fortuna",
+  "Contratti",
+  "Bonus a fine partita",
+  "Costruzione percorsi"
+ ],
+ "42": [
+  "Bluff",
+  "Collezione Set",
+  "Medioevo",
+  "Carte",
+  "Costruzione città",
+  "Set-up Variabile",
+  "Rendite",
+  "Forza Giocatori variabile"
+ ],
+ "43": [
+  "Astratto",
+  "Collezione Set"
+ ],
+ "44": [
+  "Bluff",
+  "Collezione Set",
+  "Votazione",
+  "Carte",
+  "Forza Giocatori variabile"
+ ],
+ "45": [
+  "Collezione Set",
+  "Gestione della Mano",
+  "Politica",
+  "Rinascimento",
+  "Carte"
+ ],
+ "46": [
+  "Azioni simultanee",
+  "Combattimento",
+  "Fantasy",
+  "Gestione della Mano",
+  "Lancio di dadi",
+  "Navi",
+  "Pirati",
+  "Corse",
+  "Sfida la fortuna",
+  "Maggioranze",
+  "Dadi",
+  "Forza Giocatori variabile"
+ ],
+ "47": [
+  "Astratto",
+  "Mappa modulare",
+  "Mancala"
+ ],
+ "48": [
+  "Animali",
+  "Antichità",
+  "Collezione Set",
+  "Cooperativo",
+  "Gestione della Mano",
+  "Lancio di dadi",
+  "Solitario",
+  "Eventi",
+  "Forza Giocatori variabile"
+ ],
+ "49": [
+  "Aste",
+  "Civilizzazione",
+  "Mitologia",
+  "Piazzamento Tessere",
+  "Costruzione territorio",
+  "Bonus a fine partita"
+ ],
+ "50": [
+  "Esplorazione",
+  "Fantasy",
+  "Gestione della Mano",
+  "Raccolta e Consegna",
+  "Carte",
+  "Mappa modulare",
+  "Solitario"
+ ],
+ "51": [
+  "Bluff",
+  "Combattimento",
+  "Deduzione",
+  "Gestione della Mano",
+  "Humor",
+  "West",
+  "Carte",
+  "Ruoli Nascosti",
+  "Eliminazione giocatori",
+  "Gioco a Squadre",
+  "Forza Giocatori variabile"
+ ],
+ "52": [
+  "Aste",
+  "Azioni simultanee",
+  "Videogame",
+  "Sport",
+  "Corse"
+ ],
+ "54": [
+  "Combattimento",
+  "Fantascienza",
+  "Film e serie TV",
+  "Lancio di dadi",
+  "Sfida la fortuna",
+  "Dadi",
+  "Eliminazione giocatori"
+ ],
+ "55": [
+  "Animali",
+  "Collezione Set",
+  "Gestione della Mano",
+  "Piazzamento lavoratori",
+  "Sfida la fortuna",
+  "Carte",
+  "Costruzione percorsi"
+ ],
+ "56": [
+  "Fantasy",
+  "Medioevo",
+  "Piazzamento Tessere",
+  "Storytelling",
+  "Bambini"
+ ]
+}

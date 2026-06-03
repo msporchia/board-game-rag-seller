@@ -1,0 +1,78 @@
+{
+  "name": "Apiary",
+  "missing_info": [
+    "ambientazione",
+    "durata",
+    "numero giocatori"
+  ],
+  "recorded_with_model": "llama3.1",
+  "search_results": [
+    {
+      "title": "Apiary | Gioco da Tavolo (GdT) | Tana dei Goblin",
+      "url": "https://www.goblins.net/giochi/apiary-79804",
+      "snippet": "Per questo gioco non ci sono recensioni, se vuoi puoi contattare la redazione per pubblicare una tua recensione. ... Per questo gioco non ci sono ..."
+    },
+    {
+      "title": "BoardGameItalia Blog dedicato ai Giochi da Tavolo Tutorial e",
+      "url": "https://www.boardgameitalia.it/2024/02/15/tutorial-e-recensione-apiary-alla-guida-del-nostro-alveare-dello-spazio/",
+      "snippet": "In questo episodio il Tutorial e la Recensione del gioco da tavolo: “ Apiary “ ... Apiary è un gioco da tavolo competitivo, edito dalla ..."
+    },
+    {
+      "title": "BoardGameItalia Blog dedicato ai Giochi da Tavolo Connie",
+      "url": "https://www.boardgameitalia.it/tag/connie-vogelmann/",
+      "snippet": "In questo episodio il Tutorial e la Recensione del gioco da tavolo: “ Apiary “ Apiary è un gioco ... dadi deck building devir Devir ..."
+    },
+    {
+      "title": "Red Rising - Gioco da Tavolo Strategico di Gestione delle Mani",
+      "url": "https://www.gamenest.example/03220-red-rising-giochi-di-carte.html",
+      "snippet": "Immergiti in un mondo affascinante e oscuro con **Red Rising**, il gioco da tavolo strategico che ti catapulterà in una società distopica, dove le ..."
+    },
+    {
+      "title": "Apiary - stoneimar games - gioco da tavolo -- Ghenos Games -",
+      "url": "https://www.lsgiochi.it/product/12306836/apiary-italiano",
+      "snippet": "La causa della loro scomparsa (o forse della loro fine) è sconosciuta, ma la loro assenza ha lasciato un vuoto pronto ad essere riempito da un'altra ..."
+    },
+    {
+      "title": "Apiary Quest Game Download for PC",
+      "url": "https://www.doublegames.org/apiary-quest.html",
+      "snippet": "Non è un attività davvero dolcissima, quella di raccogliere miele? Ma certo che sì! E le api lavoratrici ti aiuteranno in questo compito, perché ..."
+    },
+    {
+      "title": "Connie Vogelmann | La Tana dei Goblin",
+      "url": "https://www.goblins.net/giochi-da-tavolo/designer/connie-vogelmann",
+      "snippet": "La Tana dei Goblin : community italiana dei Giochi da tavolo , di carte e di ruolo ... Classifica Giochi da Tavolo ... Recensione"
+    },
+    {
+      "title": "Misc: Watch It Played How To Videos | La Tana dei Goblin",
+      "url": "https://www.goblins.net/giochi-da-tavolo/famiglie/misc-watch-it-played-how-videos",
+      "snippet": "La Tana dei Goblin : community italiana dei Giochi da tavolo , di carte e di ruolo ... Classifica Giochi da Tavolo ... Recensione"
+    }
+  ],
+  "pages": {
+    "https://www.goblins.net/giochi/apiary-79804": "Pensavo meglio\nIn a far-distant future, humans no longer inhabit Earth. The cause of their disappearance (or perhaps their demise) is unknown, but their absence left a void ready to be filled by another sentient species. Over the span of untold generations, one species of the humble honeybee evolved to fill that void. They grew in size and intelligence to become a highly advanced society. They call themselves Mellifera, and they have made substantial technological advances in addition to the technology they adapted from human ruins, up to and including space travel. In Apiary, each player controls one of twenty unique factions. Your faction starts the game with a hive, a few resources, and worker bees. A worker-placement, hive-building challenge awaits you: explore planets, gather resources, develop technologies, and create carvings to demonstrate your faction's strengths (measured in victory points) over one year's Flow. However, the Dearth quickly approaches, and your workers can take only a few actions before they must hibernate! Can you thrive or merely survive? —description from the publisher\n- Apiary\n- Apiario\n- Včelín",
+    "https://www.goblins.net/giochi-da-tavolo/designer/connie-vogelmann": "© 2004 - 2023 Associazione Culturale - \"TdG\" La Tana dei Goblin\nC.F./P.IVA: 12082231007 - P.le Clodio 8, 00195 Roma\nRegolamento del sito | Archivio | Informativa privacy e cookie | Contatti\nLa Tana dei Goblin protegge e condivide i contenuti del sito in base alla seguente licenza Creative Commons: Attribuzione - Non Commerciale - Condividi allo stesso modo, v.4.0. Leggi il testo sintetico, oppure il testo legale della licenza.",
+    "https://www.goblins.net/giochi-da-tavolo/famiglie/misc-watch-it-played-how-videos": "© 2004 - 2023 Associazione Culturale - \"TdG\" La Tana dei Goblin\nC.F./P.IVA: 12082231007 - P.le Clodio 8, 00195 Roma\nRegolamento del sito | Archivio | Informativa privacy e cookie | Contatti\nLa Tana dei Goblin protegge e condivide i contenuti del sito in base alla seguente licenza Creative Commons: Attribuzione - Non Commerciale - Condividi allo stesso modo, v.4.0. Leggi il testo sintetico, oppure il testo legale della licenza."
+  },
+  "expect": {
+    "ranking": {
+      "top_domains": ["goblins.net", "goblins.net", "goblins.net"],
+      "must_drop_domains": ["gamenest.example"],
+      "note": "3 URL goblin in cima (la whitelist non distingue scheda-gioco da pagine di navigazione del sito); la gestione delle pagine 'povere' è demandata al judgment LLM"
+    },
+    "judgment": {
+      "https://www.goblins.net/giochi/apiary-79804": {
+        "is_this_game": true,
+        "note": "scheda del gioco Apiary con descrizione publisher (ambientazione futura sci-fi di api evolute)"
+      },
+      "https://www.goblins.net/giochi-da-tavolo/designer/connie-vogelmann": {
+        "is_this_game": false,
+        "note": "Pagina di NAVIGAZIONE del sito (footer/credits), il testo non parla di Apiary. Test della trappola whitelist-ma-non-pertinente"
+      },
+      "https://www.goblins.net/giochi-da-tavolo/famiglie/misc-watch-it-played-how-videos": {
+        "is_this_game": false,
+        "note": "Idem: pagina di indice, testo svuotato da trafilatura (solo footer). is_this_game DEVE essere false anche se il dominio è whitelist"
+      }
+    },
+    "extraction": {}
+  }
+}

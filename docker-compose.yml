@@ -30,7 +30,7 @@ services:
     environment:
       GAMES_FILE: /data/games.json
     volumes:
-      - ./tests/fixtures/suites/core/games.json:/data/games.json:ro
+      - ./tests/fixtures/games.json:/data/games.json:ro   # ~200-game demo catalog
     ports:
       - "8001:8001"
 

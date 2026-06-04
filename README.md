@@ -9,7 +9,7 @@ semantic search over Qdrant. FastAPI · LangChain · Ollama, local-first and pro
 ## Quickstart (self-contained, offline)
 
 The stack runs without a real PrestaShop/MySQL: a bundled **mock** serves the demo catalog
-(50 games) over the same contract.
+(~200 games) over the same contract.
 
 ```bash
 # 1. Start the stack (Qdrant + Ollama + API + mock catalog)

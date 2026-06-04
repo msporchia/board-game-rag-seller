@@ -12,6 +12,7 @@ from app.ingestion.enricher.compose import RuleComposeEnricher
 from app.ingestion.enricher.extract import ExtractEnricher
 from app.ingestion.enricher.gapfill import GapFillEnricher
 from app.ingestion.enricher.curator import CuratorEnricher
+from app.ingestion.enricher.synth import SynthEnricher
 from app.ingestion.enricher.trim import TrimEnricher
 from app.ingestion.enricher.web import WebEnricher
 
@@ -22,6 +23,7 @@ __all__ = [
     "TrimEnricher",
     "RuleComposeEnricher",
     "CuratorEnricher",
+    "SynthEnricher",
     "ExtractEnricher",
     "WebEnricher",
     "AugmentEnricher",

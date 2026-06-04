@@ -21,7 +21,13 @@ import json
 from pathlib import Path
 
 from app.core.vector_store import GameVectorStore
-from app.ingestion.enricher import CuratorEnricher, EnrichmentPipeline, RuleComposeEnricher, TrimEnricher
+from app.ingestion.enricher import (
+    CuratorEnricher,
+    EnrichmentPipeline,
+    RuleComposeEnricher,
+    SynthEnricher,
+    TrimEnricher,
+)
 from app.ingestion.ingester import Ingester
 from app.ingestion.sources import JsonSource
 from app.rag.retriever import GameRetriever
@@ -33,6 +39,7 @@ PIPELINES = {
     "rule": [RuleComposeEnricher()],                    # baseline: deterministic compose
     "trim": [TrimEnricher(350), RuleComposeEnricher()],  # aggressive-cut experiment (§6); the default is the 1000 failsafe
     "curator": [CuratorEnricher(), RuleComposeEnricher()],  # SEMANTIC compression (LLM) + compose
+    "synth": [CuratorEnricher(), SynthEnricher(), RuleComposeEnricher()],  # the missing link: fuse facts into the text
 }
 
 

@@ -188,7 +188,14 @@ TESTO:
         e = game.enriched
         new_desc = (e.description + "\n" + block).strip() if e.description else block
         new_missing = [m for m in game.missing_info if m not in facts]
+        # Dual-write: besides the human-readable block in the description (which keeps the facts
+        # in embed_text even when Synth is off), also record them in the STRUCTURED `extracted`
+        # bag. That makes `extracted` the single complete fact-record (curator + web) that Synth
+        # consumes and the EnrichmentStore persists. Web fills only MISSING labels, so it never
+        # collides with the curator's keys; the merge is a safe progressive union.
+        web_extracted = {info: entries[0]["value"] for info, entries in facts.items()}
         return game.model_copy(update={
             "enriched": e.model_copy(update={"description": new_desc}),
             "missing_info": new_missing,
+            "extracted": {**game.extracted, **web_extracted},
         })

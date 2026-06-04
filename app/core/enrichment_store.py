@@ -7,7 +7,7 @@ the same page and avoids re-calling the LLM for facts already extracted.
 
 SQLite for now (single file, zero infra, local-first); the interface is meant to be
 swappable with Postgres if/when scale demands it. Three tables:
-  - products     GameDoc lifecycle (original/enriched/embed_text/missing_info)
+  - products     GameDoc lifecycle (original/enriched/embed_text/missing_info/extracted)
   - web_pages    fetch cache (url → clean text)
   - extractions  facts extracted from the web with quote and provenance (→ source scoreboard)
 """
@@ -31,6 +31,7 @@ CREATE TABLE IF NOT EXISTS products (
     enriched_json TEXT NOT NULL,
     embed_text    TEXT,
     missing_info  TEXT NOT NULL DEFAULT '[]',
+    extracted     TEXT NOT NULL DEFAULT '{}',
     low_quality   INTEGER NOT NULL DEFAULT 0,
     updated_at    TEXT NOT NULL
 );
@@ -70,7 +71,17 @@ class EnrichmentStore:
         self._conn.row_factory = sqlite3.Row
         self._conn.execute("PRAGMA journal_mode=WAL")
         self._conn.executescript(_SCHEMA)
+        self._migrate()
         self._conn.commit()
+
+    def _migrate(self) -> None:
+        """Additive migrations for DBs created before a column existed (SQLite has no
+        ADD COLUMN IF NOT EXISTS). New columns must carry a DEFAULT so old rows stay valid."""
+        cols = {r["name"] for r in self._conn.execute("PRAGMA table_info(products)")}
+        if "extracted" not in cols:
+            self._conn.execute(
+                "ALTER TABLE products ADD COLUMN extracted TEXT NOT NULL DEFAULT '{}'"
+            )
 
     # ---- products: the game's curated record ----
 
@@ -79,16 +90,18 @@ class EnrichmentStore:
             self._conn.execute(
                 """INSERT INTO products
                    (id_product, content_hash, name, original_json, enriched_json,
-                    embed_text, missing_info, low_quality, updated_at)
-                   VALUES (?,?,?,?,?,?,?,?,?)
+                    embed_text, missing_info, extracted, low_quality, updated_at)
+                   VALUES (?,?,?,?,?,?,?,?,?,?)
                    ON CONFLICT(id_product) DO UPDATE SET
                      content_hash=excluded.content_hash, name=excluded.name,
                      original_json=excluded.original_json, enriched_json=excluded.enriched_json,
                      embed_text=excluded.embed_text, missing_info=excluded.missing_info,
+                     extracted=excluded.extracted,
                      low_quality=excluded.low_quality, updated_at=excluded.updated_at""",
                 (doc.id_product, doc.content_hash, doc.original.name,
                  doc.original.model_dump_json(), doc.enriched.model_dump_json(),
-                 doc.embed_text, json.dumps(doc.missing_info), int(low_quality), _now()),
+                 doc.embed_text, json.dumps(doc.missing_info), json.dumps(doc.extracted),
+                 int(low_quality), _now()),
             )
             self._conn.commit()
 
@@ -103,6 +116,7 @@ class EnrichmentStore:
             enriched=GameData.model_validate_json(row["enriched_json"]),
             embed_text=row["embed_text"],
             missing_info=json.loads(row["missing_info"]),
+            extracted=json.loads(row["extracted"]),
         )
 
     def content_hash(self, id_product: int) -> Optional[str]:

@@ -11,9 +11,32 @@ import argparse
 
 from app.core.enrichment_store import EnrichmentStore
 from app.core.vector_store import GameVectorStore
-from app.ingestion.enricher import EnrichmentPipeline, RuleComposeEnricher
+from app.ingestion.enricher import (
+    CuratorEnricher,
+    EnrichmentPipeline,
+    RuleComposeEnricher,
+    SynthEnricher,
+    WebEnricher,
+)
 from app.ingestion.serializer import DocumentSerializer
 from app.ingestion.sources import GameSource, PrestashopSource
+
+
+def build_pipeline(store: EnrichmentStore | None = None) -> EnrichmentPipeline:
+    """The production enrichment chain, in pipeline order (see docs/enrichment/):
+
+        Curator (extract facts → `extracted`) → Web (fill the gaps, fallback) →
+        Synth (fuse everything into `enriched.description`) → Compose (assemble `embed_text`).
+
+    Compose is last so `embed_text` is always present. The store is injected into Web for the
+    page cache and extraction provenance. Eval builds its own (experiment) pipelines instead.
+    """
+    return EnrichmentPipeline([
+        CuratorEnricher(),
+        WebEnricher(store=store),
+        SynthEnricher(),
+        RuleComposeEnricher(),
+    ])
 
 
 class Ingester:
@@ -25,10 +48,12 @@ class Ingester:
         self.source = source or PrestashopSource()
         self.serializer = serializer or DocumentSerializer()   # GameDoc → Document (thin)
         self.store = store or GameVectorStore()
-        # default: deterministic compose, so embed_text is always present
-        self.pipeline = pipeline or EnrichmentPipeline([RuleComposeEnricher()])
         # optional: persists the curated record (system-of-record). None in test/eval.
         self.enrichment_store = enrichment_store
+        # default: the full production chain (curator → web → synth → compose), with the
+        # enrichment store injected into Web (page cache + provenance). Eval/tests inject
+        # their own pipeline; Compose stays last so embed_text is always present.
+        self.pipeline = pipeline or build_pipeline(store=self.enrichment_store)
 
     def run(self, recreate: bool = True, **fetch_kwargs) -> int:
         print("[1/3] Reading games from the source...", flush=True)

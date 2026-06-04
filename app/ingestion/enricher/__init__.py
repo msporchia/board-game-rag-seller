@@ -1,7 +1,8 @@
 """DATA enrichment pipeline (one file per enricher).
 
 Stage: source → [EnrichmentPipeline] → serializer → vector store.
-Typical logical order: Extract → Web → Augment → Trim → GapFill → Compose(Rule|Llm).
+Production order (build_pipeline): Curator → Web → Synth → Compose(Rule).
+(Extract/Augment/GapFill/Trim are stubs/experiments, not in the default chain.)
 
 Public imports (compatibility: `from app.ingestion.enricher import X`).
 """

@@ -91,11 +91,15 @@ enter this text.
 
 All measurable on the retrieval scorecard (it's the ruler this step defines):
 
-### 1. Drop constant boilerplate
+### 1. Trim constant prefixes, keep the informative leaf
 
-Some phrases are identical for *every* game and add no discriminating signal — e.g. "Categoria:
-Giochi da tavolo" (every product is a board game). Constant text only **dilutes** the centroid.
-Pruning near-constant phrases should sharpen retrieval at zero cost.
+`categoria` in the real catalog is a **hierarchy**, e.g. `Giochi da tavolo > Giochi Gestionali`.
+The leading `Giochi da tavolo >` is constant across every game — pure dilution — but the **leaf**
+(`Giochi Gestionali`, `Giochi di Avventura`, `Party Game`…) is strong **genre signal**. Compose
+should drop the constant prefix and surface the leaf (it even pairs with the Curator's
+"genre from category" idea — the leaf ≈ genre, the slot with the worst recall). Measurable on the
+scorecard. *(Note: the bundled mock flattens `categoria` to a constant `"Giochi da tavolo"`, which
+is unrealistic — the mock should mirror the real hierarchy so local tests aren't misleading.)*
 
 ### 2. Reorder toward the most-queried dimensions
 

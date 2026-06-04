@@ -61,6 +61,29 @@ Three more steps exist only as stubs (`ExtractEnricher`, `AugmentEnricher`,
 > pipeline beat the raw baseline. With Synth in place, `curator → synth → compose` is the **first
 > pipeline to beat it** on the `core` suite.
 
+The four steps are wired together as the production chain by `build_pipeline()` in
+`app/ingestion/ingester.py` (`Curator → Web → Synth → Compose`), which is the `Ingester`'s
+default — so a plain `python -m app.ingestion.ingester` now runs the full enrichment, not just
+Compose. Eval keeps its own experiment variants (`rule`, `trim`, `curator`, `synth`) in
+`tests/eval.py`, injected explicitly.
+
+## Where the curated data lands
+
+At the end of ingest (`Ingester.run`), once the pipeline has produced `embed_text`, each game is
+written to **two sinks** — plus a third written *during* the Web step:
+
+| Sink | What it stores | When |
+|------|----------------|------|
+| **SQLite** — `EnrichmentStore`, the durable system-of-record | `original`, `enriched`, `embed_text`, `missing_info` **and `extracted`** (the curator+web fact bag) | `save_game`, after the pipeline |
+| **Qdrant** — the regenerable vector index | `embed_text` as the embedded `page_content` + the `enriched` fields as the filter payload | `store.index` (embed + upsert) |
+| **SQLite** — `web_pages` / `extractions` | the Web step's page cache and per-fact provenance (→ source scoreboard) | mid-pipeline, by the Web step |
+
+The two fact paths are kept **consistent**: both the Curator (text extractions) and the Web step
+(verified online facts) write into `game.extracted`, and `extracted` is now persisted — so an
+incremental re-ingest can reuse the facts instead of re-deriving them with the LLM. The Web step
+*also* appends a readable block to the description (**dual-write**), so its facts survive in
+`embed_text` even on a pipeline that skips Synth.
+
 ## How we evaluate
 
 We decide with numbers, not intuition. Three levels, each with a different job:

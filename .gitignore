@@ -10,3 +10,7 @@ venv/
 # Enrichment store (dati locali, non versionati)
 data/
 *.db
+
+# IDE
+.idea/
+.vscode/

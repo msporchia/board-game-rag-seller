@@ -43,6 +43,7 @@ printed by `pytest_sessionfinish` (see conftest).
 """
 
 import json
+import os
 from pathlib import Path
 
 import pytest
@@ -54,6 +55,11 @@ pytestmark = pytest.mark.llm
 
 FIXTURE = Path(__file__).parent / "fixtures" / "assess_cases.json"
 CASES = json.loads(FIXTURE.read_text(encoding="utf-8"))
+# Quick iteration: EVAL_LIMIT=N runs only the first N cases (the LLM is slow on CPU).
+# Unset → the full suite. The metrics are still printed, just over fewer cases.
+_limit = os.environ.get("EVAL_LIMIT")
+if _limit:
+    CASES = CASES[: int(_limit)]
 IDS = [c["slug"] for c in CASES]
 
 

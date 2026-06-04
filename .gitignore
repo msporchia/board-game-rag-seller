@@ -17,3 +17,6 @@ data/
 
 # Local-only proprietary catalog (served by the mock; never committed)
 mock/catalog.json
+
+# Local-only compose override (machine-specific, e.g. reusing existing volumes)
+docker-compose.override.yml

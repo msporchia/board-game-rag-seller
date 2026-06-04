@@ -1,0 +1,59 @@
+name: seller
+
+# Self-contained stack: vector store + local models + API + a mock catalog source.
+# No real PrestaShop/MySQL needed — the mock serves the bundled demo fixtures over the
+# same contract. GPU is optional (see docker-compose.gpu.yml).
+
+services:
+  seller-qdrant:
+    container_name: seller-qdrant
+    image: qdrant/qdrant:latest
+    ports:
+      - "6333:6333"   # REST API + dashboard (http://localhost:6333/dashboard)
+      - "6334:6334"   # gRPC
+    volumes:
+      - qdrantdata:/qdrant/storage
+
+  seller-ollama:
+    container_name: seller-ollama
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollamadata:/root/.ollama
+    # GPU is optional. To enable NVIDIA:
+    #   docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d
+
+  mock-prestashop:
+    container_name: mock-prestashop
+    build: ./mock
+    environment:
+      GAMES_FILE: /data/games.json
+    volumes:
+      - ./tests/fixtures/suites/core/games.json:/data/games.json:ro
+    ports:
+      - "8001:8001"
+
+  seller-api:
+    container_name: seller-api
+    build: .
+    depends_on:
+      - seller-qdrant
+      - seller-ollama
+      - mock-prestashop
+    ports:
+      - "8000:8000"
+    environment:
+      QDRANT_URL: http://seller-qdrant:6333
+      OLLAMA_URL: http://seller-ollama:11434
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-nomic-embed-text}
+      LLM_MODEL: ${LLM_MODEL:-llama3.1}
+      # Data source for ingest. Default = the bundled mock; point at a real PrestaShop
+      # "seller" endpoint to ingest a live catalog (see .env.example).
+      PRESTASHOP_BASE_URL: ${PRESTASHOP_BASE_URL:-http://mock-prestashop:8001}
+    volumes:
+      - .:/app          # hot-reload during development (the Dockerfile uses --reload)
+
+volumes:
+  qdrantdata:
+  ollamadata:

@@ -1,0 +1,14 @@
+# Optional NVIDIA GPU override for Ollama.
+# Requires the host to have the NVIDIA Container Toolkit installed.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d
+
+services:
+  seller-ollama:
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]

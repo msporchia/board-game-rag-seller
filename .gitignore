@@ -14,3 +14,6 @@ data/
 # IDE
 .idea/
 .vscode/
+
+# Local-only proprietary catalog (served by the mock; never committed)
+mock/catalog.json

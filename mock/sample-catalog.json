@@ -1,0 +1,349 @@
+[
+  {
+    "id_product": 1,
+    "name": "Catan",
+    "content_hash": "sample0001",
+    "description": "Gioco di gestione risorse e commercio: raccogli materie prime, costruisci strade e villaggi e negozia con gli altri per espanderti sull'isola.",
+    "source_descriptions": [
+      {
+        "source": "fonte1",
+        "description": "Gioco di scambio e costruzione sull'isola di Catan, per 3-4 giocatori."
+      },
+      {
+        "source": "fonte2",
+        "description": "Classico tedesco di negoziazione e gestione risorse, ottimo per famiglie."
+      }
+    ],
+    "tags": [
+      "Gestione Risorse",
+      "Commercio",
+      "Piazzamento"
+    ],
+    "autori": "",
+    "players": [
+      3,
+      4
+    ],
+    "players_display": "3-4",
+    "duration_min": 75,
+    "age_min": 10,
+    "complexity": "Medio",
+    "complexity_level": 2,
+    "year": 1995,
+    "internal_rating": 7.0,
+    "is_expansion": false,
+    "categoria": "Giochi da tavolo",
+    "marca": "KOSMOS",
+    "image": "https://img.gamenest.example/1.jpg"
+  },
+  {
+    "id_product": 2,
+    "name": "Carcassonne",
+    "content_hash": "sample0002",
+    "description": "Piazza tessere per comporre un paesaggio medievale e schiera i tuoi seguaci su città, strade e monasteri per fare punti.",
+    "source_descriptions": [
+      {
+        "source": "fonte1",
+        "description": "Tile-laying medievale: completa città e strade con i tuoi meeple."
+      }
+    ],
+    "tags": [
+      "Piazzamento Tessere",
+      "Controllo Aree"
+    ],
+    "autori": "",
+    "players": [
+      2,
+      3,
+      4,
+      5
+    ],
+    "players_display": "2-5",
+    "duration_min": 40,
+    "age_min": 7,
+    "complexity": "Leggero",
+    "complexity_level": 1,
+    "year": 2000,
+    "internal_rating": 7.1,
+    "is_expansion": false,
+    "categoria": "Giochi da tavolo",
+    "marca": "Hans im Glück",
+    "image": "https://img.gamenest.example/2.jpg"
+  },
+  {
+    "id_product": 3,
+    "name": "Azul",
+    "content_hash": "sample0003",
+    "description": "Drafting di piastrelle colorate per decorare il palazzo: scegli con cura per non sprecare pezzi e massimizzare i pattern.",
+    "source_descriptions": [
+      {
+        "source": "fonte1",
+        "description": "Astratto di drafting e composizione di mosaici."
+      }
+    ],
+    "tags": [
+      "Drafting",
+      "Pattern Building",
+      "Astratto"
+    ],
+    "autori": "",
+    "players": [
+      2,
+      3,
+      4
+    ],
+    "players_display": "2-4",
+    "duration_min": 40,
+    "age_min": 8,
+    "complexity": "Leggero",
+    "complexity_level": 2,
+    "year": 2017,
+    "internal_rating": 7.4,
+    "is_expansion": false,
+    "categoria": "Giochi da tavolo",
+    "marca": "Plan B Games",
+    "image": "https://img.gamenest.example/3.jpg"
+  },
+  {
+    "id_product": 4,
+    "name": "Pandemic",
+    "content_hash": "sample0004",
+    "description": "Cooperativo: una squadra di specialisti gira il mondo per curare quattro malattie prima che le epidemie dilaghino.",
+    "source_descriptions": [
+      {
+        "source": "fonte1",
+        "description": "Cooperativo a tema epidemie: tutti contro il gioco."
+      },
+      {
+        "source": "fonte2",
+        "description": "Coop introduttivo molto solido, alto fattore tensione."
+      }
+    ],
+    "tags": [
+      "Cooperativo",
+      "Gestione della Mano",
+      "Punto di Azione"
+    ],
+    "autori": "",
+    "players": [
+      2,
+      3,
+      4
+    ],
+    "players_display": "2-4",
+    "duration_min": 45,
+    "age_min": 8,
+    "complexity": "Medio",
+    "complexity_level": 2,
+    "year": 2008,
+    "internal_rating": 7.5,
+    "is_expansion": false,
+    "categoria": "Giochi da tavolo",
+    "marca": "Z-Man Games",
+    "image": "https://img.gamenest.example/4.jpg"
+  },
+  {
+    "id_product": 5,
+    "name": "Ticket to Ride",
+    "content_hash": "sample0005",
+    "description": "Colleziona carte vagone e rivendica tratte ferroviarie per completare i tuoi obiettivi di destinazione attraverso la mappa.",
+    "source_descriptions": [
+      {
+        "source": "fonte1",
+        "description": "Costruzione di rotte ferroviarie con collezione di carte colore."
+      }
+    ],
+    "tags": [
+      "Set Collection",
+      "Costruzione Percorsi"
+    ],
+    "autori": "",
+    "players": [
+      2,
+      3,
+      4,
+      5
+    ],
+    "players_display": "2-5",
+    "duration_min": 60,
+    "age_min": 8,
+    "complexity": "Leggero",
+    "complexity_level": 2,
+    "year": 2004,
+    "internal_rating": 7.2,
+    "is_expansion": false,
+    "categoria": "Giochi da tavolo",
+    "marca": "Days of Wonder",
+    "image": "https://img.gamenest.example/5.jpg"
+  },
+  {
+    "id_product": 6,
+    "name": "7 Wonders",
+    "content_hash": "sample0006",
+    "description": "Draft simultaneo di carte su tre ere per sviluppare la tua civiltà tra scienza, militare e commercio.",
+    "source_descriptions": [
+      {
+        "source": "fonte1",
+        "description": "Draft di carte a ere per costruire una civiltà; scala fino a 7 giocatori."
+      }
+    ],
+    "tags": [
+      "Drafting",
+      "Costruzione Motore",
+      "Civilizzazione"
+    ],
+    "autori": "",
+    "players": [
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "players_display": "3-7",
+    "duration_min": 30,
+    "age_min": 10,
+    "complexity": "Medio",
+    "complexity_level": 2,
+    "year": 2010,
+    "internal_rating": 7.7,
+    "is_expansion": false,
+    "categoria": "Giochi da tavolo",
+    "marca": "Repos Production",
+    "image": "https://img.gamenest.example/6.jpg"
+  },
+  {
+    "id_product": 7,
+    "name": "Splendor",
+    "content_hash": "sample0007",
+    "description": "Acquisisci gemme e carte sviluppo per costruire un motore economico e attirare i nobili: corsa ai 15 punti prestigio.",
+    "source_descriptions": [],
+    "tags": [
+      "Costruzione Motore",
+      "Gestione Risorse"
+    ],
+    "autori": "",
+    "players": [
+      2,
+      3,
+      4
+    ],
+    "players_display": "2-4",
+    "duration_min": 30,
+    "age_min": 10,
+    "complexity": "Leggero",
+    "complexity_level": 2,
+    "year": 2014,
+    "internal_rating": 7.0,
+    "is_expansion": false,
+    "categoria": "Giochi da tavolo",
+    "marca": "Space Cowboys",
+    "image": "https://img.gamenest.example/7.jpg"
+  },
+  {
+    "id_product": 8,
+    "name": "Wingspan",
+    "content_hash": "sample0008",
+    "description": "Engine building a tema ornitologico: gioca uccelli nei tre habitat per innescare catene di abilità sempre più potenti.",
+    "source_descriptions": [
+      {
+        "source": "fonte1",
+        "description": "Engine builder con uccelli; ottimo anche in solitario."
+      },
+      {
+        "source": "fonte2",
+        "description": "Motore di carte elegante, materiali curatissimi."
+      }
+    ],
+    "tags": [
+      "Costruzione Motore",
+      "Set Collection",
+      "Gestione della Mano"
+    ],
+    "autori": "",
+    "players": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "players_display": "1-5",
+    "duration_min": 70,
+    "age_min": 10,
+    "complexity": "Medio",
+    "complexity_level": 2,
+    "year": 2019,
+    "internal_rating": 8.0,
+    "is_expansion": false,
+    "categoria": "Giochi da tavolo",
+    "marca": "Stonemaier Games",
+    "image": "https://img.gamenest.example/8.jpg"
+  },
+  {
+    "id_product": 9,
+    "name": "Dixit",
+    "content_hash": "sample0009",
+    "description": "Party narrativo: dai un indizio evocativo per la tua illustrazione e fai indovinare la carta giusta — ma non a tutti.",
+    "source_descriptions": [
+      {
+        "source": "fonte1",
+        "description": "Gioco di immaginazione con illustrazioni oniriche; ottimo in famiglia."
+      }
+    ],
+    "tags": [
+      "Party Game",
+      "Storytelling",
+      "Deduzione"
+    ],
+    "autori": "",
+    "players": [
+      3,
+      4,
+      5,
+      6
+    ],
+    "players_display": "3-6",
+    "duration_min": 30,
+    "age_min": 8,
+    "complexity": "Leggero",
+    "complexity_level": 1,
+    "year": 2008,
+    "internal_rating": 7.3,
+    "is_expansion": false,
+    "categoria": "Giochi da tavolo",
+    "marca": "Libellud",
+    "image": "https://img.gamenest.example/9.jpg"
+  },
+  {
+    "id_product": 10,
+    "name": "Codenames",
+    "content_hash": "sample0010",
+    "description": "A squadre: i capispia danno indizi di una parola per far indovinare le proprie parole sul tavolo evitando l'assassino.",
+    "source_descriptions": [],
+    "tags": [
+      "Party Game",
+      "Deduzione",
+      "Squadre"
+    ],
+    "autori": "",
+    "players": [
+      4,
+      5,
+      6,
+      7,
+      8
+    ],
+    "players_display": "4-8",
+    "duration_min": 15,
+    "age_min": 10,
+    "complexity": "Leggero",
+    "complexity_level": 1,
+    "year": 2015,
+    "internal_rating": 7.6,
+    "is_expansion": false,
+    "categoria": "Giochi da tavolo",
+    "marca": "CGE",
+    "image": "https://img.gamenest.example/10.jpg"
+  }
+]

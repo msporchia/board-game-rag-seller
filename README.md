@@ -8,8 +8,10 @@ semantic search over Qdrant. FastAPI · LangChain · Ollama, local-first and pro
 
 ## Quickstart (self-contained, offline)
 
-The stack runs without a real PrestaShop/MySQL: a bundled **mock** serves the demo catalog
-(~200 games) over the same contract.
+The stack runs without a real PrestaShop/MySQL: a bundled **mock** serves a small synthetic
+demo catalog (`mock/sample-catalog.json`) over the same contract. To run against a larger
+catalog, drop your own JSON at `mock/catalog.json` (git-ignored) and set `MOCK_CATALOG` — see
+[`.env.example`](.env.example).
 
 ```bash
 # 1. Start the stack (Qdrant + Ollama + API + mock catalog)
@@ -43,8 +45,9 @@ docker compose exec seller-api python -m tests.eval --suite core --k 5    # retr
 
 ## Data source
 
-By default the API ingests from the bundled mock (`PRESTASHOP_BASE_URL=http://mock-prestashop:8001`).
-Point it at a real PrestaShop "seller" endpoint to ingest a live catalog — see
+By default the API ingests from the bundled mock (`PRESTASHOP_BASE_URL=http://mock-prestashop:8001`),
+which serves the synthetic sample catalog. Point `MOCK_CATALOG` at your own dataset, or point
+`PRESTASHOP_BASE_URL` at a real PrestaShop "seller" endpoint to ingest a live catalog — see
 [`.env.example`](.env.example) and [`docs/pipeline-dati.md`](docs/pipeline-dati.md).
 
 ## Structure

@@ -44,16 +44,22 @@ Source(DTO) → Curator → Web (fallback) → Synth → Compose → embed_text 
 |---|------|-------------------------|--------|
 | 1 | [Curator](01-curator.md) | reads the description, decides what we know / can extract / are missing — no invention | ✅ implemented |
 | 2 | [Web](02-web.md) | for what's still missing, searches the web and extracts verified facts (fallback) | ✅ implemented |
-| 3 | [Synth](03-synth.md) | fuses certain data + extractions + web facts into one tight description | 🚧 TODO |
+| 3 | [Synth](03-synth.md) | rewrites the description (setting/theme/genre + web facts) so the extractions reach the embedded text | ✅ implemented |
 | 4 | [Compose](04-compose.md) | turns the enriched fields into the final `embed_text` | ✅ implemented (rule-based) |
+
+Steps 3 and 4 share the work cleanly: **Compose** owns the structured facts (players, duration,
+complexity, tags — deterministic, from the fields), **Synth** owns the descriptive prose (setting,
+theme, genre + recovered facts with no field). Each fact appears once, produced by the layer that
+does it most reliably.
 
 Three more steps exist only as stubs (`ExtractEnricher`, `AugmentEnricher`,
 `GapFillEnricher`) — placeholders for future work, not yet wired in.
 
-> ⚠️ **Known gap.** The Curator's extractions are kept in `extracted`, but only **Synth** (step
-> 3) would weave them into the text — and Synth doesn't exist yet. Today the ingest runs only
-> Compose, so the extracted setting/genre/audience never reach `embed_text`. This is why
-> enrichment does not yet beat the raw baseline on retrieval. Synth is the missing link.
+> **The link that closed the loop.** The Curator's extractions live in `extracted`, but Compose
+> builds `embed_text` only from the `enriched` fields — so until **Synth** wrote them back into
+> the description, the recovered setting/genre/web facts never reached the embedding, and no
+> pipeline beat the raw baseline. With Synth in place, `curator → synth → compose` is the **first
+> pipeline to beat it** on the `core` suite.
 
 ## How we evaluate
 

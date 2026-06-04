@@ -7,11 +7,17 @@ Synth fuses ALL the available material into one dense, search-friendly descripti
 signal that steps 1-2 worked to gather actually enters `embed_text`.
 
 Design (see docs/enrichment/03-synth.md):
-  - Input = certain data (structured fields) + `game.extracted` (Curator) + the current
-    description (which already carries the Web facts) + multi-source `source_descriptions`.
-  - Output = `enriched.description` rewritten as a unified synthesis (~400-600 chars).
+  - Division of labor with Compose: the STRUCTURED facts (players, duration, complexity, year)
+    are owned by the deterministic Compose, straight from the fields — so Synth must NOT restate
+    them (that would duplicate them in the embedded text). Synth owns the DESCRIPTIVE prose:
+    setting/theme, genre, audience, what the game is about, plus descriptive facts recovered from
+    text/web that have no structured field (e.g. "ambientato in Toscana").
+  - Input = `game.extracted` (Curator) + the current description (which already carries the Web
+    facts) + multi-source `source_descriptions`; the certain data is passed as CONTEXT only
+    (don't contradict it), not to be restated.
+  - Output = `enriched.description` rewritten as a descriptive synthesis (short, dense).
   - REWRITE, don't compress: keep theme/setting/mechanic words (the trim/v1 lesson — blind
-    cutting loses recall), weave in the canonical facts, drop only marketing noise.
+    cutting loses recall), weave in the descriptive facts, drop only marketing noise.
   - Fuse, never invent: only facts present in the material; the step adds structure, not claims.
 
 Note: the prompt is intentionally in Italian — it drives an Italian-language LLM over an
@@ -86,22 +92,25 @@ class SynthEnricher(Enricher):
     # ---- prompt ---------------------------------------------------------------
 
     def _prompt(self, name: str, material: str) -> str:
-        return f"""Sei un redattore di giochi da tavolo. Riscrivi UNA descrizione unica e
-concisa del gioco "{name}", fondendo TUTTO il materiale qui sotto.
+        return f"""Sei un redattore di giochi da tavolo. Scrivi UNA sintesi descrittiva, densa e
+concisa, del gioco "{name}", basandoti sul materiale qui sotto.
+
+A cosa serve: questo testo descrive l'ESPERIENZA del gioco — di cosa parla e com'è giocarlo.
+I dati numerici (giocatori, durata, complessità, anno) sono registrati ALTROVE: NON ripeterli.
 
 Regole rigide:
-- Usa SOLO fatti presenti nel materiale. NON inventare nulla (niente numeri, ambientazioni o
-  meccaniche non citati). Se un'informazione non c'è, non scriverla.
-- I [DATI CERTI] hanno sempre la priorità: se il testo li contraddice, vincono i dati certi.
+- Concentrati su: ambientazione/tema, genere, a chi è adatto, e cosa si fa nel gioco.
+- NON indicare numero di giocatori, durata in minuti, complessità o anno: sono aggiunti a parte.
+- Usa SOLO fatti presenti nel materiale. NON inventare nulla. Se un'informazione non c'è, non
+  scriverla. I [DATI CERTI] danno solo il contesto: non contraddirli.
 - MANTIENI le parole-chiave di tema, ambientazione e meccaniche (es. "cooperativo", "fantasy",
-  "Toscana", "piazzamento lavoratori"): servono alla ricerca. Togli solo il marketing vuoto.
-- Stile: denso e fattuale, una sintesi di {self.max_chars // 5}-{self.max_chars // 4} parole
-  circa. Niente elenco puntato, niente titoli: testo scorrevole.
+  "Toscana", "piazzamento lavoratori"): servono alla ricerca. Togli il marketing vuoto.
+- Stile: testo scorrevole, niente elenchi né titoli. Circa {self.max_chars // 5}-{self.max_chars // 4} parole.
 
 MATERIALE:
 {material}
 
-Rispondi SOLO con la descrizione riscritta, senza preamboli."""
+Rispondi SOLO con la sintesi, senza preamboli."""
 
     # ---- API ------------------------------------------------------------------
 

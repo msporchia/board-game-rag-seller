@@ -91,15 +91,16 @@ enter this text.
 
 All measurable on the retrieval scorecard (it's the ruler this step defines):
 
-### 1. Trim constant prefixes, keep the informative leaf
+### 1. The category leaf is genre signal — but that's not Compose's job
 
 `categoria` in the real catalog is a **hierarchy**, e.g. `Giochi da tavolo > Giochi Gestionali`.
-The leading `Giochi da tavolo >` is constant across every game — pure dilution — but the **leaf**
-(`Giochi Gestionali`, `Giochi di Avventura`, `Party Game`…) is strong **genre signal**. Compose
-should drop the constant prefix and surface the leaf (it even pairs with the Curator's
-"genre from category" idea — the leaf ≈ genre, the slot with the worst recall). Measurable on the
-scorecard. *(Note: the bundled mock flattens `categoria` to a constant `"Giochi da tavolo"`, which
-is unrealistic — the mock should mirror the real hierarchy so local tests aren't misleading.)*
+The **leaf** (`Giochi Gestionali`, `Giochi di Avventura`, `Party Game`…) is strong **genre
+signal** — but turning it into genre is an *enrichment* concern (the Curator's "genre from
+category"), not Compose's. And the constant `Giochi da tavolo >` prefix is a tiny, uniform
+dilution: normalizing it would belong to **source parsing (phase 1)**, not here, and since the
+effect is minimal we deliberately **leave it**. *(Note: the bundled mock flattens `categoria` to a
+constant `"Giochi da tavolo"`, which is unrealistic — the mock should mirror the real hierarchy so
+local tests aren't misleading.)*
 
 ### 2. Reorder toward the most-queried dimensions
 

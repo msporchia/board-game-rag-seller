@@ -20,8 +20,8 @@ measure), `note.md` (ideas), `seller.md` (overview).
     `source_descriptions`); `GameHit`.
   - `ingestion/enricher/` (one file per enricher): `base`, `trim` (FAILSAFE 1000 chars),
     `compose` (`RuleComposeEnricher`), `curator` (`CuratorEnricher` — citation-based, NO
-    synthesis), `web` (`WebEnricher`), stubs `extract`/`augment`/`gapfill`.
-    **Unified synthesis step** (`SynthEnricher`) still TODO.
+    synthesis), `web` (`WebEnricher`), `synth` (`SynthEnricher` — descriptive synthesis, the
+    structured/descriptive split with Compose), stubs `extract`/`augment`/`gapfill`.
   - `core/web_search.py`: `DdgsSearch` (DuckDuckGo search, swappable) + `fetch_clean`
     (httpx with browser User-Agent + trafilatura).
   - `core/enrichment_store.py`: `EnrichmentStore` (SQLite, durable system-of-record).
@@ -52,15 +52,23 @@ measure), `note.md` (ideas), `seller.md` (overview).
 
 ## Enrichment pipeline (current architecture)
 
+Per-step docs live in [`docs/enrichment/`](enrichment/) (one file per step: what it does, how we
+measure it, before→after, improvements). Wired as the `Ingester` default by `build_pipeline()`.
+
 ```
-Source(DTO) → CuratorEnricher → WebEnricher(fallback) → [SynthEnricher TODO] → RuleComposeEnricher → serializer → Qdrant
-                  │                    │                          │
-                  │                    │                          └─ unified synthesis over certain data +
-                  │                    │                              extracted + multi-source source_descriptions
+Source(DTO) → CuratorEnricher → WebEnricher(fallback) → SynthEnricher → RuleComposeEnricher → serializer → Qdrant
+                  │                    │                       │
+                  │                    │                       └─ descriptive synthesis (setting/genre + web facts);
+                  │                    │                          does NOT restate the structured numbers (Compose owns them)
                   │                    └─ runs ONLY if gaps remain (game.missing_info)
                   └─ classification + extraction (citation-based with verbatim validation)
-            EnrichmentStore (SQLite) ← persists each game's curated record
+            EnrichmentStore (SQLite) ← persists each game's curated record (incl. `extracted`)
 ```
+
+**Compose/Synth split** (measured decision): the structured facts (players, duration, complexity,
+tags) are owned by the deterministic Compose; Synth owns the descriptive prose and does not repeat
+the numbers. Removing that duplication lowered inversions (err 0.29 → 0.25) vs an overlapping
+synthesis — each fact appears once, from the layer that produces it most reliably.
 
 - **CuratorEnricher** (llama3.1, **citation-based**): for each of the 7 REQUIRED INFO it asks
   the LLM `{where: CERTAIN_DATA|TEXT|NONE, quote: verbatim, normalized_value}`; it **validates
@@ -97,6 +105,12 @@ Source(DTO) → CuratorEnricher → WebEnricher(fallback) → [SynthEnricher TOD
   baseline. The compressed synthesis lost theme words (same lesson as trim). **THE REASON the
   synthesis was MOVED into the SynthEnricher** (with ALL the material available, no longer
   blind compression of the description alone).
+- `synth` (`curator → synth → compose`, GPU/llama3.1): **Recall@5 0.28, P@5 0.48, err 0.25** →
+  the **first pipeline to beat the baseline** on all three. The descriptive synthesis carries the
+  recovered setting/genre/web facts into `embed_text`; the structured-vs-descriptive split (Synth
+  drops the numeric overlap) cut inversions further (err 0.29 → 0.25). Per-query wins:
+  "cooperativo", "fantasy", "piazzamento lavoratori" (1st-rel → #1); residual regression on
+  "aste/offerte" to watch. Fresh `rule` re-run for comparison: R@5 0.25, P@5 0.40, err 0.32.
 
 ### Citation-based Curator — eval on 10 curated cases (`tests/eval/CuratorEnricher/`)
 LOCAL fixture with TARGETED stripping of structured fields + an explicit per-case oracle
@@ -184,21 +198,21 @@ iterate on the prompt in 10s instead of 3min. Used to evolve v1→v4.
 
 ## Where to restart
 
-- **SynthEnricher (NEXT)**: implement the unified synthesis step. Input: certain data +
-  `game.extracted` (from the Curator) + facts from the Web + **multi-source
-  `source_descriptions` (not wired in yet, the API already exports them)**. Output:
-  `enriched.description` = unified synthesis (~400-600 chars) based on ALL the material (no
-  longer on the main description alone). Deterministic unit tests + FIDELITY eval vs oracle.
+- **SynthEnricher — DONE (first version)**: implemented (`app/ingestion/enricher/synth.py`),
+  wired into `build_pipeline()`, 6 unit tests, and it **beats the baseline** on the `core` suite
+  (see Measured results). Left to do: (a) **fidelity eval** in isolation (coverage + no-invention)
+  — not built yet; (b) chase the per-query regressions (e.g. "aste/offerte"); (c) feed multi-source
+  `source_descriptions` (still gated on step 1's "worth it at scale?" question).
 - **Curator — the last fine errors**: at 3/10 PASS, the 7 residual fails are micro errors
   (1 label out of 7) — no longer catastrophic. Pattern: (a) "genre" mis-recognized (4/7),
   (b) "complexity" gap-detected when the 8B quotes a plausible word, (c) 1 sub-optimal extracted
   value ("1-4" vs "2-4"). Hypothesis: hard-code "genre" derived from the DTO's `categoria` field
   (always present, sub-category ≈ genre); or change the model (Qwen2.5 / Gemma) and measure the
   delta with the `runs/` diff.
-- **Retrieval**: the Curator doesn't beat the baseline yet; the next retrieval test must be done
-  AFTER the SynthEnricher (it's the synthesis that enters `embed_text`). Hypotheses to try: a
-  compose that KEEPS dense tags/themes + synopsis; multilingual embedder (`bge-m3`) vs `nomic`
-  (weak on Italian).
+- **Retrieval — baseline now beaten by `synth`** (R@5 0.28 vs 0.25). Remaining levers to push it
+  further, all measurable on the same scorecard: a **different LLM** for the Synth/Curator steps
+  (Qwen2.5 / Gemma); a **multilingual embedder** (`bge-m3` vs `nomic`, weak on Italian); Compose
+  template tweaks (surface the `categoria` leaf as genre; reorder toward theme/mechanics).
 - **Full real loop**: Curator → Web → Synth → Compose on real games with the store enabled, to
   see curated data + provenance accumulate.
 - **Full WebEnricher idempotency**: reuse the already-saved `extractions` to skip the LLM

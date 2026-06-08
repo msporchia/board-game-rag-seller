@@ -184,9 +184,14 @@ The frontend draws the buttons; a click becomes a new filter in the hybrid searc
 - [x] **Phase 2 — Semantic retrieval**: `GameRetriever` + `/search` endpoint. ✅ works
   (the enriched text surfaces players/duration). ⚠️ Finding: `nomic-embed-text` is weak on
   Italian → test a better multilingual embedding (e.g. `bge-m3`).
-- [ ] **Phase 3 — Hybrid search**: add filters (player count, duration, age, complexity).
-- [ ] **Phase 4 — RAG**: LLM that writes the pitch over the retrieved games.
-- [ ] **Phase 5 — Conversation + buttons**: structured output, chat memory, quick replies.
+- [x] **Phase 3 — Hybrid search**: filters (player count, duration, age, complexity) as Qdrant
+  hard pre-filters + soft boost/rerank. ✅ (`app/rag/filters/`, `tests/unit/HybridSearch/`).
+- [~] **Phase 4 — RAG**: LLM that writes the pitch over the retrieved games. ✅ first cut —
+  stateless `POST /chat`, grounded structured output `{message, games, quick_replies}`, anti-
+  hallucination validation + deterministic fallback (`app/chat/`, `tests/unit/ChatAdvisor/`).
+  See [chat.md](chat.md) for findings + next levers (prose↔cards coherence, stronger model).
+- [ ] **Phase 5 — Conversation + buttons**: stateful LangGraph over the Phase-4 core — chat
+  memory, strategy routing, quick-reply clicks → filters, Haiku→Sonnet tiering.
 - [~] **Phase 6 — Real sync + API**: ✅ enriched export endpoint ready (`controller=seller`);
   the live endpoints (price/stock, user orders) and the incremental re-ingest via
   `lastUpdateFrom` remain.

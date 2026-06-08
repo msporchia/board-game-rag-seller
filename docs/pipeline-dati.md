@@ -31,6 +31,24 @@ PrestaShop (PHP)                         Seller (Python)
 - **Volatile** (NOT embedded, fetched **live** at recommendation time): price,
   availability/stock.
 
+## Derived / derivable fields (future — for hybrid filters)
+
+Beyond the slow fields above, there is a class of **status/flag** attributes that would make good
+extra hybrid-search filters (Phase 3) and good pitch signals: e.g. **preorder**, **new release**,
+**best-seller**, **on sale**, used/damaged, language availability. PrestaShop already models some
+(`FEAT_STATO` = preorder/immediate/used; year). The rule of thumb:
+
+- **Prefer the source.** When the field is a real attribute, it should come **through the DTO
+  contract** (the PHP ACL adds it once, every consumer benefits) — not be guessed downstream.
+- **Derive only as a fallback.** When the source can't give it, we can derive it ourselves from
+  data we already have — e.g. "new release" from `year` (or a release date) relative to *now*,
+  "best-seller" from sales/rating signals. Derived fields are second-class: lower confidence,
+  and they belong next to the enrichment (provenance), not silently in the payload.
+
+Not built yet. Flagged here because these are cheap, likely-useful filters/labels to add once we
+decide which come from the source and which we derive — worth measuring whether they actually
+improve retrieval/conversion before wiring them in.
+
 ## The contract (enriched product DTO)
 
 The API returns objects with this shape (mirrors `app/models.py:GameDoc`):

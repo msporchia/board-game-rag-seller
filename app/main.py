@@ -5,9 +5,10 @@ Thin: builds the app and wires the routers. The logic lives in api/, ingestion/,
 
 from fastapi import FastAPI
 
-from app.api import health, search
+from app.api import chat, health, search
 
 app = FastAPI(title="Seller", description="Board-game advisor bot (RAG)")
 
 app.include_router(health.router)
 app.include_router(search.router)
+app.include_router(chat.router)

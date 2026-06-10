@@ -1,16 +1,18 @@
 """ChatAdvisor — the generation half of RAG (Phase 4, stateless).
 
 Pipeline for one turn: retrieve real games from the catalog (hybrid search) → hand them to the
-LLM as the ONLY allowed context → the LLM writes a short Italian salesperson pitch and picks
-which games to feature, as structured output → we validate its picks against the retrieved set.
+LLM as the ONLY allowed context → the LLM returns an intro plus per-game {id, pitch} pairs as
+structured output → we validate the ids against the retrieved set and ASSEMBLE the customer
+message in code (intro + surviving pitches). Binding each pitch to its id makes prose↔cards
+incoherence structurally impossible: the text can only describe games that are in the cards.
 
 Two invariants, both enforced in code (we do not trust the model):
   1. Anti-hallucination: a featured game must be in the retrieved set. The LLM references games
-     by `id`; any id it returns that was not retrieved is dropped. It can never surface a title
-     that is not in the catalog (the absolute rule from docs/note.md).
+     by `id`; any id it returns that was not retrieved is dropped — together with its pitch. It
+     can never surface a title that is not in the catalog (the absolute rule from docs/note.md).
   2. Robust transport: structured output (idee.md §A) constrains the JSON shape; if the local 8B
-     still fails to produce it, we fall back to a deterministic reply over the top hits rather
-     than 500-ing.
+     still fails to produce it — or none of its picked ids survive validation — we fall back to
+     a deterministic reply over the top hits rather than 500-ing.
 
 Stateless on purpose: no session memory, no strategy routing, no model tiering — those are
 Phase 5 (a stateful LangGraph wrapping this same retrieve→pitch core). See docs/chat.md.
@@ -23,6 +25,7 @@ from langchain_ollama import ChatOllama
 
 from app.chat.models import ChatReply, ChatResponse
 from app.config import settings
+from app.core.tracing import get_trace_callbacks
 from app.models import GameHit
 from app.rag.filters import SearchFilters
 from app.rag.retriever import GameRetriever
@@ -44,7 +47,8 @@ class ChatAdvisor:
         # `llm` is any object with `.invoke(prompt) -> ChatReply`. Default: ChatOllama constrained
         # to the ChatReply schema. Tests inject a fake to stay offline and deterministic.
         self._llm = llm or ChatOllama(
-            model=self.model, base_url=base_url or settings.ollama_url, temperature=temperature
+            model=self.model, base_url=base_url or settings.ollama_url, temperature=temperature,
+            callbacks=get_trace_callbacks("chat"), tags=["chat"],
         ).with_structured_output(ChatReply)
 
     # ---- context assembly -----------------------------------------------------
@@ -80,17 +84,18 @@ GIOCHI DISPONIBILI (gli UNICI che puoi proporre):
 Regole rigide:
 - Proponi SOLO giochi presenti nella lista qui sopra. NON inventare titoli e non usare la tua
   conoscenza di altri giochi: esistono solo quelli in lista.
-- Scegli i 2-3 giochi più adatti alla richiesta e spiega in poche frasi PERCHÉ piaceranno
-  (tema, esperienza di gioco). Vendi l'esperienza, non elencare dati.
-- COERENZA: nel `message` nomina i giochi per NOME (mai l'`id`: è un codice interno, il cliente
-  non deve vederlo). In `recommended_ids` metti gli `id` ESATTAMENTE degli stessi giochi che hai
-  nominato nel messaggio — stessa lista, stesso ordine.
-- Se nessun gioco è davvero adatto, dillo onestamente e proponi l'alternativa più vicina.
-- Scrivi in italiano, tono amichevole, breve (3-5 frasi).
+- `intro`: UNA breve frase di apertura amichevole, senza nomi di giochi e senza `id`.
+- `recommendations`: scegli i 2-3 giochi più adatti alla richiesta. Per ciascuno metti l'`id`
+  ESATTO preso dalla lista e un `pitch` di 1-2 frasi che spiega PERCHÉ piacerà (tema, esperienza
+  di gioco). Vendi l'esperienza, non elencare dati. Nel `pitch` nomina il gioco per NOME — mai
+  l'`id`: è un codice interno, il cliente non deve vederlo.
+- Se nessun gioco è davvero adatto, dillo onestamente nell'`intro` e proponi l'alternativa più
+  vicina come unica recommendation.
+- Scrivi in italiano, tono amichevole, breve.
 - Compila SEMPRE 2-3 `quick_replies`: brevi affinamenti per il passo successivo
   (es. "Solo cooperativi", "Max 1 ora", "Sorprendimi").
 
-Restituisci: il messaggio per il cliente (con i NOMI), gli `id` degli stessi giochi, e le quick_replies."""
+Restituisci: `intro`, le `recommendations` (id + pitch per ogni gioco scelto) e le `quick_replies`."""
 
     # ---- API ------------------------------------------------------------------
 
@@ -107,13 +112,18 @@ Restituisci: il messaggio per il cliente (con i NOMI), gli `id` degli stessi gio
         except Exception:  # noqa: BLE001  LLM/transport failure → deterministic fallback, never 500
             return self._fallback(hits)
 
-        # Anti-hallucination: keep only ids that were actually retrieved, preserving the LLM order.
+        # Anti-hallucination: keep only recommendations whose id was actually retrieved,
+        # preserving the LLM order. An invented id loses its pitch too — the assembled message
+        # can therefore only ever describe games that are in the cards (coherence by construction).
         by_id = {h.id_product: h for h in hits}
-        games = [by_id[i] for i in (reply.recommended_ids or []) if i in by_id]
-        if not games:  # model picked nothing valid → surface the top hits so the turn stays useful
-            games = hits[:3]
+        kept = [r for r in (reply.recommendations or []) if r.id in by_id]
+        if not kept:  # nothing valid → no grounded pitch to show, degrade to the deterministic reply
+            return self._fallback(hits)
+        games = [by_id[r.id] for r in kept]
+        parts = [(reply.intro or "").strip()] + [(r.pitch or "").strip() for r in kept]
+        message = " ".join(p for p in parts if p)
         return ChatResponse(
-            message=(reply.message or "").strip() or self._plain_pitch(games),
+            message=message or self._plain_pitch(games),
             games=games,
             quick_replies=(reply.quick_replies or [])[:3],
         )

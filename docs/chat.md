@@ -25,11 +25,12 @@ out of the Curator: one task at a time, the local 8B holds up better and we can 
 flowchart LR
     U[User turn<br/>message + choices] --> R[GameRetriever<br/>hybrid search]
     R -->|top-K real games| C["&lt;retrieved_games&gt; context"]
-    C --> L[LLM · with_structured_output<br/>ChatReply]
+    C --> L["LLM · with_structured_output<br/>ChatReply: intro + [{id, pitch}]"]
     L --> V{validate ids<br/>∈ retrieved set}
-    V -->|drop invented ids| Resp[ChatResponse<br/>message · games · quick_replies]
+    V -->|"drop invented ids (pitch included)"| A[assemble message<br/>intro + surviving pitches]
+    A --> Resp[ChatResponse<br/>message · games · quick_replies]
     R -->|0 hits| H[honest 'no match' reply]
-    L -. transport / JSON failure .-> F[deterministic fallback]
+    L -. transport / JSON failure<br/>or zero valid ids .-> F[deterministic fallback]
 ```
 
 - Endpoint: `POST /chat` (`app/api/chat.py`) — body `{message, choices[], k}`.
@@ -39,13 +40,14 @@ flowchart LR
 ### Two invariants, both enforced in code (we do not trust the model)
 
 1. **Anti-hallucination grounding.** The LLM references games by `id` only; any id it returns
-   that was not in the retrieved set is dropped before the response is built. It can never
-   surface a title outside the catalog (the absolute rule from `docs/note.md`). Same discipline
-   as the Curator's verbatim-quote validation — the model proposes, the code verifies.
+   that was not in the retrieved set is dropped before the response is built — together with the
+   pitch bound to it. It can never surface a title outside the catalog (the absolute rule from
+   `docs/note.md`). Same discipline as the Curator's verbatim-quote validation — the model
+   proposes, the code verifies.
 2. **Robust transport.** `with_structured_output(ChatReply)` constrains the JSON shape
-   (`idee.md §A`); if the 8B still fails, the advisor falls back to a deterministic reply over
-   the top hits rather than returning a 500. Empty retrieval short-circuits to an honest
-   "no match" without prompting the LLM at all.
+   (`idee.md §A`); if the 8B still fails — or none of its picked ids survives validation — the
+   advisor falls back to a deterministic reply over the top hits rather than returning a 500.
+   Empty retrieval short-circuits to an honest "no match" without prompting the LLM at all.
 
 ## Findings — first real runs (llama3.1, 10-game dev index)
 
@@ -68,24 +70,39 @@ What we learned:
 - ❌ **Prose ↔ cards incoherence persists.** The 8B writes the pitch about one set of games and
   returns a *different* set in `recommended_ids` — so the rendered cards don't match the text.
   An explicit "keep them consistent" instruction did **not** fix it. This is a model-capability
-  limit (keeping two free-form fields in sync), not a prompt bug.
+  limit (keeping two free-form fields in sync), not a prompt bug. *Since addressed structurally —
+  see "Coherence by construction" below; to be re-measured.*
 - ❌ **`quick_replies` come back empty** despite being requested.
 
 These are expected weaknesses of an 8B on structured output (`idee.md §A`) and the reason the
 project's stance is *"if it works on the 8B it flies on a stronger model"*. They are logged below,
 not papered over.
 
+## Coherence by construction (implemented)
+
+The incoherence finding above was not fixable by instructions, so the *shape* was changed
+instead: `ChatReply` is no longer `{message, recommended_ids, quick_replies}` but
+`{intro, recommendations: [{id, pitch}], quick_replies}`. Each pitch is bound to its game id
+locally — much easier for an 8B than keeping a prose blob and a separate id list in sync. The
+customer `message` is then **assembled in code**: `intro` + the pitch of each recommendation
+whose id survived grounding validation (LLM order preserved, invented ids dropped silently —
+pitch included). The text can therefore only ever describe games that are in the cards;
+incoherence is structurally impossible, not requested. Still one LLM call, same external
+`{message, games, quick_replies}` contract. Degradation when *no* id survives validation:
+nothing grounded was pitched, so the advisor reuses the deterministic fallback over the top
+hits — message and cards still match. The `intro` is asked to stay name-free so a dropped
+recommendation can't leak through it. Whether the 8B fills the new shape *well* (pitch quality,
+quick_replies) is an open question — the finding needs re-measuring against the real llama3.1
+on the next run.
+
 ## Low-hanging fruit (next levers, measure to decide)
 
-1. **Coherence by construction (recommended first).** Replace "prose + a separate id list" with a
-   per-game-bound shape: `ChatReply { intro, recommendations: [{id, pitch}], quick_replies }`.
-   The customer `message` is then assembled from `intro` + the `pitch` of each *validated* id, so
-   the text can only ever describe games that are in the cards. Still one LLM call; binds the
-   reason to the id locally (much easier for the 8B than syncing two lists). Directly kills the
-   incoherence finding.
+1. ~~**Coherence by construction (recommended first).**~~ ✅ **Implemented** — see the section
+   above. Re-measure on the real 8B.
 2. **Stronger / remote model.** `with_structured_output` quality is the bottleneck. Try
    Qwen2.5-7B/14B or Gemma-9B locally, or go remote (Haiku) via a provider-swappable transport
-   (`idee.md §E`, litellm). Expected to fix both the coherence and the empty `quick_replies`.
+   (`idee.md §E`, litellm). Expected to fix the empty `quick_replies` and lift pitch quality
+   (coherence is now enforced structurally, see above).
 3. **Richer pitch context.** The retriever's `GameHit` payload is lean (no description). Pull the
    synthesized description from the EnrichmentStore / payload so the pitch has more to sell with.
 4. **Live price & stock.** The contract wants these fetched live from PrestaShop at recommendation
@@ -96,7 +113,8 @@ not papered over.
 ## Tests
 
 `tests/unit/ChatAdvisor/` — offline, deterministic (fake retriever + fake structured LLM):
-grounding (invalid/invented ids dropped, LLM order preserved), honest empty-retrieval path (no
-LLM call), fallback on transport failure, contract shape (message pass-through, `quick_replies`
-capped, `choices` reach retrieval). The model's *quality* (coherence, pitch) is not unit-tested —
+grounding (an invented id is dropped from both cards and message, LLM order preserved), message
+assembly (intro + surviving pitches), honest empty-retrieval path (no LLM call), fallback on
+transport failure and on all-ids-invalid, contract shape (`quick_replies` capped, `choices`
+reach retrieval). The model's *quality* (coherence, pitch) is not unit-tested —
 that's a measured property of the real LLM, tracked in the findings above.

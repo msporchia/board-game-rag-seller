@@ -1,8 +1,9 @@
 """Fixtures LOCAL to the ChatAdvisor unit — fully offline, no Ollama, no Qdrant.
 
 The advisor talks to two collaborators: a retriever (`.search → list[GameHit]`) and a
-structured LLM (`.invoke → ChatReply`). We fake both so the tests are deterministic and assert
-the advisor's own logic — grounding/validation, fallback, contract shape — not the model.
+structured LLM (`.invoke → ChatReply`, i.e. intro + per-game {id, pitch} recommendations). We
+fake both so the tests are deterministic and assert the advisor's own logic —
+grounding/validation, message assembly, fallback, contract shape — not the model.
 
 `FakeStructuredLLM` returns a preset `ChatReply` (the advisor wires `with_structured_output`, so
 the real transport hands back a parsed object, not raw text) — or raises, to drive the

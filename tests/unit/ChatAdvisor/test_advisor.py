@@ -2,43 +2,73 @@
 
 Purpose: lock the advisor's two invariants and its contract, with the model faked.
 What it tests:
-  - Anti-hallucination grounding: featured games are exactly the retrieved ids the LLM cited,
-    invalid/invented ids are dropped, LLM order is preserved.
+  - Anti-hallucination grounding: featured games are exactly the retrieved ids the LLM cited;
+    a recommendation with an invented id is dropped from BOTH the cards and the assembled
+    message (its pitch goes with it); LLM order is preserved.
+  - Coherence by construction: the customer message is assembled in code as intro + the pitch
+    of each surviving recommendation, in LLM order.
   - Honest empty-retrieval path (no LLM call, no invented alternatives).
-  - Robust transport: an LLM failure falls back to a deterministic reply, never an exception.
-  - Contract shape: message passes through, quick_replies are capped, choices reach retrieval.
+  - Robust transport: an LLM failure — or a reply where NO id survives validation — falls back
+    to the deterministic reply over the top hits, never an exception.
+  - Contract shape: quick_replies are capped, choices reach retrieval.
 How: fake retriever (preset hits) + fake structured LLM (preset ChatReply or raising), both
 local to this unit (see conftest). No Ollama, no Qdrant.
 """
 
 from app.chat.advisor import _NO_MATCH
-from app.chat.models import ChatReply
+from app.chat.models import ChatRecommendation, ChatReply
 
 from .conftest import make_hit
 
 
+def rec(id: int, pitch: str) -> ChatRecommendation:
+    return ChatRecommendation(id=id, pitch=pitch)
+
+
 class TestChatAdvisor:
-    def test_grounding_drops_unretrieved_ids(self, make_advisor):
+    def test_grounding_drops_unretrieved_ids_from_cards_and_message(self, make_advisor):
         hits = [make_hit(10, "Alpha"), make_hit(20, "Bravo"), make_hit(30, "Charlie")]
-        reply = ChatReply(message="ok", recommended_ids=[20, 999], quick_replies=[])
+        reply = ChatReply(
+            intro="Ecco cosa ti propongo.",
+            recommendations=[rec(20, "Bravo è perfetto in due."),
+                             rec(999, "Fantasma vi stupirà.")],
+        )
         advisor, _, _ = make_advisor(hits=hits, reply=reply)
 
         res = advisor.reply("qualcosa")
 
-        # 999 was never retrieved → it cannot reach the response (anti-hallucination).
+        # 999 was never retrieved → its card AND its pitch cannot reach the response.
         assert [g.id_product for g in res.games] == [20]
+        assert "Fantasma" not in res.message
+        assert "Bravo è perfetto in due." in res.message
 
     def test_grounding_preserves_llm_order(self, make_advisor):
         hits = [make_hit(10, "Alpha"), make_hit(20, "Bravo"), make_hit(30, "Charlie")]
-        reply = ChatReply(message="ok", recommended_ids=[30, 10])
+        reply = ChatReply(recommendations=[rec(30, "p3"), rec(10, "p1")])
         advisor, _, _ = make_advisor(hits=hits, reply=reply)
 
         res = advisor.reply("qualcosa")
 
         assert [g.id_product for g in res.games] == [30, 10]
 
+    def test_message_is_intro_plus_surviving_pitches_in_order(self, make_advisor):
+        hits = [make_hit(1, "Alpha"), make_hit(2, "Bravo")]
+        reply = ChatReply(
+            intro="Ho due idee per voi.",
+            recommendations=[rec(2, "Bravo è veloce e brillante."),
+                             rec(1, "Alpha vi terrà incollati.")],
+        )
+        advisor, _, _ = make_advisor(hits=hits, reply=reply)
+
+        res = advisor.reply("qualcosa")
+
+        # Assembled in code: intro first, then the pitches in the LLM's order — the text can
+        # only describe the games in the cards (coherence by construction).
+        assert res.message == "Ho due idee per voi. Bravo è veloce e brillante. Alpha vi terrà incollati."
+        assert [g.id_product for g in res.games] == [2, 1]
+
     def test_empty_retrieval_is_honest(self, make_advisor):
-        advisor, _, llm = make_advisor(hits=[], reply=ChatReply(message="unused"))
+        advisor, _, llm = make_advisor(hits=[], reply=ChatReply(intro="unused"))
 
         res = advisor.reply("gioco inesistente")
 
@@ -56,18 +86,22 @@ class TestChatAdvisor:
         assert [g.id_product for g in res.games] == [1, 2, 3]
         assert res.games[0].name in res.message
 
-    def test_no_valid_picks_surfaces_top_hits(self, make_advisor):
+    def test_all_ids_invalid_degrades_to_deterministic_fallback(self, make_advisor):
         hits = [make_hit(i, f"G{i}") for i in (1, 2, 3, 4)]
-        reply = ChatReply(message="vedi qui", recommended_ids=[999])  # all invalid
+        reply = ChatReply(intro="vedi qui", recommendations=[rec(999, "invented")])
         advisor, _, _ = make_advisor(hits=hits, reply=reply)
 
         res = advisor.reply("qualcosa")
 
+        # No surviving pitch → nothing grounded to say. Same degradation as a transport failure:
+        # the deterministic reply over the top hits, so message and cards still match.
         assert [g.id_product for g in res.games] == [1, 2, 3]
+        assert res.games[0].name in res.message
+        assert "invented" not in res.message
 
     def test_quick_replies_capped_at_three(self, make_advisor):
         hits = [make_hit(1, "Alpha")]
-        reply = ChatReply(message="ok", recommended_ids=[1],
+        reply = ChatReply(intro="ok", recommendations=[rec(1, "Alpha!")],
                           quick_replies=["a", "b", "c", "d", "e"])
         advisor, _, _ = make_advisor(hits=hits, reply=reply)
 
@@ -75,16 +109,20 @@ class TestChatAdvisor:
 
         assert res.quick_replies == ["a", "b", "c"]
 
-    def test_message_passes_through(self, make_advisor):
+    def test_blank_intro_and_pitches_fall_back_to_plain_pitch(self, make_advisor):
         hits = [make_hit(1, "Alpha")]
-        reply = ChatReply(message="Ti consiglio Alpha!", recommended_ids=[1])
+        reply = ChatReply(intro="  ", recommendations=[rec(1, "")])
         advisor, _, _ = make_advisor(hits=hits, reply=reply)
 
-        assert advisor.reply("qualcosa").message == "Ti consiglio Alpha!"
+        res = advisor.reply("qualcosa")
+
+        # Valid id but empty text → cards stay, message degrades to the deterministic pitch.
+        assert [g.id_product for g in res.games] == [1]
+        assert "Alpha" in res.message
 
     def test_choices_are_folded_into_the_query(self, make_advisor):
         hits = [make_hit(1, "Alpha")]
-        reply = ChatReply(message="ok", recommended_ids=[1])
+        reply = ChatReply(intro="ok", recommendations=[rec(1, "Alpha!")])
         advisor, retriever, _ = make_advisor(hits=hits, reply=reply)
 
         advisor.reply("cooperativo", choices=["Max 1 ora"])

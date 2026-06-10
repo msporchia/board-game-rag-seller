@@ -13,6 +13,11 @@ class Settings(BaseSettings):
     ollama_url: str = "http://seller-ollama:11434"
     embedding_model: str = "nomic-embed-text"
     llm_model: str = "llama3.1"
+    # Chat model tiering (Phase 5): the model the generate step escalates to when the analyze
+    # step sets `escalate=true`. Empty → falls back to `llm_model`, so locally the escalation
+    # CONTRACT is exercised end-to-end as a no-op; in production point it at a stronger model
+    # (e.g. a larger local model, or Sonnet behind a provider-swappable transport).
+    llm_model_strong: str = ""
 
     # Qdrant collection that holds the games
     collection_name: str = "games"
@@ -28,6 +33,9 @@ class Settings(BaseSettings):
     # --- Enrichment store (durable system-of-record, separate from the vector store) ---
     # /app is the bind mount of ./seller → the DB persists on the host and is inspectable.
     enrichment_db_path: str = "/app/data/seller.db"
+
+    # --- Chat memory (Phase 5): LangGraph checkpointer storage, same data/ layout ---
+    chat_checkpoint_db_path: str = "/app/data/chat_sessions.db"
 
     # --- Observability (docs/observability.md) ---
     log_level: str = "INFO"        # LOG_LEVEL: root logging level for API and ingester CLI

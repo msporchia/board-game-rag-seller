@@ -8,6 +8,8 @@ langchain-core
 langchain-ollama      # embeddings + LLM via Ollama
 langchain-qdrant      # Qdrant vector store
 qdrant-client
+langgraph             # Phase 5: stateful conversation graph (docs/chat.md)
+langgraph-checkpoint-sqlite   # session memory on a local sqlite file (swappable: Postgres/Redis)
 
 # --- HTTP ---
 httpx                 # client toward the PrestaShop endpoint

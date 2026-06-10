@@ -1,4 +1,4 @@
-"""ChatAdvisor — the generation half of RAG (Phase 4, stateless).
+"""ChatAdvisor — the generation half of RAG (Phase 4 core, reused by the Phase 5 graph).
 
 Pipeline for one turn: retrieve real games from the catalog (hybrid search) → hand them to the
 LLM as the ONLY allowed context → the LLM returns an intro plus per-game {id, pitch} pairs as
@@ -14,12 +14,19 @@ Two invariants, both enforced in code (we do not trust the model):
      still fails to produce it — or none of its picked ids survive validation — we fall back to
      a deterministic reply over the top hits rather than 500-ing.
 
-Stateless on purpose: no session memory, no strategy routing, no model tiering — those are
-Phase 5 (a stateful LangGraph wrapping this same retrieve→pitch core). See docs/chat.md.
+Two entry points so the logic lives in ONE place:
+  - `reply()`  — Phase 4, stateless: retrieve then pitch, one shot.
+  - `pitch()`  — the generation step alone, over hits the caller already has. The Phase 5 graph
+    calls this with `strategy` / `expertise_level` / `history` (which shape the prompt — the
+    fixed+dynamic structure from docs/note.md) and optionally a different `llm` (model tiering:
+    the escalation path passes the strong model). Grounding validation, message assembly and the
+    deterministic fallback are identical on both paths.
 
 Note: the prompt is intentionally in Italian — the bot speaks Italian to customers (system
 behavior), like the enrichment prompts.
 """
+
+import logging
 
 from langchain_ollama import ChatOllama
 
@@ -30,12 +37,54 @@ from app.models import GameHit
 from app.rag.filters import SearchFilters
 from app.rag.retriever import GameRetriever
 
+log = logging.getLogger(__name__)
+
 # Honest fallback when nothing matches — the absolute rule says to say so, not to invent.
 _NO_MATCH = (
     "Al momento non ho in catalogo un gioco che corrisponde bene a quello che cerchi. "
     "Prova a dirmi qualcosa in più: quante persone giocano, quanto tempo avete, o un gioco che "
     "ti è piaciuto."
 )
+
+# Default persona (Phase 4, no per-user analysis available).
+_DEFAULT_PERSONA = (
+    "Sei un commesso esperto e appassionato di giochi da tavolo. Aiuti il cliente a\n"
+    "scegliere il gioco giusto in modo caldo, semplice e convincente — non sei un motore di ricerca."
+)
+
+# Fixed part of the Phase 5 prompt (docs/note.md): how to talk at each expertise level.
+_EXPERTISE_RULES = """Sei un commesso esperto di giochi da tavolo, molto empatico. Aiuti il cliente a scegliere il
+gioco giusto in modo caldo, semplice e convincente — non sei un motore di ricerca.
+L'utente ha livello di esperienza: {expertise_level}.
+Regole di comunicazione:
+- Se beginner: usa linguaggio semplice, evita termini tecnici. Spiega sempre cosa significa una
+  meccanica con un esempio ("cooperativo significa che tutti giocano contro il gioco, non tra di voi").
+- Se intermediate: puoi usare qualche termine ma spiegalo la prima volta.
+- Se advanced: usa terminologia precisa (worker placement, engine building, area control, ecc.).
+Non dare per scontato che conosca le cose. Obiettivo: educare divertendo, mai far sentire stupido."""
+
+# Dynamic part (docs/note.md): the behavior of the strategy the router picked for this turn.
+_STRATEGY_RULES = {
+    "GUIDED": (
+        "Strategia per questo turno — GUIDED: il cliente è indeciso. Proponi al massimo 1-2 "
+        "scelte chiare con esempi concreti e chiudi con UNA domanda semplice per capire meglio "
+        "cosa cerca."
+    ),
+    "EXPLANATORY": (
+        "Strategia per questo turno — EXPLANATORY: il cliente è curioso. Spiega le meccaniche "
+        "dei giochi mostrati con linguaggio semplice e analogie (\"è come...\"), approfondendo "
+        "dove mostra interesse."
+    ),
+    "DISCOVERY": (
+        "Strategia per questo turno — DISCOVERY: stile libero e conversazionale. Parti da quello "
+        "che il cliente racconta e proponi in modo creativo i giochi più affini."
+    ),
+    "QUICK_MATCH": (
+        "Strategia per questo turno — QUICK MATCH: il cliente è pronto (o la conversazione va "
+        "chiusa). Proponi subito 3-4 giochi concreti dalla lista, ognuno con una frase di "
+        "vendita incisiva."
+    ),
+}
 
 
 class ChatAdvisor:
@@ -48,7 +97,7 @@ class ChatAdvisor:
         # to the ChatReply schema. Tests inject a fake to stay offline and deterministic.
         self._llm = llm or ChatOllama(
             model=self.model, base_url=base_url or settings.ollama_url, temperature=temperature,
-            callbacks=get_trace_callbacks("chat"), tags=["chat"],
+            callbacks=get_trace_callbacks("chat.generate"), tags=["chat"],
         ).with_structured_output(ChatReply)
 
     # ---- context assembly -----------------------------------------------------
@@ -70,17 +119,28 @@ class ChatAdvisor:
             parts.append(f"complessità: {h.complexity}")
         return " | ".join(parts)
 
-    def _prompt(self, message: str, hits: list[GameHit]) -> str:
-        catalog = "\n".join(self._game_line(i, h) for i, h in enumerate(hits))
-        return f"""Sei un commesso esperto e appassionato di giochi da tavolo. Aiuti il cliente a
-scegliere il gioco giusto in modo caldo, semplice e convincente — non sei un motore di ricerca.
+    def _prompt(self, message: str, hits: list[GameHit], *, strategy: str | None = None,
+                expertise_level: str | None = None, history: str | None = None) -> str:
+        """Fixed + dynamic prompt structure (docs/note.md).
 
+        Without the Phase 5 keywords this is exactly the Phase 4 prompt. With them, the persona
+        block carries the expertise communication rules, the strategy block carries the selling
+        strategy of this turn, and the conversation so far gives the model context — the rigid
+        anti-hallucination rules at the bottom are IDENTICAL on both paths.
+        """
+        catalog = "\n".join(self._game_line(i, h) for i, h in enumerate(hits))
+        persona = (_EXPERTISE_RULES.format(expertise_level=expertise_level)
+                   if expertise_level else _DEFAULT_PERSONA)
+        conversation = f"\nCONVERSAZIONE FINORA:\n{history}\n" if history else ""
+        strategy_block = f"\n{_STRATEGY_RULES[strategy]}\n" if strategy else ""
+        return f"""{persona}
+{conversation}
 RICHIESTA DEL CLIENTE:
 {message}
 
 GIOCHI DISPONIBILI (gli UNICI che puoi proporre):
 {catalog}
-
+{strategy_block}
 Regole rigide:
 - Proponi SOLO giochi presenti nella lista qui sopra. NON inventare titoli e non usare la tua
   conoscenza di altri giochi: esistono solo quelli in lista.
@@ -92,8 +152,10 @@ Regole rigide:
 - Se nessun gioco è davvero adatto, dillo onestamente nell'`intro` e proponi l'alternativa più
   vicina come unica recommendation.
 - Scrivi in italiano, tono amichevole, breve.
-- Compila SEMPRE 2-3 `quick_replies`: brevi affinamenti per il passo successivo
-  (es. "Solo cooperativi", "Max 1 ora", "Sorprendimi").
+- Compila SEMPRE 2-3 `quick_replies`: brevi affinamenti per il passo successivo. Quando il
+  filtro è numerico usa ESATTAMENTE questi formati: "per N giocatori", "max N minuti",
+  "dai N anni", "senza espansioni" (es. "per 2 giocatori", "max 60 minuti"); altrimenti testo
+  libero breve (es. "Sorprendimi").
 
 Restituisci: `intro`, le `recommendations` (id + pitch per ogni gioco scelto) e le `quick_replies`."""
 
@@ -101,15 +163,31 @@ Restituisci: `intro`, le `recommendations` (id + pitch per ogni gioco scelto) e 
 
     def reply(self, message: str, choices: list[str] | None = None,
               filters: SearchFilters | None = None, k: int = 5) -> ChatResponse:
-        # Phase 4: quick-reply clicks are folded into the retrieval query (Phase 5 → filters).
+        """Phase 4, stateless: quick-reply clicks are folded into the retrieval query.
+
+        (The Phase 5 graph parses them into SearchFilters instead and calls `pitch` directly.)
+        """
         query = f"{message}\n{' '.join(choices)}" if choices else message
         hits = self.retriever.search(query, k=k, filters=filters)
+        return self.pitch(message, hits)
+
+    def pitch(self, message: str, hits: list[GameHit], *, strategy: str | None = None,
+              expertise_level: str | None = None, history: str | None = None,
+              llm=None) -> ChatResponse:
+        """Generate the grounded pitch over `hits` (the generation step alone).
+
+        `llm` overrides the default model for this call — the model-tiering hook: the graph's
+        generate node passes the strong model here when the analyze step escalated.
+        """
         if not hits:
             return ChatResponse(message=_NO_MATCH, games=[], quick_replies=[])
 
+        prompt = self._prompt(message, hits, strategy=strategy,
+                              expertise_level=expertise_level, history=history)
         try:
-            reply: ChatReply = self._llm.invoke(self._prompt(message, hits))
+            reply: ChatReply = (llm or self._llm).invoke(prompt)
         except Exception:  # noqa: BLE001  LLM/transport failure → deterministic fallback, never 500
+            log.warning("pitch: structured LLM failed, using deterministic fallback")
             return self._fallback(hits)
 
         # Anti-hallucination: keep only recommendations whose id was actually retrieved,

@@ -8,6 +8,8 @@ add different sources.
 """
 
 import argparse
+import logging
+import time
 
 from app.core.enrichment_store import EnrichmentStore
 from app.core.vector_store import GameVectorStore
@@ -20,6 +22,8 @@ from app.ingestion.enricher import (
 )
 from app.ingestion.serializer import DocumentSerializer
 from app.ingestion.sources import GameSource, PrestashopSource
+
+logger = logging.getLogger(__name__)
 
 
 def build_pipeline(store: EnrichmentStore | None = None) -> EnrichmentPipeline:
@@ -56,27 +60,38 @@ class Ingester:
         self.pipeline = pipeline or build_pipeline(store=self.enrichment_store)
 
     def run(self, recreate: bool = True, **fetch_kwargs) -> int:
-        print("[1/3] Reading games from the source...", flush=True)
+        logger.info("[1/3] Reading games from the source...")
         games = self.source.fetch(**fetch_kwargs)
-        print(f"      -> {len(games)} games", flush=True)
+        logger.info("      -> %d games", len(games))
         if not games:
             return 0
 
-        games = [self.pipeline.run(g) for g in games]          # data enrichment
+        enriched = []
+        for g in games:                                        # data enrichment, per game
+            t0 = time.perf_counter()
+            doc = self.pipeline.run(g)
+            logger.info("game=%s %r enriched in %.2fs",
+                        doc.id_product, doc.original.name, time.perf_counter() - t0)
+            enriched.append(doc)
+        games = enriched
         if self.enrichment_store:                              # persist the curated data
             for g in games:
                 self.enrichment_store.save_game(g)
         documents = [self.serializer.to_document(g) for g in games]
         ids = [GameVectorStore.point_id(g.id_product) for g in games]
 
-        print(f"[2/3] Embedding + upsert to Qdrant (recreate={recreate})...", flush=True)
+        logger.info("[2/3] Embedding + upsert to Qdrant (recreate=%s)...", recreate)
+        t0 = time.perf_counter()
         self.store.index(documents, ids=ids, recreate=recreate)
+        logger.info("      -> indexed in %.2fs", time.perf_counter() - t0)
 
-        print(f"[3/3] Done: {len(documents)} documents indexed.", flush=True)
+        logger.info("[3/3] Done: %d documents indexed.", len(documents))
         return len(documents)
 
 
 if __name__ == "__main__":
+    from app.core.logging import setup_logging
+    setup_logging()
     ap = argparse.ArgumentParser()
     ap.add_argument("--max-pages", type=int, default=None, help="limit the pages (validation)")
     ap.add_argument("--no-recreate", action="store_true", help="incremental upsert instead of recreate")

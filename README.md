@@ -1,5 +1,7 @@
 # Seller 🎲 — a RAG advisor that *sells* board games
 
+[![CI](https://github.com/msporchia/board-game-rag-seller/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/msporchia/board-game-rag-seller/actions/workflows/ci.yml)
+
 > **🔬 Personal research project.** A solo build to explore one idea properly — how to make
 > semantic search over a messy product catalog actually *good* — and to practice
 > production-shaped RAG (LangChain · Qdrant · FastAPI · Ollama). Local-first, offline-runnable,
@@ -214,6 +216,9 @@ docker compose exec -e PYTHONPATH=/app seller-api python tests/eval.py --suite c
 docker exec seller-api python -m pytest tests/e2e/enrichment -v                         # real end-to-end (LLM + web replay)
 ```
 
+What we measure today, what we're still blind to, and the roadmap (logging, tracing,
+chat-level evals): [`docs/observability.md`](docs/observability.md).
+
 ## Project structure
 
 ```
@@ -233,7 +238,8 @@ seller/
 ├── docs/
 │   ├── enrichment/             # one doc per pipeline step (the "why & how we know")
 │   ├── showcase/               # before → after walkthroughs on real games  ← start here
-│   └── valutazione.md          # how embeddings work & how we measure
+│   ├── valutazione.md          # how embeddings work & how we measure
+│   └── observability.md        # eval & observability: status and roadmap
 └── tests/                      # unit (deterministic) · eval (LLM, record/replay) · e2e
 ```
 

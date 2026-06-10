@@ -5,6 +5,7 @@ recommender use this class instead of each re-creating its own connection.
 `collection_name` is overridable (e.g. 'games_test' for the evaluation harness).
 """
 
+import logging
 import uuid
 
 from langchain_core.documents import Document
@@ -13,6 +14,8 @@ from langchain_qdrant import QdrantVectorStore
 from qdrant_client import QdrantClient, models as qm
 
 from app.config import settings
+
+logger = logging.getLogger(__name__)
 
 
 class GameVectorStore:
@@ -76,5 +79,6 @@ class GameVectorStore:
     def count(self) -> int:
         try:
             return self.client.count(self.collection_name, exact=True).count
-        except Exception:
+        except Exception:  # noqa: BLE001  missing collection / Qdrant down → report empty
+            logger.warning("count failed for collection %r", self.collection_name, exc_info=True)
             return 0

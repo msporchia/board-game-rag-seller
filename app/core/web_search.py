@@ -10,6 +10,7 @@ NO LLM here: just network I/O. The logic (whitelist, judgment, extraction) lives
 WebEnricher.
 """
 
+import logging
 from abc import ABC, abstractmethod
 from urllib.parse import urlparse
 
@@ -18,6 +19,8 @@ import trafilatura
 from pydantic import BaseModel
 
 from app.config import settings
+
+logger = logging.getLogger(__name__)
 
 
 class SearchResult(BaseModel):
@@ -47,7 +50,8 @@ class DdgsSearch(WebSearchProvider):
         from ddgs import DDGS
         try:
             rows = DDGS().text(query, region=self.region, max_results=max_results)
-        except Exception:
+        except Exception:  # noqa: BLE001  flaky engine/rate-limit → no results this round
+            logger.warning("ddgs search failed (query=%r)", query, exc_info=True)
             return []
         return [
             SearchResult(
@@ -73,7 +77,8 @@ def fetch_clean(url: str, max_chars: int | None = None) -> str:
             follow_redirects=True,
         )
         resp.raise_for_status()
-    except Exception:
+    except Exception:  # noqa: BLE001  network/4xx/5xx → page skipped
+        logger.warning("fetch failed (url=%s)", url, exc_info=True)
         return ""
     text = trafilatura.extract(resp.text) or ""
     return text[:max_chars].strip()

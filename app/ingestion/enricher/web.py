@@ -17,17 +17,21 @@ behavior over an Italian catalog, so they are not translated.
 """
 
 import json
+import logging
 
 from langchain_ollama import ChatOllama
 
 from app.config import settings
 from app.core.enrichment_store import EnrichmentStore
+from app.core.tracing import get_trace_callbacks
 from app.core.web_search import DdgsSearch, SearchResult, WebSearchProvider, fetch_clean
 from app.ingestion.enricher.base import Enricher
 from app.models import GameDoc
 
 # separators with which catalog names attach the marketing ("X - Gioco da Tavolo...")
 _NAME_SEPARATORS = (" - ", " – ", " | ", " — ")
+
+logger = logging.getLogger(__name__)
 
 
 class WebEnricher(Enricher):
@@ -44,6 +48,7 @@ class WebEnricher(Enricher):
             model=self.model,
             base_url=base_url or settings.ollama_url,
             format="json", temperature=0,
+            callbacks=get_trace_callbacks("web"), tags=["web"],
         )
 
     def _fetch(self, url: str) -> str:
@@ -112,7 +117,8 @@ TESTO:
         try:
             raw = self._llm.invoke(self._prompt(name, missing, text)).content
             return json.loads(raw)
-        except Exception:
+        except Exception:  # noqa: BLE001  LLM/parse failure → source skipped
+            logger.warning("web LLM judge/extract failed (game=%r)", name, exc_info=True)
             return None
 
     def _judge_extract(self, name: str, missing: list[str], text: str) -> dict:
@@ -171,9 +177,12 @@ TESTO:
 
     def enrich(self, game: GameDoc) -> GameDoc:
         if not game.missing_info:
+            logger.info("web game=%s skipped (no missing info)", game.id_product)
             return game
         a = self.assess(game)
         facts = a["facts"]
+        logger.info("web game=%s fired: sources=%d, verified facts=%d/%d missing",
+                    game.id_product, len(a["sources"]), len(facts), len(game.missing_info))
         if not facts:
             return game  # nothing verified online → we don't touch the data
 

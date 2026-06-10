@@ -29,6 +29,10 @@ class Settings(BaseSettings):
     # /app is the bind mount of ./seller → the DB persists on the host and is inspectable.
     enrichment_db_path: str = "/app/data/seller.db"
 
+    # --- Observability (docs/observability.md) ---
+    log_level: str = "INFO"        # LOG_LEVEL: root logging level for API and ingester CLI
+    trace_backend: str = "sqlite"  # TRACE_BACKEND: sqlite (local `traces` table) | off
+
     # --- WebEnricher: online search (fallback, see docs) ---
     web_search_region: str = "it-it"
     # Browser UA: many sources block "bare" fetchers (403/401).

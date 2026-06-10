@@ -10,7 +10,6 @@ final text block with provenance. Meant to "see the process", it is not a test.
 
 import argparse
 
-from app.core.web_search import fetch_clean
 from app.ingestion.enricher.web import WebEnricher
 from app.models import GameDoc
 

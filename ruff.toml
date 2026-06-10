@@ -1,0 +1,13 @@
+# Minimal lint gate for CI: real errors only (syntax errors, undefined names,
+# unused imports/variables). The codebase predates any lint config, so style
+# rules are intentionally left out to avoid a mass reformat.
+target-version = "py312"
+
+# Local agent worktrees; never present in CI checkouts.
+exclude = [".claude"]
+
+[lint]
+select = [
+    "E9", # syntax errors / io errors (pycodestyle runtime-level errors)
+    "F",  # pyflakes: undefined names, unused imports/variables, etc.
+]

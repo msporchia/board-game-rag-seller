@@ -25,7 +25,6 @@ from pathlib import Path
 
 import pytest
 
-from app.ingestion.enricher import CuratorEnricher
 from app.ingestion.sources import JsonSource
 from tests.factories import make_game
 

@@ -22,8 +22,8 @@ measure), `note.md` (ideas), `seller.md` (overview).
     `compose` (`RuleComposeEnricher`), `curator` (`CuratorEnricher` — citation-based, NO
     synthesis), `web` (`WebEnricher`), `synth` (`SynthEnricher` — descriptive synthesis, the
     structured/descriptive split with Compose), stubs `extract`/`augment`/`gapfill`.
-  - `core/web_search.py`: `DdgsSearch` (DuckDuckGo search, swappable) + `fetch_clean`
-    (httpx with browser User-Agent + trafilatura).
+  - `core/web_search/` (one class per file): `DdgsSearch` (DuckDuckGo search, swappable) +
+    `PageFetcher` (httpx with browser User-Agent + trafilatura), both injectable.
   - `core/enrichment_store.py`: `EnrichmentStore` (SQLite, durable system-of-record).
   - `ingestion/serializer.py` (`DocumentSerializer`), `core/vector_store.py`
     (`GameVectorStore`), `ingestion/ingester.py`, `rag/retriever.py`, `api/` (`/health`, `/search`).

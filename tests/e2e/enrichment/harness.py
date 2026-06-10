@@ -17,8 +17,8 @@ What it builds:
 Comparing a target's rank/keywords across the two collections is how we measure that the
 enrichment made the game "richer and better placed".
 
-The Rails are engaged for the WHOLE full ingest: any unexpected network call raises
-OutOfRailsError and fails the ingest loudly.
+The Rails (search provider + fetcher) are injected into the WebEnricher for the WHOLE full
+ingest: any unexpected network attempt raises OutOfRailsError and fails the ingest loudly.
 """
 
 from dataclasses import dataclass, field
@@ -90,7 +90,7 @@ class EnrichmentHarness:
             # max_sources=2: two verified sources are enough to exercise the Web (ranking →
             # fetch → quoted extraction → provenance) while keeping the e2e tractable on a
             # CPU-only Ollama (each judge_extract is an LLM call over a long page).
-            WebEnricher(search=rails.search, store=store, max_sources=2),
+            WebEnricher(search=rails.search, fetcher=rails.fetcher, store=store, max_sources=2),
             SynthEnricher(),
             RuleComposeEnricher(),
         ])
@@ -105,16 +105,17 @@ class EnrichmentHarness:
 
         pipeline = self._pipeline(rails, store)
 
-        # --- full enrichment of the targets, ON THE RAILS --------------------------------------
+        # --- full enrichment of the targets, ON THE RAILS ---------------------------------------
+        # The rails are structural: RailedSearch/RailedFetcher are injected into the WebEnricher,
+        # so any unrecorded query or page cache miss raises OutOfRailsError — no patching needed.
         full_docs: dict[int, GameDoc] = {}
         base_embed: dict[int, str] = {}
-        with rails.engaged():
-            for c in self.cases:
-                doc = pipeline.run(c.doc())   # real Curator→Web→Synth→Compose (on the stripped DTO)
-                store.save_game(doc)
-                full_docs[c.id_product] = doc
-                # baseline = SAME (stripped) input, deterministic compose → fair comparison
-                base_embed[c.id_product] = self._rule_embed(c.ingest_dto()).embed_text or ""
+        for c in self.cases:
+            doc = pipeline.run(c.doc())   # real Curator→Web→Synth→Compose (on the stripped DTO)
+            store.save_game(doc)
+            full_docs[c.id_product] = doc
+            # baseline = SAME (stripped) input, deterministic compose → fair comparison
+            base_embed[c.id_product] = self._rule_embed(c.ingest_dto()).embed_text or ""
 
         ser = self.serializer
 

@@ -10,7 +10,7 @@ HOW: pure functions over hand-built `SearchResult`; no network (conftest).
 
 import pytest
 
-from app.core.web_search import SearchResult
+from app.core.web_search.result import SearchResult
 from app.ingestion.enricher import WebEnricher
 
 

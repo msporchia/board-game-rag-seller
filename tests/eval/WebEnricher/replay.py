@@ -14,7 +14,8 @@ are tested separately because each has its own goal (see the 3 `test_*.py`):
 import json
 from pathlib import Path
 
-from app.core.web_search import SearchResult, WebSearchProvider
+from app.core.web_search.provider import WebSearchProvider
+from app.core.web_search.result import SearchResult
 from app.ingestion.enricher import WebEnricher
 from app.models import GameDoc
 

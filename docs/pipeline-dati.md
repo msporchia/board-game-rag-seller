@@ -142,7 +142,7 @@ Source → EnrichmentPipeline → Composer → serializer → VectorStore
 | `app/ingestion/enricher/` | Package: one file per enricher (`base`, `trim`, `compose`, `curator`, `web`, stubs `extract`/`augment`/`gapfill`). |
 | `app/ingestion/serializer.py` | `DocumentSerializer`: `GameDoc` → Document (page_content=embed_text + payload). |
 | `app/ingestion/ingester.py` | Orchestration: source → pipeline → serializer → Qdrant (+ EnrichmentStore). |
-| `app/core/web_search.py` | `DdgsSearch` (search) + `fetch_clean` (httpx UA + trafilatura) for the WebEnricher. |
+| `app/core/web_search/` | Package: `DdgsSearch` (search, swappable ABC) + `PageFetcher` (httpx UA + trafilatura), both injected into the WebEnricher. |
 | `app/core/enrichment_store.py` | `EnrichmentStore` (SQLite): curated record + page cache + provenance. |
 | `app/core/vector_store.py` | `GameVectorStore` (embeddings + Qdrant). |
 | `app/rag/retriever.py` | `GameRetriever` (semantic search). |

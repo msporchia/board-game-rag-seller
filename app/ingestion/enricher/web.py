@@ -24,7 +24,10 @@ from langchain_ollama import ChatOllama
 from app.config import settings
 from app.core.enrichment_store import EnrichmentStore
 from app.core.tracing import get_trace_callbacks
-from app.core.web_search import DdgsSearch, SearchResult, WebSearchProvider, fetch_clean
+from app.core.web_search.ddgs import DdgsSearch
+from app.core.web_search.fetcher import PageFetcher
+from app.core.web_search.provider import WebSearchProvider
+from app.core.web_search.result import SearchResult
 from app.ingestion.enricher.base import Enricher
 from app.models import GameDoc
 
@@ -37,8 +40,9 @@ logger = logging.getLogger(__name__)
 class WebEnricher(Enricher):
     def __init__(self, search: WebSearchProvider | None = None, model: str | None = None,
                  base_url: str | None = None, max_sources: int | None = None,
-                 store: EnrichmentStore | None = None):
+                 store: EnrichmentStore | None = None, fetcher: PageFetcher | None = None):
         self.search_provider = search or DdgsSearch()
+        self.fetcher = fetcher or PageFetcher()
         self.max_sources = max_sources or settings.web_max_sources
         self.trusted = set(settings.web_trusted_domains)
         self.blocked = set(settings.web_blocked_domains)
@@ -57,7 +61,7 @@ class WebEnricher(Enricher):
             cached = self.store.get_page(url)
             if cached is not None:
                 return cached
-        text = fetch_clean(url)
+        text = self.fetcher.fetch(url)
         if self.store and text:
             self.store.save_page(url, 200, text)
         return text

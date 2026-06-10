@@ -15,7 +15,8 @@ Entry point: `python -m tests.e2e.enrichment record --ids 160,22,21` (see __main
 import json
 
 from app.config import settings
-from app.core.web_search import DdgsSearch, fetch_clean
+from app.core.web_search.ddgs import DdgsSearch
+from app.core.web_search.fetcher import PageFetcher
 from app.ingestion.enricher import WebEnricher
 from tests.e2e.enrichment.cases import FIXTURES, load_corpus, query_for
 
@@ -46,12 +47,14 @@ class Recorder:
     def __init__(self):
         self._enr = WebEnricher()
         self._search = DdgsSearch()
+        self._fetcher = PageFetcher()
 
     def record_one(self, dto: dict) -> dict:
         name = dto["name"]
         query = query_for(name)
         raw = self._search.search(query, settings.web_max_results)   # REAL search
-        pages = {r.url: fetch_clean(r.url) for r in self._enr._ranked(raw)}  # REAL fetch, all ranked
+        pages = {r.url: self._fetcher.fetch(r.url)
+                 for r in self._enr._ranked(raw)}                    # REAL fetch, all ranked
         return {
             "id_product": int(dto["id_product"]),
             "name": name,            # informational (runtime recomputes the query from the corpus)

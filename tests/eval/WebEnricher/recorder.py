@@ -20,7 +20,8 @@ import argparse
 import json
 
 from app.config import settings
-from app.core.web_search import DdgsSearch, fetch_clean
+from app.core.web_search.ddgs import DdgsSearch
+from app.core.web_search.fetcher import PageFetcher
 from app.ingestion.enricher import WebEnricher
 from tests.eval.WebEnricher.replay import FIXTURES
 
@@ -49,13 +50,14 @@ def record(name: str, missing: list[str]) -> dict:
     search_results = [r.model_dump() for r in raw]
 
     # 2) REAL fetch, replicating the order and stop-condition of WebEnricher.assess
+    fetcher = PageFetcher()
     ranked = enr._ranked(raw)
     pages: dict[str, str] = {}
     fetched = 0
     for r in ranked:
         if fetched >= enr.max_sources:
             break
-        text = fetch_clean(r.url)
+        text = fetcher.fetch(r.url)
         pages[r.url] = text
         if text:
             fetched += 1

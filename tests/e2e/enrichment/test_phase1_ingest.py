@@ -6,7 +6,7 @@ that the web stayed under control.
 
 Key points:
   - if the scraper had "left the rails" (an unrecorded query/URL), RailedSearch /
-    railed_fetch_clean would have raised OutOfRailsError DURING the ingest → the session fixture
+    RailedFetcher would have raised OutOfRailsError DURING the ingest → the session fixture
     would have blown up and all these tests would error. Getting here green IS the proof it stayed
     on the rails.
   - the Web fires ONLY when it should: `expect_web` per game (Onitama/TM stripped: yes;

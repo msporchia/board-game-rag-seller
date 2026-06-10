@@ -87,7 +87,10 @@ class EnrichmentHarness:
     def _pipeline(self, rails: Rails, store: EnrichmentStore) -> EnrichmentPipeline:
         return EnrichmentPipeline([
             CuratorEnricher(),
-            WebEnricher(search=rails.search, store=store),
+            # max_sources=2: two verified sources are enough to exercise the Web (ranking →
+            # fetch → quoted extraction → provenance) while keeping the e2e tractable on a
+            # CPU-only Ollama (each judge_extract is an LLM call over a long page).
+            WebEnricher(search=rails.search, store=store, max_sources=2),
             SynthEnricher(),
             RuleComposeEnricher(),
         ])

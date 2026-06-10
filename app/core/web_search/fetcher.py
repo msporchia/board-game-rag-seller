@@ -1,11 +1,10 @@
-import logging
-
 import httpx
 import trafilatura
 
 from app.config import settings
+from app.core.logging import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class PageFetcher:
@@ -29,7 +28,7 @@ class PageFetcher:
             )
             resp.raise_for_status()
         except Exception:  # noqa: BLE001  network/4xx/5xx → page skipped
-            logger.warning("fetch failed (url=%s)", url, exc_info=True)
+            logger.warning("web_fetch_failed", url=url, exc_info=True)
             return ""
         text = trafilatura.extract(resp.text) or ""
         return text[: self.max_chars].strip()

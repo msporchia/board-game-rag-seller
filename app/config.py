@@ -39,6 +39,7 @@ class Settings(BaseSettings):
 
     # --- Observability (docs/observability.md) ---
     log_level: str = "INFO"        # LOG_LEVEL: root logging level for API and ingester CLI
+    log_format: str = "console"    # LOG_FORMAT: console (human, dev) | json (one object per line)
     trace_backend: str = "sqlite"  # TRACE_BACKEND: sqlite (local `traces` table) | off
 
     # --- WebEnricher: online search (fallback, see docs) ---

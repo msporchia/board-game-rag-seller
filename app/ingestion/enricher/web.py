@@ -17,12 +17,11 @@ behavior over an Italian catalog, so they are not translated.
 """
 
 import json
-import logging
-
 from langchain_ollama import ChatOllama
 
 from app.config import settings
 from app.core.enrichment_store import EnrichmentStore
+from app.core.logging import get_logger
 from app.core.tracing import get_trace_callbacks
 from app.core.web_search.ddgs import DdgsSearch
 from app.core.web_search.fetcher import PageFetcher
@@ -34,7 +33,7 @@ from app.models import GameDoc
 # separators with which catalog names attach the marketing ("X - Gioco da Tavolo...")
 _NAME_SEPARATORS = (" - ", " – ", " | ", " — ")
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class WebEnricher(Enricher):
@@ -122,7 +121,7 @@ TESTO:
             raw = self._llm.invoke(self._prompt(name, missing, text)).content
             return json.loads(raw)
         except Exception:  # noqa: BLE001  LLM/parse failure → source skipped
-            logger.warning("web LLM judge/extract failed (game=%r)", name, exc_info=True)
+            logger.warning("web_judge_failed", game_name=name, exc_info=True)
             return None
 
     def _judge_extract(self, name: str, missing: list[str], text: str) -> dict:
@@ -181,12 +180,12 @@ TESTO:
 
     def enrich(self, game: GameDoc) -> GameDoc:
         if not game.missing_info:
-            logger.info("web game=%s skipped (no missing info)", game.id_product)
+            logger.info("web_skipped", game=game.id_product, reason="no_missing_info")
             return game
         a = self.assess(game)
         facts = a["facts"]
-        logger.info("web game=%s fired: sources=%d, verified facts=%d/%d missing",
-                    game.id_product, len(a["sources"]), len(facts), len(game.missing_info))
+        logger.info("web_done", game=game.id_product, sources=len(a["sources"]),
+                    facts_verified=len(facts), facts_missing=len(game.missing_info))
         if not facts:
             return game  # nothing verified online → we don't touch the data
 

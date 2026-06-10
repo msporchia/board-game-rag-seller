@@ -22,7 +22,6 @@ Token counts: langchain-ollama populates `AIMessage.usage_metadata` with
 / `eval_count`, which also remain available in `generation_info`/`response_metadata`).
 """
 
-import logging
 import sqlite3
 import threading
 import time
@@ -35,8 +34,9 @@ from langchain_core.callbacks import BaseCallbackHandler
 from langchain_core.outputs import LLMResult
 
 from app.config import settings
+from app.core.logging import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS traces (
@@ -144,7 +144,7 @@ class SQLiteTraceHandler(BaseCallbackHandler):
                 "prompt_preview": prompt[: self.PREVIEW_CHARS],
             }
         except Exception:  # noqa: BLE001  tracing must never break the call path
-            logger.warning("trace start failed (component=%s)", self.component, exc_info=True)
+            logger.warning("trace_start_failed", component=self.component, exc_info=True)
 
     def on_llm_end(self, response: LLMResult, *, run_id: UUID, **kwargs: Any) -> None:
         self._finish(run_id, response=response)
@@ -181,7 +181,7 @@ class SQLiteTraceHandler(BaseCallbackHandler):
                 output_tokens=output_tokens, duration_ms=duration_ms, error=error,
             )
         except Exception:  # noqa: BLE001  tracing must never break the call path
-            logger.warning("trace write failed (component=%s)", self.component, exc_info=True)
+            logger.warning("trace_write_failed", component=self.component, exc_info=True)
 
 
 def get_trace_callbacks(component: str) -> list[BaseCallbackHandler]:
@@ -195,5 +195,5 @@ def get_trace_callbacks(component: str) -> list[BaseCallbackHandler]:
         return []
     if backend == "sqlite":
         return [SQLiteTraceHandler(component=component)]
-    logger.warning("unknown TRACE_BACKEND=%r: tracing disabled", settings.trace_backend)
+    logger.warning("unknown_trace_backend", backend=settings.trace_backend, fallback="disabled")
     return []

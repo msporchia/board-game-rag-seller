@@ -24,11 +24,10 @@ Note: the prompt is intentionally in Italian — it drives an Italian-language L
 Italian catalog (system behavior), like the Curator and Web prompts.
 """
 
-import logging
-
 from langchain_ollama import ChatOllama
 
 from app.config import settings
+from app.core.logging import get_logger
 from app.core.tracing import get_trace_callbacks
 from app.ingestion.enricher.base import Enricher, with_enriched
 from app.models import GameData, GameDoc
@@ -36,7 +35,7 @@ from app.models import GameData, GameDoc
 # Keep the synthesis short: dense facts beat long prose (less dilution of the embedding).
 _MAX_CHARS = 700
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class SynthEnricher(Enricher):
@@ -127,13 +126,13 @@ Rispondi SOLO con la sintesi, senza preamboli."""
         try:
             text = (self._llm.invoke(self._prompt(game.original.name, material)).content or "").strip()
         except Exception:  # noqa: BLE001  LLM/network failure → keep the existing description
-            logger.warning("synth game=%s LLM failed, keeping existing description",
-                           game.id_product, exc_info=True)
+            logger.warning("synth_llm_failed", game=game.id_product,
+                           fallback="keep_existing_description", exc_info=True)
             return game
         if not text:
             return game
         if len(text) > self.max_chars:  # safety cap (the prompt asks for short, this enforces it)
             text = text[: self.max_chars].rsplit(" ", 1)[0].strip()
-        logger.info("synth game=%s rewrote description %d→%d chars",
-                    game.id_product, len(game.enriched.description or ""), len(text))
+        logger.info("synth_description_rewritten", game=game.id_product,
+                    chars_before=len(game.enriched.description or ""), chars_after=len(text))
         return with_enriched(game, description=text)

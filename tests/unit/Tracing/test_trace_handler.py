@@ -117,4 +117,5 @@ def test_store_failure_never_breaks_the_call_path(caplog):
     with caplog.at_level("WARNING", logger="app.core.tracing"):
         handler.on_llm_start({}, ["prompt"], run_id=run_id, invocation_params={})
         handler.on_llm_end(LLMResult(generations=[[Generation(text="ok")]]), run_id=run_id)
-    assert any("trace write failed" in r.message for r in caplog.records)
+    # structlog routes into stdlib: the record's msg is the event dict, event name included
+    assert any("trace_write_failed" in r.getMessage() for r in caplog.records)

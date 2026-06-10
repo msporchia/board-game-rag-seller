@@ -5,13 +5,13 @@ in order (Chain of Responsibility). They work on the `game.enriched` working cop
 `game.original` (hard-truth) untouched.
 """
 
-import logging
 import time
 from abc import ABC, abstractmethod
 
+from app.core.logging import get_logger
 from app.models import GameDoc
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class Enricher(ABC):
@@ -31,8 +31,8 @@ class EnrichmentPipeline:
         for step in self.steps:
             t0 = time.perf_counter()
             game = step.enrich(game)
-            logger.info("step=%s game=%s done in %.2fs",
-                        type(step).__name__, game.id_product, time.perf_counter() - t0)
+            logger.info("enrich_step", step=type(step).__name__, game=game.id_product,
+                        duration_ms=round((time.perf_counter() - t0) * 1000))
         return game
 
 

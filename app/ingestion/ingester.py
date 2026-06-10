@@ -8,10 +8,12 @@ add different sources.
 """
 
 import argparse
-import logging
 import time
 
+from structlog.contextvars import bind_contextvars, unbind_contextvars
+
 from app.core.enrichment_store import EnrichmentStore
+from app.core.logging import get_logger
 from app.core.vector_store import GameVectorStore
 from app.ingestion.enricher import (
     CuratorEnricher,
@@ -23,7 +25,7 @@ from app.ingestion.enricher import (
 from app.ingestion.serializer import DocumentSerializer
 from app.ingestion.sources import GameSource, PrestashopSource
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 def build_pipeline(store: EnrichmentStore | None = None) -> EnrichmentPipeline:
@@ -60,18 +62,24 @@ class Ingester:
         self.pipeline = pipeline or build_pipeline(store=self.enrichment_store)
 
     def run(self, recreate: bool = True, **fetch_kwargs) -> int:
-        logger.info("[1/3] Reading games from the source...")
+        logger.info("ingest_fetching")
         games = self.source.fetch(**fetch_kwargs)
-        logger.info("      -> %d games", len(games))
+        logger.info("ingest_fetched", games=len(games))
         if not games:
             return 0
 
         enriched = []
         for g in games:                                        # data enrichment, per game
             t0 = time.perf_counter()
-            doc = self.pipeline.run(g)
-            logger.info("game=%s %r enriched in %.2fs",
-                        doc.id_product, doc.original.name, time.perf_counter() - t0)
+            # Bound context: EVERY event emitted while this game is in the pipeline
+            # (curator/web/synth/fetch, any module) carries game=<id>.
+            bind_contextvars(game=g.id_product)
+            try:
+                doc = self.pipeline.run(g)
+            finally:
+                unbind_contextvars("game")
+            logger.info("game_enriched", game=doc.id_product, name=doc.original.name,
+                        duration_ms=round((time.perf_counter() - t0) * 1000))
             enriched.append(doc)
         games = enriched
         if self.enrichment_store:                              # persist the curated data
@@ -80,12 +88,12 @@ class Ingester:
         documents = [self.serializer.to_document(g) for g in games]
         ids = [GameVectorStore.point_id(g.id_product) for g in games]
 
-        logger.info("[2/3] Embedding + upsert to Qdrant (recreate=%s)...", recreate)
+        logger.info("ingest_indexing", recreate=recreate)
         t0 = time.perf_counter()
         self.store.index(documents, ids=ids, recreate=recreate)
-        logger.info("      -> indexed in %.2fs", time.perf_counter() - t0)
+        logger.info("ingest_indexed", duration_ms=round((time.perf_counter() - t0) * 1000))
 
-        logger.info("[3/3] Done: %d documents indexed.", len(documents))
+        logger.info("ingest_done", games=len(documents))
         return len(documents)
 
 

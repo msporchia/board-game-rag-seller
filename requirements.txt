@@ -11,6 +11,9 @@ qdrant-client
 langgraph             # Phase 5: stateful conversation graph (docs/chat.md)
 langgraph-checkpoint-sqlite   # session memory on a local sqlite file (swappable: Postgres/Redis)
 
+# --- Observability ---
+structlog             # structured logging: events with fields; console renderer locally, JSON for platforms
+
 # --- HTTP ---
 httpx                 # client toward the PrestaShop endpoint
 

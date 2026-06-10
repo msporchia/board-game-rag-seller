@@ -7,15 +7,15 @@ LLM tool-call produces). OR inside a field (e.g. `players=2&players=3`), AND bet
 `soft=<name>` marks a constraint as non-strict (boost instead of exclude), e.g. `soft=duration`.
 """
 
-import logging
-
 from fastapi import APIRouter, HTTPException, Query
+
+from app.core.logging import get_logger
 
 from app.models import GameHit
 from app.rag.filters import SearchFilters
 from app.rag.retriever import GameRetriever
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 router = APIRouter()
 _retriever = GameRetriever()
@@ -72,7 +72,7 @@ def search(
     try:
         filters = SearchFilters.from_dict(spec)
     except ValueError as e:
-        logger.warning("GET /search rejected (q=%r): %s", q, e)
+        logger.warning("search_rejected", query=q, error=str(e))
         raise HTTPException(status_code=400, detail=str(e))
 
     return _retriever.search(q, k=k, filters=None if filters.is_empty() else filters)

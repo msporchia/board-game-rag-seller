@@ -1,10 +1,9 @@
-import logging
-
 from app.config import settings
+from app.core.logging import get_logger
 from app.core.web_search.provider import WebSearchProvider
 from app.core.web_search.result import SearchResult
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class DdgsSearch(WebSearchProvider):
@@ -19,7 +18,7 @@ class DdgsSearch(WebSearchProvider):
         try:
             rows = DDGS().text(query, region=self.region, max_results=max_results)
         except Exception:  # noqa: BLE001  flaky engine/rate-limit → no results this round
-            logger.warning("ddgs search failed (query=%r)", query, exc_info=True)
+            logger.warning("web_search_failed", query=query, exc_info=True)
             return []
         return [
             SearchResult(

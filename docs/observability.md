@@ -12,7 +12,7 @@ caught, not just tooling for its own sake.
 | Regression gate | `tests/e2e/enrichment/` + versioned `baseline.json` | no metric may regress beyond tolerance vs the committed baseline |
 | Per-step LLM evals | `tests/eval.py --pipeline …` | each enrichment step measured against hand-written oracles |
 | Invariants in code | `WebEnricher` (quote verification), `ChatAdvisor` (id grounding) | anti-hallucination enforced at runtime, not just tested |
-| Structured logging | `app/core/logging.py` + per-module loggers | step, game id, duration, outcome for every pipeline step; query/k/filters/hits/latency for every search; failed LLM/web calls log a warning instead of vanishing |
+| Structured logging | `app/core/logging.py` (structlog) + per-module loggers | every log is an EVENT with FIELDS (`enrich_step`, `game=2845`, `duration_ms=140`): step, game id, duration, outcome for every pipeline step; query/k/filters/hits/latency for every search; failed LLM/web calls log a warning instead of vanishing. `LOG_FORMAT=json` makes the same events machine-shippable |
 | LLM call tracing | `app/core/tracing.py` (`traces` table in `data/seller.db`) | every Curator/Web/Synth call recorded: component, model, prompt size+preview, response size, latency, token counts |
 
 ## What we are blind to
@@ -28,11 +28,18 @@ caught, not just tooling for its own sake.
 
 ## Design — logging & tracing
 
-**Structured logging** is stdlib-only: `setup_logging()` (idempotent, called by the API
-entrypoint and the ingester CLI) sets one line format — timestamp, level, logger, message —
-and the level from `LOG_LEVEL`. Modules use `logging.getLogger(__name__)`; the previously
-silent `except Exception` paths (curator/web/synth LLM calls, ddgs search, page fetch,
-Qdrant count) now log warnings without changing control flow.
+**Structured logging** is structlog over stdlib `logging`: modules log events with fields
+(`logger.info("search_done", query=q, hits=3, duration_ms=142)`), never values interpolated
+into prose — a value is a field to index, not a substring to regex out of a sentence.
+`setup_logging()` (idempotent, called by the API entrypoint and the ingester CLI) attaches
+ONE root handler whose `ProcessorFormatter` renders both structlog events and foreign
+records (uvicorn, libraries) through the same chain; `LOG_FORMAT` picks `console`
+(human-readable, default) or `json` (one object per line on stdout — the twelve-factor
+contract: the app never knows where logs are shipped, the platform does). During enrichment
+the ingester binds `game=<id>` via `structlog.contextvars`, so every event emitted by any
+module while that game is in the pipeline carries the game id. The previously silent
+`except Exception` paths (curator/web/synth LLM calls, ddgs search, page fetch, Qdrant
+count) log warnings without changing control flow.
 
 **Why a callback handler for tracing.** LangChain fires `on_llm_start` / `on_llm_end` /
 `on_llm_error` around every model call, so tracing needs zero changes inside the enrichers:

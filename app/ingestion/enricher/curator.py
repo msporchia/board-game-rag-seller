@@ -11,16 +11,15 @@ Italian-language LLM over an Italian catalog (system behavior), so they are not 
 """
 
 import json
-import logging
-
 from langchain_ollama import ChatOllama
 
 from app.config import settings
+from app.core.logging import get_logger
 from app.core.tracing import get_trace_callbacks
 from app.ingestion.enricher.base import Enricher
 from app.models import GameData, GameDoc
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class CuratorEnricher(Enricher):
@@ -197,7 +196,7 @@ Rispondi SOLO con JSON, una chiave per ogni etichetta della LISTA:
             raw = self._llm.invoke(self._prompt(labels, desc)).content
             data = json.loads(raw)
         except Exception:  # noqa: BLE001  intentional: LLM/parse/network → batch ignored
-            logger.warning("curator LLM batch failed (labels=%s)", labels, exc_info=True)
+            logger.warning("curator_llm_batch_failed", labels=labels, exc_info=True)
             return {}
         return data if isinstance(data, dict) else {}
 
@@ -236,9 +235,9 @@ Rispondi SOLO con JSON, una chiave per ogni etichetta della LISTA:
 
     def enrich(self, game: GameDoc) -> GameDoc:
         a = self.assess(game)
-        logger.info("curator game=%s extracted=%d facts, missing=%d (%s)",
-                    game.id_product, len(a.get("estratti", {})),
-                    len(a.get("mancanti", [])), ", ".join(a.get("mancanti", [])) or "-")
+        logger.info("curator_done", game=game.id_product,
+                    extracted=len(a.get("estratti", {})),
+                    missing=len(a.get("mancanti", [])), missing_labels=a.get("mancanti", []))
         e = game.enriched
         # mechanics extracted from the text → tags (only if empty; certain data ALWAYS wins)
         deduced_mec = a.get("estratti", {}).get("meccaniche principali")

@@ -7,9 +7,9 @@ Phase 2 was purely semantic. Phase 3 adds structured constraints (`SearchFilters
   that satisfy them (see `app/rag/filters.py`).
 """
 
-import logging
 import time
 
+from app.core.logging import get_logger
 from app.core.vector_store import GameVectorStore
 from app.models import GameHit
 from app.rag.filters import SearchFilters, rerank_soft
@@ -18,7 +18,7 @@ from app.rag.filters import SearchFilters, rerank_soft
 # wider pool before we cut to k.
 SOFT_OVERSAMPLE = 4
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class GameRetriever:
@@ -36,7 +36,7 @@ class GameRetriever:
             results = rerank_soft(results, soft)[:k]
 
         hits = [GameHit(score=float(score), **doc.metadata) for doc, score in results]
-        logger.info("search query=%r k=%d hard_filter=%s soft=%d hits=%d in %.0fms",
-                    query, k, query_filter is not None, len(soft), len(hits),
-                    (time.perf_counter() - t0) * 1000)
+        logger.info("search_done", query=query, k=k, hard_filter=query_filter is not None,
+                    soft=len(soft), hits=len(hits),
+                    duration_ms=round((time.perf_counter() - t0) * 1000))
         return hits

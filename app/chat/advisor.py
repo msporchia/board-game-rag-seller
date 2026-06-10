@@ -26,18 +26,18 @@ Note: the prompt is intentionally in Italian — the bot speaks Italian to custo
 behavior), like the enrichment prompts.
 """
 
-import logging
 
 from langchain_ollama import ChatOllama
 
 from app.chat.models import ChatReply, ChatResponse
 from app.config import settings
+from app.core.logging import get_logger
 from app.core.tracing import get_trace_callbacks
 from app.models import GameHit
 from app.rag.filters import SearchFilters
 from app.rag.retriever import GameRetriever
 
-log = logging.getLogger(__name__)
+log = get_logger(__name__)
 
 # Honest fallback when nothing matches — the absolute rule says to say so, not to invent.
 _NO_MATCH = (
@@ -187,7 +187,7 @@ Restituisci: `intro`, le `recommendations` (id + pitch per ogni gioco scelto) e 
         try:
             reply: ChatReply = (llm or self._llm).invoke(prompt)
         except Exception:  # noqa: BLE001  LLM/transport failure → deterministic fallback, never 500
-            log.warning("pitch: structured LLM failed, using deterministic fallback")
+            log.warning("pitch_llm_failed", fallback="deterministic_pitch")
             return self._fallback(hits)
 
         # Anti-hallucination: keep only recommendations whose id was actually retrieved,

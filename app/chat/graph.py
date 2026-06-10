@@ -29,7 +29,6 @@ respective `langgraph-checkpoint-*` packages) instead of SqliteSaver and pass it
 no node, state or API change.
 """
 
-import logging
 import sqlite3
 from pathlib import Path
 from typing import Annotated, TypedDict
@@ -42,10 +41,11 @@ from app.chat.choices import parse_choices
 from app.chat.models import ChatReply, ChatResponse, Strategy, TurnAnalysis
 from app.core.tracing import get_trace_callbacks
 from app.config import settings
+from app.core.logging import get_logger
 from app.models import GameHit
 from app.rag.filters import SearchFilters
 
-log = logging.getLogger(__name__)
+log = get_logger(__name__)
 
 # docs/note.md: "after max 3-4 exchanges without a concrete proposal → force QUICK MATCH".
 FORCE_QUICK_MATCH_AFTER = 3
@@ -201,16 +201,16 @@ class ChatGraph:
             analysis: TurnAnalysis = self._analyze_llm.invoke(
                 _analysis_prompt(state.get("history") or [], message))
         except Exception:  # noqa: BLE001 — the analysis failing must never kill the turn
-            log.warning("analyze: LLM failed, keeping previous/default analysis")
+            log.warning("analyze_llm_failed", fallback="previous_or_default_analysis")
             analysis = TurnAnalysis(
                 enthusiasm=state.get("enthusiasm", "medium"),
                 decisiveness=state.get("decisiveness", "undecided"),
                 expertise_level=state.get("expertise_level", "beginner"),
                 reply_style=state.get("reply_style", "short"),
             )
-        log.info("analyze: enthusiasm=%s decisiveness=%s expertise=%s style=%s escalate=%s",
-                 analysis.enthusiasm, analysis.decisiveness, analysis.expertise_level,
-                 analysis.reply_style, analysis.escalate)
+        log.info("analyze_done", enthusiasm=analysis.enthusiasm,
+                 decisiveness=analysis.decisiveness, expertise=analysis.expertise_level,
+                 style=analysis.reply_style, escalate=analysis.escalate)
         return {
             "enthusiasm": analysis.enthusiasm,
             "decisiveness": analysis.decisiveness,
@@ -238,7 +238,7 @@ class ChatGraph:
         stalled = state.get("turns_without_proposal", 0)
         strategy = pick_strategy(analysis, stalled)
         proposal = strategy in (Strategy.QUICK_MATCH, Strategy.DISCOVERY)
-        log.info("route: strategy=%s (turns_without_proposal=%d)", strategy.value, stalled)
+        log.info("route_done", strategy=strategy.value, turns_without_proposal=stalled)
         return {
             "strategy": strategy.value,
             "turns_without_proposal": 0 if proposal else stalled + 1,
@@ -272,16 +272,16 @@ class ChatGraph:
         strategy = Strategy(state["strategy"])
         k = (state.get("k") or 5) if strategy is Strategy.DISCOVERY else _STRATEGY_K[strategy]
         hits = self.advisor.retriever.search(query, k=k, filters=filters)
-        log.info("retrieve: k=%d filters=%s → %d hits", k, sorted(spec) or None, len(hits))
+        log.info("retrieve_done", k=k, filters=sorted(spec) or None, hits=len(hits))
         return {"hits": hits, "filters_spec": fragment}
 
     def _generate(self, state: ChatState) -> dict:
         """Delegate to the Phase 4 grounded pitch; strategy/expertise shape the prompt."""
         llm = None
         if state.get("escalate"):
-            log.info("generate: escalating to strong model '%s' (reason: %s, confidence: %.2f)",
-                     self._strong_model, state.get("escalation_reason") or "n/a",
-                     state.get("confidence") or 0.0)
+            log.info("generate_escalating", model=self._strong_model,
+                     reason=state.get("escalation_reason") or "n/a",
+                     confidence=round(state.get("confidence") or 0.0, 2))
             llm = self._strong_llm
 
         history = state.get("history") or []

@@ -30,4 +30,4 @@ def test_unknown_backend_disables_tracing_with_warning(monkeypatch, caplog):
     monkeypatch.setattr(settings, "trace_backend", "wat")
     with caplog.at_level("WARNING", logger="app.core.tracing"):
         assert get_trace_callbacks("synth") == []
-    assert any("TRACE_BACKEND" in r.message for r in caplog.records)
+    assert any("unknown_trace_backend" in r.getMessage() for r in caplog.records)

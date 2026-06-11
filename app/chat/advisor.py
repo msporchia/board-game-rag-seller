@@ -67,14 +67,17 @@ Non dare per scontato che conosca le cose. Obiettivo: educare divertendo, mai fa
 # Dynamic part (docs/note.md): the behavior of the strategy the router picked for this turn.
 _STRATEGY_RULES = {
     "GUIDED": (
-        "Strategia per questo turno — GUIDED: il cliente è indeciso. Proponi al massimo 1-2 "
-        "scelte chiare con esempi concreti e chiudi con UNA domanda semplice per capire meglio "
-        "cosa cerca."
+        "Strategia per questo turno — GUIDED: il cliente è indeciso. Proponi al MASSIMO 2 "
+        "giochi (mai più di 2 recommendations), con esempi concreti. OBBLIGATORIO: il `pitch` "
+        "dell'ultimo gioco deve TERMINARE con una domanda semplice rivolta al cliente per "
+        "capire meglio cosa cerca — l'ultima frase di quel `pitch` finisce con \"?\" "
+        "(es. \"Preferite più una sfida a due o un gioco di squadra?\"). Le "
+        "`quick_replies` NON sostituiscono questa domanda: va scritta dentro il `pitch`."
     ),
     "EXPLANATORY": (
-        "Strategia per questo turno — EXPLANATORY: il cliente è curioso. Spiega le meccaniche "
-        "dei giochi mostrati con linguaggio semplice e analogie (\"è come...\"), approfondendo "
-        "dove mostra interesse."
+        "Strategia per questo turno — EXPLANATORY: il cliente è curioso. Scegli i 2-3 giochi "
+        "più adatti (NON tutta la lista) e spiega le loro meccaniche con linguaggio semplice "
+        "e analogie (\"è come...\"), approfondendo dove mostra interesse."
     ),
     "DISCOVERY": (
         "Strategia per questo turno — DISCOVERY: stile libero e conversazionale. Parti da quello "
@@ -82,8 +85,8 @@ _STRATEGY_RULES = {
     ),
     "QUICK_MATCH": (
         "Strategia per questo turno — QUICK MATCH: il cliente è pronto (o la conversazione va "
-        "chiusa). Proponi subito 3-4 giochi concreti dalla lista, ognuno con una frase di "
-        "vendita incisiva."
+        "chiusa). Proponi SUBITO 3-4 giochi concreti dalla lista (ALMENO 3 recommendations), "
+        "ognuno con una frase di vendita incisiva."
     ),
 }
 
@@ -141,15 +144,18 @@ RICHIESTA DEL CLIENTE:
 
 GIOCHI DISPONIBILI (gli UNICI che puoi proporre):
 {catalog}
-{strategy_block}
+
 Regole rigide:
 - Proponi SOLO giochi presenti nella lista qui sopra. NON inventare titoli e non usare la tua
   conoscenza di altri giochi: esistono solo quelli in lista.
-- `intro`: UNA breve frase di apertura amichevole, senza nomi di giochi e senza `id`.
-- `recommendations`: scegli i 2-3 giochi più adatti alla richiesta. Per ciascuno metti l'`id`
-  ESATTO preso dalla lista e un `pitch` di 1-2 frasi che spiega PERCHÉ piacerà (tema, esperienza
-  di gioco). Vendi l'esperienza, non elencare dati. Nel `pitch` nomina il gioco per NOME — mai
-  l'`id`: è un codice interno, il cliente non deve vederlo.
+- I consigli vivono SOLO in `recommendations`: un oggetto per OGNI gioco che proponi, con
+  l'`id` ESATTO copiato dalla lista (il numero dopo "id=") e un `pitch` di 1-2 frasi che spiega
+  PERCHÉ piacerà (tema, esperienza di gioco). Vendi l'esperienza, non elencare dati. Nel `pitch`
+  nomina il gioco per NOME — mai l'`id`: è un codice interno, il cliente non deve vederlo.
+- `intro`: UNA breve frase di apertura amichevole, senza nomi di giochi e senza `id`. L'intro da
+  sola NON è una risposta: i giochi che prometti devono stare in `recommendations`.
+- Quanti giochi proporre: segui la strategia di questo turno se indica un numero; altrimenti
+  scegli i 2-3 più adatti alla richiesta.
 - Se nessun gioco è davvero adatto, dillo onestamente nell'`intro` e proponi l'alternativa più
   vicina come unica recommendation.
 - Scrivi in italiano, tono amichevole, breve.
@@ -158,7 +164,13 @@ Regole rigide:
   "dai N anni", "senza espansioni" (es. "per 2 giocatori", "max 60 minuti"); altrimenti testo
   libero breve (es. "Sorprendimi").
 
-Restituisci: `intro`, le `recommendations` (id + pitch per ogni gioco scelto) e le `quick_replies`."""
+FORMATO DELLA RISPOSTA (JSON, TUTTI i campi obbligatori):
+{{"intro": "<una frase di apertura>",
+ "recommendations": [{{"id": <numero preso dalla lista>, "pitch": "<perché questo gioco piacerà>"}}, ...],
+ "quick_replies": ["<affinamento breve>", ...]}}
+`recommendations` NON può MAI essere vuota: ogni gioco che consigli deve comparirci con il suo
+`id` e il suo `pitch`. Una risposta senza `recommendations` è una risposta sbagliata.
+{strategy_block}"""
 
     # ---- API ------------------------------------------------------------------
 

@@ -190,6 +190,26 @@ context requires it; **LOW** = nice-to-have / when scaling.
 - **Measure**: time to answer "what happened to game X" (minutes of archaeology → one
   query/endpoint call); a retry of a single failed game without re-running the catalog.
 
+## N. Adaptive source count in the WebEnricher — MEDIUM (idea only, do NOT build yet)
+
+- **What**: today `max_sources` is a fixed cap (3): the loop fetches until the cap or until
+  `missing_info` is empty. Make the number of sources **adaptive between a min and a max cap**,
+  driven by the results: if the first sources filled everything and passed the judge cleanly,
+  stop early; if what came back is sketchy (low judge pass-rate, few extractions per page,
+  gaps still open), keep widening the pool hoping the sources *together* form a more cohesive
+  picture.
+- **Why**: a fixed cap spends the same budget on an easy game and a hard one. The easy game
+  wastes LLM calls on pages it doesn't need; the hard game gets cut off exactly when more
+  evidence would help. The cost (`judge_extract` per page) should follow the difficulty.
+- **How (sketch)**: keep the hard floor/ceiling (`min_sources`/`max_sources`); after the floor,
+  the stop condition becomes a quality signal instead of a count — candidates already exist:
+  residual `missing_info`, judge pass-rate, extraction yield per fetched page (the same
+  signals as the quality flag, idea G). No new infrastructure, it's a smarter loop guard in
+  `WebEnricher`.
+- **Measure**: per-game fetched-sources distribution (expected: bimodal — rich sheets stop at
+  the floor, poor sheets reach the ceiling); LLM calls saved on the full catalog vs the fixed
+  cap; `n_extractions`/recall on the poor-sheet games must not get worse.
+
 ---
 
 ## Red lines I would NOT change

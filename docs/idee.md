@@ -163,6 +163,33 @@ context requires it; **LOW** = nice-to-have / when scaling.
 - **Measure**: first you need a goal (conversion? engagement? session length?). To be defined
   before touching the code.
 
+## M. Product lineage / flow tracking — HIGH (design to re-discuss)
+
+- **What**: the system cannot answer three operational questions today: *"how are the
+  pipelines doing?"* (no run ledger: start/end/failed-count live only in stdout logs),
+  *"what happened to game X / why isn't it suggested?"* (its history is scattered: final
+  state in `products`, facts in `extractions`, LLM calls in `traces` — which has NO
+  `id_product`, so per-game LLM calls are unanswerable), *"how do I retry one product?"*
+  (the CLI is all-catalog-or-nothing; `content_hash` skips unchanged games, the opposite of
+  a forced retry).
+- **Why**: logs are ephemeral (stdout); the durable stores only keep *final state*, not the
+  journey. Every "why is this game wrong/missing" investigation is manual archaeology.
+- **How (proposed, NOT yet agreed — re-discuss after the Phase 5 review)**:
+  1. `product_events` journal table `(id_product, run_id, step, status started/done/failed,
+     error, duration_ms, created_at)` written by `EnrichmentPipeline.run` (it already times
+     every step);
+  2. `pipeline_runs` summary table `(run_id, started_at, finished_at, games_total, done,
+     failed, status)`;
+  3. `id_product` column in `traces`: enrichers pass `{"id_product": …}` as LangChain
+     per-invoke metadata, the callback handler records it;
+  4. retry CLI: `python -m app.ingestion.ingester --game <id> --force` (bypass
+     `content_hash`, single upsert);
+  5. `GET /debug/games/{id}`: one endpoint assembling the whole story — curated record,
+     events, extractions with sources, LLM calls, indexed-in-Qdrant status.
+  Steps 1–3 are one cohesive commit; 4–5 a second one.
+- **Measure**: time to answer "what happened to game X" (minutes of archaeology → one
+  query/endpoint call); a retry of a single failed game without re-running the catalog.
+
 ---
 
 ## Red lines I would NOT change

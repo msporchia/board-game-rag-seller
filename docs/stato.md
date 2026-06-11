@@ -13,8 +13,8 @@ measure), `note.md` (ideas), `seller.md` (overview).
   Seller module, out of this repo) → enriched DTO. Includes `source_descriptions`: **all** the
   per-source descriptions from a product-info table (one row per source, cleaned+deduped).
 - **Python microservice** (`seller/app/`):
-  - `ingestion/sources.py`: `PrestashopSource`, `JsonSource` → `GameDoc`.
-  - `models.py`: `GameDoc` = `original` (hard-truth) + `enriched` (working copy) +
+  - `ingestion/sources/`: `PrestashopSource`, `JsonSource` → `GameDoc`.
+  - `models/`: `GameDoc` = `original` (hard-truth) + `enriched` (working copy) +
     `embed_text` + `missing_info` + **`extracted`** (info extracted from the description/web,
     produced by Curator and Web → consumed by the SynthEnricher); `GameData` (flat shape, with
     `source_descriptions`); `GameHit`.

@@ -15,8 +15,10 @@ the choices-parser and API-bypass tests in this package do not.
 import pytest
 
 from app.chat.advisor import ChatAdvisor
-from app.chat.models import ChatRecommendation, ChatReply, TurnAnalysis
-from app.models import GameHit
+from app.chat.models.analysis import TurnAnalysis
+from app.chat.models.recommendation import ChatRecommendation
+from app.chat.models.reply import ChatReply
+from app.models.game_hit import GameHit
 
 
 def make_hit(id_product: int, name: str, **overrides) -> GameHit:

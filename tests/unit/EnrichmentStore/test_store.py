@@ -1,6 +1,6 @@
 """EnrichmentStore (in-memory SQLite, no network): curated record + page cache + provenance."""
 
-from app.ingestion.enricher import RuleComposeEnricher
+from app.ingestion.enricher.compose import RuleComposeEnricher
 from tests.factories import make_game
 
 

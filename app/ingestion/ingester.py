@@ -15,15 +15,14 @@ from structlog.contextvars import bind_contextvars, unbind_contextvars
 from app.core.enrichment_store import EnrichmentStore
 from app.core.logging import get_logger
 from app.core.vector_store import GameVectorStore
-from app.ingestion.enricher import (
-    CuratorEnricher,
-    EnrichmentPipeline,
-    RuleComposeEnricher,
-    SynthEnricher,
-    WebEnricher,
-)
+from app.ingestion.enricher.compose import RuleComposeEnricher
+from app.ingestion.enricher.curator import CuratorEnricher
+from app.ingestion.enricher.pipeline import EnrichmentPipeline
+from app.ingestion.enricher.synth import SynthEnricher
+from app.ingestion.enricher.web import WebEnricher
 from app.ingestion.serializer import DocumentSerializer
-from app.ingestion.sources import GameSource, PrestashopSource
+from app.ingestion.sources.prestashop import PrestashopSource
+from app.ingestion.sources.source import GameSource
 
 logger = get_logger(__name__)
 

@@ -11,7 +11,7 @@ import time
 
 from app.core.logging import get_logger
 from app.core.vector_store import GameVectorStore
-from app.models import GameHit
+from app.models.game_hit import GameHit
 from app.rag.filters import SearchFilters, rerank_soft
 
 # When soft constraints are present we fetch more candidates than k, so the boost can reorder a

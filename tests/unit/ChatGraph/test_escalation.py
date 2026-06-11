@@ -9,7 +9,9 @@ import pytest
 
 pytest.importorskip("langgraph")
 
-from app.chat.models import ChatRecommendation, ChatReply, TurnAnalysis  # noqa: E402
+from app.chat.models.analysis import TurnAnalysis  # noqa: E402
+from app.chat.models.recommendation import ChatRecommendation  # noqa: E402
+from app.chat.models.reply import ChatReply  # noqa: E402
 
 
 class TestEscalation:

@@ -1,6 +1,6 @@
 """DocumentSerializer: GameDoc → Document (page_content=embed_text, payload=enriched)."""
 
-from app.ingestion.enricher import RuleComposeEnricher
+from app.ingestion.enricher.compose import RuleComposeEnricher
 from app.ingestion.serializer import DocumentSerializer
 from tests.factories import make_game
 

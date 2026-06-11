@@ -11,7 +11,7 @@ final text block with provenance. Meant to "see the process", it is not a test.
 import argparse
 
 from app.ingestion.enricher.web import WebEnricher
-from app.models import GameDoc
+from app.models.game_doc import GameDoc
 
 
 def run(name: str, missing: list[str]) -> None:

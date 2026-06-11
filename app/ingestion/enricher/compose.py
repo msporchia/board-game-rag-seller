@@ -4,8 +4,9 @@ Note: the composed text is intentionally in Italian — it is the embedded docum
 Italian-language catalog, i.e. system output, not source comments.
 """
 
-from app.ingestion.enricher.base import Enricher
-from app.models import GameData, GameDoc
+from app.ingestion.enricher.enricher import Enricher
+from app.models.game_data import GameData
+from app.models.game_doc import GameDoc
 
 
 class RuleComposeEnricher(Enricher):

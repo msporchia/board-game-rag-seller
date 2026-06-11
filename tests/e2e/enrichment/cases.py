@@ -14,8 +14,8 @@ import json
 from dataclasses import dataclass
 from pathlib import Path
 
-from app.ingestion.enricher import WebEnricher
-from app.models import GameDoc
+from app.ingestion.enricher.web import WebEnricher
+from app.models.game_doc import GameDoc
 
 CORPUS = Path(__file__).resolve().parents[2] / "fixtures" / "suites" / "core" / "games.json"
 FIXTURES = Path(__file__).resolve().parent / "fixtures"

@@ -1,7 +1,7 @@
 """GapFillEnricher: generates sensible values for the still-missing fields (TODO)."""
 
-from app.ingestion.enricher.base import Enricher
-from app.models import GameDoc
+from app.ingestion.enricher.enricher import Enricher
+from app.models.game_doc import GameDoc
 
 
 class GapFillEnricher(Enricher):

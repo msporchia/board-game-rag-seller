@@ -20,7 +20,8 @@ from pathlib import Path
 from typing import Optional
 
 from app.config import settings
-from app.models import GameData, GameDoc
+from app.models.game_data import GameData
+from app.models.game_doc import GameDoc
 
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS products (

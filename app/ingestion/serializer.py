@@ -6,7 +6,7 @@
 
 from langchain_core.documents import Document
 
-from app.models import GameDoc
+from app.models.game_doc import GameDoc
 
 
 class DocumentSerializer:

@@ -2,8 +2,8 @@
 
 import re
 
-from app.ingestion.enricher.base import Enricher, with_enriched
-from app.models import GameDoc
+from app.ingestion.enricher.enricher import Enricher
+from app.models.game_doc import GameDoc
 
 _SENTENCE = re.compile(r"(?<=[.!?])\s+")
 
@@ -32,4 +32,4 @@ class TrimEnricher(Enricher):
                 break
             kept.append(sentence)
             total += len(sentence) + 1
-        return with_enriched(game, description=" ".join(kept).strip())
+        return game.with_enriched(description=" ".join(kept).strip())

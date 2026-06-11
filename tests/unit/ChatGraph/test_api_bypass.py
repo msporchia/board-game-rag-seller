@@ -8,7 +8,8 @@ HTTP, no Ollama, no Qdrant.
 
 import pytest
 
-from app.chat.models import ChatRequest, ChatResponse
+from app.chat.models.request import ChatRequest
+from app.chat.models.response import ChatResponse
 
 
 class TestSessionRouting:

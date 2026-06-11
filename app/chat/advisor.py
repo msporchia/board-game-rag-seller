@@ -29,11 +29,12 @@ behavior), like the enrichment prompts.
 
 from langchain_ollama import ChatOllama
 
-from app.chat.models import ChatReply, ChatResponse
+from app.chat.models.reply import ChatReply
+from app.chat.models.response import ChatResponse
 from app.config import settings
 from app.core.logging import get_logger
 from app.core.tracing import get_trace_callbacks
-from app.models import GameHit
+from app.models.game_hit import GameHit
 from app.rag.filters import SearchFilters
 from app.rag.retriever import GameRetriever
 

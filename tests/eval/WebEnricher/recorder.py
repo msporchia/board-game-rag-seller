@@ -22,7 +22,7 @@ import json
 from app.config import settings
 from app.core.web_search.ddgs import DdgsSearch
 from app.core.web_search.fetcher import PageFetcher
-from app.ingestion.enricher import WebEnricher
+from app.ingestion.enricher.web import WebEnricher
 from tests.eval.WebEnricher.replay import FIXTURES
 
 

@@ -10,7 +10,8 @@ import pytest
 pytest.importorskip("langgraph")
 
 from app.chat.graph import FORCE_QUICK_MATCH_AFTER, pick_strategy  # noqa: E402
-from app.chat.models import Strategy, TurnAnalysis  # noqa: E402
+from app.chat.models.analysis import TurnAnalysis  # noqa: E402
+from app.chat.models.strategy import Strategy  # noqa: E402
 
 
 def analysis(**overrides) -> TurnAnalysis:

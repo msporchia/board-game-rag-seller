@@ -1,24 +1,8 @@
-"""Data sources: produce GameDoc from an external source.
-
-`GameSource` is the abstract base: to add a new source (e.g. BGG, other catalogs) you only
-need a subclass that implements `fetch()` and maps to the canonical GameDoc model.
-"""
-
-import json
-from abc import ABC, abstractmethod
-from pathlib import Path
-
 import httpx
 
 from app.config import settings
-from app.models import GameDoc
-
-
-class GameSource(ABC):
-    @abstractmethod
-    def fetch(self, **kwargs) -> list[GameDoc]:
-        """Return the source's games as GameDoc."""
-        raise NotImplementedError
+from app.ingestion.sources.source import GameSource
+from app.models.game_doc import GameDoc
 
 
 class PrestashopSource(GameSource):
@@ -65,19 +49,3 @@ class PrestashopSource(GameSource):
         if ids:
             params["ids"] = ids
         return params
-
-
-class JsonSource(GameSource):
-    """Source from a list of GameDoc dicts (or from a JSON file).
-
-    Used by the test harness to feed the system "exactly the API DTO" in a reproducible,
-    offline way. Doubles as an interim 'JSON export'.
-    """
-
-    def __init__(self, games: list[dict] | None = None, path: str | None = None):
-        if games is None and path is not None:
-            games = json.loads(Path(path).read_text(encoding="utf-8"))
-        self._games = games or []
-
-    def fetch(self, **kwargs) -> list[GameDoc]:
-        return [GameDoc.from_dto(g) for g in self._games]

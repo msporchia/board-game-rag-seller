@@ -37,7 +37,7 @@ flowchart LR
 
 - Endpoint: `POST /chat` (`app/api/chat.py`) — body `{message, choices[], k, session_id?}`
   (no `session_id` → this stateless path).
-- Core: `ChatAdvisor` (`app/chat/advisor.py`). Schemas: `app/chat/models.py`.
+- Core: `ChatAdvisor` (`app/chat/advisor.py`). Schemas: `app/chat/models/` (one class per module).
 - LLM: `llama3.1` (local, Ollama) for now — see *low-hanging fruit*.
 
 ### Two invariants, both enforced in code (we do not trust the model)

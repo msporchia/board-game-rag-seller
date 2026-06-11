@@ -1,6 +1,8 @@
 """EnrichmentPipeline: applies the steps in order; empty is a no-op."""
 
-from app.ingestion.enricher import EnrichmentPipeline, RuleComposeEnricher, TrimEnricher
+from app.ingestion.enricher.compose import RuleComposeEnricher
+from app.ingestion.enricher.pipeline import EnrichmentPipeline
+from app.ingestion.enricher.trim import TrimEnricher
 from tests.factories import make_game
 
 

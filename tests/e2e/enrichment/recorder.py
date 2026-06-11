@@ -17,7 +17,7 @@ import json
 from app.config import settings
 from app.core.web_search.ddgs import DdgsSearch
 from app.core.web_search.fetcher import PageFetcher
-from app.ingestion.enricher import WebEnricher
+from app.ingestion.enricher.web import WebEnricher
 from tests.e2e.enrichment.cases import FIXTURES, load_corpus, query_for
 
 # default = the two corpus games already battle-tested by the WebEnricher fixtures (Onitama,

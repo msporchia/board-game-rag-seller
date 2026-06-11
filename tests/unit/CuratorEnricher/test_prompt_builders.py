@@ -10,7 +10,7 @@ WHAT IT TESTS:
 HOW: direct method calls (no LLM).
 """
 
-from app.ingestion.enricher import CuratorEnricher
+from app.ingestion.enricher.curator import CuratorEnricher
 from tests.factories import make_game
 
 

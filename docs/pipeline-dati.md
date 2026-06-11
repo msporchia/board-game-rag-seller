@@ -51,7 +51,7 @@ improve retrieval/conversion before wiring them in.
 
 ## The contract (enriched product DTO)
 
-The API returns objects with this shape (mirrors `app/models.py:GameDoc`):
+The API returns objects with this shape (mirrors `app/models/game_doc.py:GameDoc`):
 
 ```json
 {
@@ -104,7 +104,7 @@ Source → EnrichmentPipeline → Composer → serializer → VectorStore
                                             └→ EnrichmentStore (durable curated record)
 ```
 
-1. **Source** (`app/ingestion/sources.py`): reads the DTOs (PrestaShop or JSON) → `GameDoc`.
+1. **Source** (`app/ingestion/sources/`): reads the DTOs (PrestaShop or JSON) → `GameDoc`.
    Prepares the data, does not decide the text.
 2. **EnrichmentPipeline** (`app/ingestion/enricher/`): ordered chain of `Enricher`
    (**Strategy** + **Chain of Responsibility** patterns), each with a *guard* (acts only when
@@ -137,8 +137,8 @@ Source → EnrichmentPipeline → Composer → serializer → VectorStore
 | File | Role |
 |------|------|
 | PHP `Seller` module (out of repo) | Contract producer (PHP): assembles the enriched DTO. |
-| `app/models.py` | `GameDoc` (`original` + `enriched` + `embed_text` + `missing_info` + **`extracted`** dict) + `GameHit`. |
-| `app/ingestion/sources.py` | Source: DTO → `GameDoc` (`PrestashopSource`, `JsonSource`). |
+| `app/models/` | `GameDoc` (`original` + `enriched` + `embed_text` + `missing_info` + **`extracted`** dict) + `GameHit`. |
+| `app/ingestion/sources/` | Source: DTO → `GameDoc` (`PrestashopSource`, `JsonSource`). |
 | `app/ingestion/enricher/` | Package: one file per enricher (`base`, `trim`, `compose`, `curator`, `web`, stubs `extract`/`augment`/`gapfill`). |
 | `app/ingestion/serializer.py` | `DocumentSerializer`: `GameDoc` → Document (page_content=embed_text + payload). |
 | `app/ingestion/ingester.py` | Orchestration: source → pipeline → serializer → Qdrant (+ EnrichmentStore). |

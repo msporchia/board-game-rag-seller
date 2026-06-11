@@ -48,8 +48,8 @@ from pathlib import Path
 
 import pytest
 
-from app.ingestion.enricher import CuratorEnricher
-from app.ingestion.sources import JsonSource
+from app.ingestion.enricher.curator import CuratorEnricher
+from app.ingestion.sources.json_source import JsonSource
 
 pytestmark = pytest.mark.llm
 

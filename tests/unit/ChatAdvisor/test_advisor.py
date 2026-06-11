@@ -16,7 +16,8 @@ local to this unit (see conftest). No Ollama, no Qdrant.
 """
 
 from app.chat.advisor import _NO_MATCH
-from app.chat.models import ChatRecommendation, ChatReply
+from app.chat.models.recommendation import ChatRecommendation
+from app.chat.models.reply import ChatReply
 
 from .conftest import make_hit
 

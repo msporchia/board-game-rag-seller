@@ -25,15 +25,13 @@ from dataclasses import dataclass, field
 
 from app.core.enrichment_store import EnrichmentStore
 from app.core.vector_store import GameVectorStore
-from app.ingestion.enricher import (
-    CuratorEnricher,
-    EnrichmentPipeline,
-    RuleComposeEnricher,
-    SynthEnricher,
-    WebEnricher,
-)
+from app.ingestion.enricher.compose import RuleComposeEnricher
+from app.ingestion.enricher.curator import CuratorEnricher
+from app.ingestion.enricher.pipeline import EnrichmentPipeline
+from app.ingestion.enricher.synth import SynthEnricher
+from app.ingestion.enricher.web import WebEnricher
 from app.ingestion.serializer import DocumentSerializer
-from app.models import GameDoc
+from app.models.game_doc import GameDoc
 from app.rag.retriever import GameRetriever
 from tests.e2e.enrichment.cases import GameCase, load_cases, load_corpus
 from tests.e2e.enrichment.rails import Rails

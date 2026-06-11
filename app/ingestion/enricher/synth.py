@@ -29,8 +29,9 @@ from langchain_ollama import ChatOllama
 from app.config import settings
 from app.core.logging import get_logger
 from app.core.tracing import get_trace_callbacks
-from app.ingestion.enricher.base import Enricher, with_enriched
-from app.models import GameData, GameDoc
+from app.ingestion.enricher.enricher import Enricher
+from app.models.game_data import GameData
+from app.models.game_doc import GameDoc
 
 # Keep the synthesis short: dense facts beat long prose (less dilution of the embedding).
 _MAX_CHARS = 700
@@ -135,4 +136,4 @@ Rispondi SOLO con la sintesi, senza preamboli."""
             text = text[: self.max_chars].rsplit(" ", 1)[0].strip()
         logger.info("synth_description_rewritten", game=game.id_product,
                     chars_before=len(game.enriched.description or ""), chars_after=len(text))
-        return with_enriched(game, description=text)
+        return game.with_enriched(description=text)

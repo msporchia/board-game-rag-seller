@@ -16,8 +16,8 @@ from pathlib import Path
 
 from app.core.web_search.provider import WebSearchProvider
 from app.core.web_search.result import SearchResult
-from app.ingestion.enricher import WebEnricher
-from app.models import GameDoc
+from app.ingestion.enricher.web import WebEnricher
+from app.models.game_doc import GameDoc
 
 FIXTURES = Path(__file__).parent / "fixtures"
 

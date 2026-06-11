@@ -7,7 +7,7 @@ LOGIC under examination (guard, ranking, quote validation).
 
 import pytest
 
-from app.ingestion.enricher import WebEnricher
+from app.ingestion.enricher.web import WebEnricher
 from tests.factories import FakeLLM
 
 

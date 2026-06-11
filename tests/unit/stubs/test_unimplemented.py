@@ -5,7 +5,9 @@ When one of these is implemented, promote it to `tests/unit/<ClassName>/`.
 
 import pytest
 
-from app.ingestion.enricher import AugmentEnricher, ExtractEnricher, GapFillEnricher
+from app.ingestion.enricher.augment import AugmentEnricher
+from app.ingestion.enricher.extract import ExtractEnricher
+from app.ingestion.enricher.gapfill import GapFillEnricher
 from tests.factories import make_game
 
 

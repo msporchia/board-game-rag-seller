@@ -21,15 +21,13 @@ import json
 from pathlib import Path
 
 from app.core.vector_store import GameVectorStore
-from app.ingestion.enricher import (
-    CuratorEnricher,
-    EnrichmentPipeline,
-    RuleComposeEnricher,
-    SynthEnricher,
-    TrimEnricher,
-)
+from app.ingestion.enricher.compose import RuleComposeEnricher
+from app.ingestion.enricher.curator import CuratorEnricher
+from app.ingestion.enricher.pipeline import EnrichmentPipeline
+from app.ingestion.enricher.synth import SynthEnricher
+from app.ingestion.enricher.trim import TrimEnricher
 from app.ingestion.ingester import Ingester
-from app.ingestion.sources import JsonSource
+from app.ingestion.sources.json_source import JsonSource
 from app.rag.retriever import GameRetriever
 
 SUITES = Path(__file__).parent / "fixtures" / "suites"

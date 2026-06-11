@@ -13,7 +13,8 @@ checkpoint DB.
 from fastapi import APIRouter
 
 from app.chat.advisor import ChatAdvisor
-from app.chat.models import ChatRequest, ChatResponse
+from app.chat.models.request import ChatRequest
+from app.chat.models.response import ChatResponse
 
 router = APIRouter()
 _advisor = ChatAdvisor()

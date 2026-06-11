@@ -8,7 +8,7 @@ import hashlib
 
 from langchain_core.embeddings import Embeddings
 
-from app.models import GameDoc
+from app.models.game_doc import GameDoc
 
 
 def make_game(**overrides) -> GameDoc:

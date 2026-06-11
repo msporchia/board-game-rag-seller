@@ -15,8 +15,9 @@ DETERMINISTIC part (exactly verifiable) from the ENRICHED part (robust check):
 
 import pytest
 
-from app.ingestion.enricher import RuleComposeEnricher
-from app.models import GameData, GameDoc
+from app.ingestion.enricher.compose import RuleComposeEnricher
+from app.models.game_data import GameData
+from app.models.game_doc import GameDoc
 
 pytestmark = pytest.mark.e2e
 

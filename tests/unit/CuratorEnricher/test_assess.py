@@ -25,7 +25,7 @@ from pathlib import Path
 
 import pytest
 
-from app.ingestion.sources import JsonSource
+from app.ingestion.sources.json_source import JsonSource
 from tests.factories import make_game
 
 FIXTURE = Path(__file__).parent / "fixtures" / "games.json"

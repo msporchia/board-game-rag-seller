@@ -27,8 +27,8 @@ from app.core.web_search.ddgs import DdgsSearch
 from app.core.web_search.fetcher import PageFetcher
 from app.core.web_search.provider import WebSearchProvider
 from app.core.web_search.result import SearchResult
-from app.ingestion.enricher.base import Enricher
-from app.models import GameDoc
+from app.ingestion.enricher.enricher import Enricher
+from app.models.game_doc import GameDoc
 
 # separators with which catalog names attach the marketing ("X - Gioco da Tavolo...")
 _NAME_SEPARATORS = (" - ", " – ", " | ", " — ")

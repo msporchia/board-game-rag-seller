@@ -63,6 +63,11 @@ class EvalReport:
         """
         return {"records": self.records}
 
+    def headline(self, metrics: dict) -> str:
+        """One markdown line with the suite's number that matters (for RESULTS.md and the
+        index table): e.g. 'micro-accuracy **0.870** · 54 cases'."""
+        raise NotImplementedError
+
     # ---- shared mechanics --------------------------------------------------------------
 
     def model(self) -> str:
@@ -113,3 +118,82 @@ class EvalReport:
         for line in self.summary_lines(metrics, prev):
             print(line)
         print("=" * 70 + "\n")
+
+        self._write_markdown(metrics, prev, payload["model"])
+
+    # ---- versioned markdown (the showcase surface: RESULTS.md + the suite index) ----------
+
+    def _write_markdown(self, metrics: dict, prev: dict | None, model: str) -> None:
+        """Regenerate `<suite>/RESULTS.md` (committed, unlike runs/) and the cross-suite
+        index `tests/eval/RESULTS.md`: a visitor must see how many cases ran and where the
+        model fails without digging into gitignored run files."""
+        suite_dir = self.runs.parent
+        lines = [
+            "<!-- Auto-generated at eval session end (tests/eval/report). Do not edit. -->",
+            f"# Eval — {self.title}",
+            "",
+            f"> {self.headline(metrics)} · {self.model_label} `{model}` "
+            f"· session {self.started}",
+            "",
+            "```",
+            *self.summary_lines(metrics, prev),
+            "```",
+            "",
+            *self._markdown_failures(),
+            "The cases live in [fixtures/](fixtures/) (each one carries its oracle `note`); "
+            "the machine-readable history stays in `runs/` (local, gitignored).",
+            "",
+        ]
+        (suite_dir / "RESULTS.md").write_text("\n".join(lines), encoding="utf-8")
+        self._write_index(suite_dir.parent)
+
+    def _markdown_failures(self) -> list[str]:
+        failures = self.sections().get("failures") or {}
+        grouped = failures if isinstance(failures, dict) else {None: failures}
+        entries = [(g, e) for g, lst in grouped.items() for e in lst]
+        if not entries:
+            return ["## Failures", "", "None in this run.", ""]
+
+        lines = [f"## Failures ({len(entries)})", ""]
+        for group, entry in entries:
+            prefix = f"{group} — " if group else ""
+            lines.append(f"### {prefix}{entry.get('case', '?')}")
+            for key, val in entry.items():
+                if key == "case" or val in (None, "", [], {}):
+                    continue
+                if isinstance(val, list):
+                    lines.append(f"- {key}:")
+                    lines += [f"  - {self._md_value(v)}" for v in val]
+                else:
+                    lines.append(f"- {key}: {self._md_value(val)}")
+            lines.append("")
+        return lines
+
+    @staticmethod
+    def _md_value(val) -> str:
+        if isinstance(val, dict):
+            return ", ".join(f"{k}={v!r}" for k, v in val.items())
+        return f"`{val}`" if isinstance(val, (int, float, bool)) else str(val)
+
+    def _write_index(self, eval_root: Path) -> None:
+        """Rebuild the suite index from every sibling RESULTS.md headline blockquote."""
+        rows = []
+        for results in sorted(eval_root.glob("*/RESULTS.md")):
+            head = next((ln[2:] for ln in results.read_text(encoding="utf-8").splitlines()
+                         if ln.startswith("> ")), None)
+            if head:
+                rows.append(f"| {results.parent.name} | {head} | "
+                            f"[{results.parent.name}/RESULTS.md]({results.parent.name}/RESULTS.md) |")
+        lines = [
+            "<!-- Auto-generated at eval session end (tests/eval/report). Do not edit. -->",
+            "# Eval results — last runs",
+            "",
+            "One line per suite, regenerated whenever that suite runs. Each page lists the",
+            "per-case failures (the interesting part) and links the oracle fixtures.",
+            "",
+            "| suite | last run | details |",
+            "|---|---|---|",
+            *rows,
+            "",
+        ]
+        (eval_root / "RESULTS.md").write_text("\n".join(lines), encoding="utf-8")

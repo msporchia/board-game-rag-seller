@@ -35,6 +35,10 @@ class RetrieveReport(EvalReport):
             "mean_rank": round(sum(found) / len(found), 2) if found else None,
         }
 
+    def headline(self, metrics: dict) -> str:
+        return (f"recall@k **{metrics['recall_at_k']:.3f}** · {metrics['n_cases']} cases "
+                f"(mean rank of found: {metrics['mean_rank']})")
+
     def sections(self) -> dict:
         """Failures first, each one self-contained: the conversation, the clicks, the target,
         and the TOP HITS that actually came back — which games beat the target is the anomaly

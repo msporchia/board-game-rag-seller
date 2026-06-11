@@ -48,6 +48,10 @@ class CuratorReport(EvalReport):
         b2 = beta * beta
         return cls._safe_div((1 + b2) * p * r, b2 * p + r)
 
+    def headline(self, metrics: dict) -> str:
+        return (f"F1 **{metrics['f1']:.3f}** · P {metrics['precision']:.3f} "
+                f"/ R {metrics['recall']:.3f}")
+
     def sections(self) -> dict:
         """Failures first: one entry per case with FP/FN slots, each slot with the oracle and
         the LLM value side by side — enough to judge the extraction without rerunning."""

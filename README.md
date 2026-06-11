@@ -217,6 +217,10 @@ oracles, no end-to-end blob):
 | [ChatPitch](tests/eval/ChatPitch) | the pitch: how often the model delivers a *grounded* recommendation instead of the fallback, per strategy |
 | [ChatRetrieve](tests/eval/ChatRetrieve) | conversational query assembly: recall@k of the games the turn should surface |
 
+**Latest measured results: [`tests/eval/RESULTS.md`](tests/eval/RESULTS.md)** — regenerated at
+the end of every eval run: one headline per suite, and per-case failures with everything needed
+to judge them (the conversation, expected vs got, the oracle note, the model's full reading).
+
 ### What a session looks like
 
 *Simulated transcript — it shows the target shape and will be replaced by a real recorded

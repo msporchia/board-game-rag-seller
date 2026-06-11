@@ -37,6 +37,9 @@ class TurnAnalyzerReport(EvalReport):
             "per_dimension": per_dim,
         }
 
+    def headline(self, metrics: dict) -> str:
+        return f"micro-accuracy **{metrics['accuracy']:.3f}** · {metrics['n_cases']} cases"
+
     def sections(self) -> dict:
         """Failures first, grouped per dimension, each one self-contained: the conversation,
         expected vs got, the oracle note, and the model's FULL reading of the turn

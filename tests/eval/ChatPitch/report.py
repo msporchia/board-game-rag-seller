@@ -40,6 +40,10 @@ class PitchReport(EvalReport):
         ok = sum(1 for v in vals if v)
         return {"n": len(vals), "ok": ok, "rate": round(ok / len(vals), 4) if vals else None}
 
+    def headline(self, metrics: dict) -> str:
+        rate = metrics["fallback_rate"]["rate"]
+        return f"fallback_rate **{rate:.3f}** · {metrics['n_cases']} cases"
+
     def sections(self) -> dict:
         """Failures first, grouped per strategy, each one self-contained: which checks failed,
         the customer request, the hits offered, and what the model actually replied (message,

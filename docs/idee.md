@@ -210,6 +210,37 @@ context requires it; **LOW** = nice-to-have / when scaling.
   the floor, poor sheets reach the ceiling); LLM calls saved on the full catalog vs the fixed
   cap; `n_extractions`/recall on the poor-sheet games must not get worse.
 
+## O. Strategy routing as configurable policy (A/B tests, user groups) — MEDIUM (future)
+
+- **What**: today `pick_strategy` is fixed first-match-wins rules in code. The expectation is
+  that this logic grows and churns: marketing will change the selling rules often, and we'll
+  want **A/B experiments** and **per-user-group variants** (different personas/strategies per
+  customer segment). The graph shape stays; the *policy* inside the route node must become
+  swappable without a rewrite.
+- **Why**: rules-in-code means a redeploy per marketing change and no way to compare variants.
+  This is also the argument that justifies LangGraph here long-term: the topology is the stable
+  part, policies are the volatile part.
+- **How (sketch)**: extract the routing policy behind a class injected into ChatGraph (it
+  already takes everything via constructor); variants keyed by experiment arm + user group,
+  loaded from config/store; the arm assignment is sticky per session (it lives in the
+  checkpointed state); arm + chosen strategy recorded in `traces` so outcomes are measurable.
+  Same later for the prompt rule-sets (`_STRATEGY_RULES`).
+- **Measure**: an A/B needs an outcome metric FIRST (see §L: conversion? clicks on cards?
+  turns-to-proposal?). Without it, this stays an idea.
+
+## P. Concurrent requests on the same session — LOW
+
+- **What**: two simultaneous `POST /chat` with the same `session_id` (double click, frontend
+  retry) read the same checkpoint and both write: last-writer-wins, one turn silently vanishes
+  from the session memory.
+- **Why**: the failure is silent and looks like "the bot forgot". Expectation: the **frontend
+  serializes** (disable input while a reply is pending) — this is the contract. Server-side
+  hardening is a future nicety, not a now-problem.
+- **How (later)**: document the contract on the endpoint; if it ever bites, a per-session_id
+  in-process lock (or an optimistic version check on the checkpoint) is enough — no
+  distributed locking until there are multiple API replicas.
+- **Measure**: none — robustness. A unit test with two interleaved turns documents the limit.
+
 ---
 
 ## Red lines I would NOT change

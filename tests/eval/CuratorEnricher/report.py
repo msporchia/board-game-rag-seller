@@ -48,6 +48,22 @@ class CuratorReport(EvalReport):
         b2 = beta * beta
         return cls._safe_div((1 + b2) * p * r, b2 * p + r)
 
+    def sections(self) -> dict:
+        """Failures first: one entry per case with FP/FN slots, each slot with the oracle and
+        the LLM value side by side — enough to judge the extraction without rerunning."""
+        failures = []
+        passes = []
+        for rec in self.records:
+            missed = {slot: {"outcome": info["outcome"], "oracle": info.get("oracle"),
+                             "llm_value": info.get("llm_value")}
+                      for slot, info in rec.get("per_slot", {}).items()
+                      if info["outcome"] in ("FP", "FN")}
+            if missed:
+                failures.append({"case": rec["slug"], "slots": missed})
+            else:
+                passes.append(rec["slug"])
+        return {"failures": failures, "passes": passes}
+
     def summary_lines(self, metrics: dict, prev: dict | None) -> list[str]:
         c = metrics["counts"]
         n_eval = c["TP"] + c["FP"] + c["FN"] + c["TN"]

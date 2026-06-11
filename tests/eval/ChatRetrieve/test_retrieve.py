@@ -72,4 +72,9 @@ class TestRetrieve:
             "rank": rank,
             "hit": rank is not None and rank <= k_used,
             "note": case["note"],
+            "conversation": case["history"],
+            "message": case["message"],
+            "choices": case["choices"],
+            # who beat the target: the anomaly signal (hub documents, diluted queries)
+            "top_hits": [{"id": h.id_product, "name": h.name} for h in out["hits"]],
         })

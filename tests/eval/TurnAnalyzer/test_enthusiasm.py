@@ -41,4 +41,7 @@ class TestEnthusiasm:
             "got": analysis.enthusiasm,
             "ok": analysis.enthusiasm == case["expect"],
             "note": case["note"],
+            "conversation": case["history"],
+            "message": case["message"],
+            "model_read": analysis.model_dump(),
         })

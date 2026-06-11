@@ -110,5 +110,7 @@ class TestPitch:
             "games": [g.name for g in response.games],
             "quick_replies": response.quick_replies,
             "message": response.message,
+            "request": case["message"],
+            "hits": [h.name for h in hits],
             "note": case["note"],
         })

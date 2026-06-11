@@ -53,6 +53,16 @@ class EvalReport:
         """The human summary printed between the header and the footer rules."""
         raise NotImplementedError
 
+    def sections(self) -> dict:
+        """How the records are laid out in the persisted run file.
+
+        The file is a READING surface, not a log: subclasses regroup the records so that
+        failures come first, grouped the way the suite is read (per dimension, per strategy),
+        each failure self-contained — everything needed to judge the case without opening
+        fixtures or rerunning. Default: the raw records, for suites without a better shape.
+        """
+        return {"records": self.records}
+
     # ---- shared mechanics --------------------------------------------------------------
 
     def model(self) -> str:
@@ -91,7 +101,7 @@ class EvalReport:
             "model": self.model(),
             "exit_status": int(exitstatus),
             "metrics": metrics,
-            "records": self.records,
+            **self.sections(),
         }
         text = json.dumps(payload, ensure_ascii=False, indent=2)
         (self.runs / f"{self.prefix}_{self.started}.json").write_text(text, encoding="utf-8")

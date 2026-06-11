@@ -39,4 +39,7 @@ class TestReplyStyle:
             "got": analysis.reply_style,
             "ok": analysis.reply_style == case["expect"],
             "note": case["note"],
+            "conversation": case["history"],
+            "message": case["message"],
+            "model_read": analysis.model_dump(),
         })

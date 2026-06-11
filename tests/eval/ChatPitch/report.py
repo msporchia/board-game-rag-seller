@@ -40,6 +40,31 @@ class PitchReport(EvalReport):
         ok = sum(1 for v in vals if v)
         return {"n": len(vals), "ok": ok, "rate": round(ok / len(vals), 4) if vals else None}
 
+    def sections(self) -> dict:
+        """Failures first, grouped per strategy, each one self-contained: which checks failed,
+        the customer request, the hits offered, and what the model actually replied (message,
+        games, quick_replies) — enough to judge the case without rerunning."""
+        failures: dict[str, list] = {}
+        passes: dict[str, list] = {}
+        for rec in self.records:
+            failed = self._failed_checks(rec)
+            if not failed:
+                passes.setdefault(rec["strategy"], []).append(rec["case"])
+                continue
+            failures.setdefault(rec["strategy"], []).append({
+                "case": rec["case"],
+                "failed": failed,
+                "expertise_level": rec.get("expertise_level"),
+                "request": rec.get("request"),
+                "hits": rec.get("hits"),
+                "reply_message": rec.get("message"),
+                "reply_games": rec.get("games"),
+                "reply_quick_replies": rec.get("quick_replies"),
+                "jargon_found": rec.get("jargon_found"),
+                "note": rec.get("note"),
+            })
+        return {"failures": failures, "passes": passes}
+
     def summary_lines(self, metrics: dict, prev: dict | None) -> list[str]:
         lines = [f"  Cases: {metrics['n_cases']}", ""]
         for name, _key, scope in self.rate_keys:

@@ -53,4 +53,7 @@ class TestDecisiveness:
             "got": analysis.decisiveness,
             "ok": analysis.decisiveness == case["expect"],
             "note": case["note"],
+            "conversation": case["history"],
+            "message": case["message"],
+            "model_read": analysis.model_dump(),
         })

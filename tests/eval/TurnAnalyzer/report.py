@@ -37,6 +37,28 @@ class TurnAnalyzerReport(EvalReport):
             "per_dimension": per_dim,
         }
 
+    def sections(self) -> dict:
+        """Failures first, grouped per dimension, each one self-contained: the conversation,
+        expected vs got, the oracle note, and the model's FULL reading of the turn
+        (`model_read`) — schema-default values there (empty reason, confidence 0.5) are the
+        anomaly signal that the model skipped a field rather than judged it."""
+        failures: dict[str, list] = {}
+        passes: dict[str, list] = {}
+        for rec in self.records:
+            if rec["ok"]:
+                passes.setdefault(rec["dimension"], []).append(rec["case"])
+            else:
+                failures.setdefault(rec["dimension"], []).append({
+                    "case": rec["case"],
+                    "expected": rec["expected"],
+                    "got": rec["got"],
+                    "conversation": rec.get("conversation"),
+                    "message": rec.get("message"),
+                    "note": rec.get("note"),
+                    "model_read": rec.get("model_read"),
+                })
+        return {"failures": failures, "passes": passes}
+
     def summary_lines(self, metrics: dict, prev: dict | None) -> list[str]:
         prev_dims = (prev or {}).get("per_dimension", {})
         lines = [

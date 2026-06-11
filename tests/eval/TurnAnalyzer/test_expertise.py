@@ -58,4 +58,7 @@ class TestExpertise:
             "got": analysis.expertise_level,
             "ok": analysis.expertise_level == case["expect"],
             "note": case["note"],
+            "conversation": case["history"],
+            "message": case["message"],
+            "model_read": analysis.model_dump(),
         })

@@ -35,6 +35,29 @@ class RetrieveReport(EvalReport):
             "mean_rank": round(sum(found) / len(found), 2) if found else None,
         }
 
+    def sections(self) -> dict:
+        """Failures first, each one self-contained: the conversation, the clicks, the target,
+        and the TOP HITS that actually came back — which games beat the target is the anomaly
+        signal (hub documents, diluted queries)."""
+        failures = []
+        passes = []
+        for rec in self.records:
+            if rec["hit"]:
+                passes.append({"case": rec["case"], "rank": rec["rank"]})
+                continue
+            failures.append({
+                "case": rec["case"],
+                "expected_id": rec["expected_id"],
+                "rank": rec["rank"],
+                "k_used": rec["k_used"],
+                "conversation": rec.get("conversation"),
+                "message": rec.get("message"),
+                "choices": rec.get("choices"),
+                "top_hits": rec.get("top_hits"),
+                "note": rec.get("note"),
+            })
+        return {"failures": failures, "passes": passes}
+
     def summary_lines(self, metrics: dict, prev: dict | None) -> list[str]:
         prev_rank = (prev or {}).get("mean_rank")
         rank_note = f" (was: {prev_rank})" if prev_rank is not None else ""

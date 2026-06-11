@@ -51,6 +51,7 @@ class TestEscalate:
             "got": analysis.escalate,
             "ok": analysis.escalate == case["expect"],
             "note": case["note"],
-            "escalation_reason": analysis.escalation_reason,
-            "confidence": analysis.confidence,
+            "conversation": case["history"],
+            "message": case["message"],
+            "model_read": analysis.model_dump(),
         })

@@ -1,0 +1,181 @@
+[
+  {
+    "id": "guided-beginner-regalo-famiglia",
+    "strategy": "GUIDED",
+    "expertise_level": "beginner",
+    "message": "Ciao! Vorrei fare un regalo ai miei cugini per Natale, giocano poco ai giochi da tavolo... non so proprio da dove cominciare, mi aiuti?",
+    "history": null,
+    "hits": [
+      {"score": 0.91, "id_product": 9, "name": "Dixit", "players": [3, 4, 5, 6], "players_display": "3-6", "duration_min": 30, "complexity": "Leggero", "tags": ["Party Game", "Storytelling", "Deduzione"], "categoria": "Giochi da tavolo"},
+      {"score": 0.88, "id_product": 10, "name": "Codenames", "players": [4, 5, 6, 7, 8], "players_display": "4-8", "duration_min": 15, "complexity": "Leggero", "tags": ["Party Game", "Deduzione", "Squadre"], "categoria": "Giochi da tavolo"},
+      {"score": 0.84, "id_product": 2, "name": "Carcassonne", "players": [2, 3, 4, 5], "players_display": "2-5", "duration_min": 40, "complexity": "Leggero", "tags": ["Piazzamento Tessere", "Controllo Aree"], "categoria": "Giochi da tavolo"},
+      {"score": 0.81, "id_product": 5, "name": "Ticket to Ride", "players": [2, 3, 4, 5], "players_display": "2-5", "duration_min": 60, "complexity": "Leggero", "tags": ["Set Collection", "Costruzione Percorsi"], "categoria": "Giochi da tavolo"},
+      {"score": 0.78, "id_product": 3, "name": "Azul", "players": [2, 3, 4], "players_display": "2-4", "duration_min": 40, "complexity": "Leggero", "tags": ["Drafting", "Pattern Building", "Astratto"], "categoria": "Giochi da tavolo"}
+    ],
+    "note": "Undecided beginner gift-shopper, first turn: GUIDED should narrow to 1-2 clear options and close with one simple question, jargon-free."
+  },
+  {
+    "id": "guided-beginner-coppia-serata",
+    "strategy": "GUIDED",
+    "expertise_level": "beginner",
+    "message": "Mah, non saprei... forse tranquillo? Però non vorrei che ci annoiassimo, boh.",
+    "history": "utente: cerco qualcosa da fare la sera con il mio ragazzo, non abbiamo mai giocato a niente\nbot: Che bello! Preferite qualcosa di tranquillo e rilassante o una sfida un po' più frizzante?",
+    "hits": [
+      {"score": 0.9, "id_product": 11, "name": "Patchwork", "players": [2], "players_display": "2", "duration_min": 30, "complexity": "Leggero", "tags": ["Piazzamento Tessere", "Astratto"], "categoria": "Giochi da tavolo"},
+      {"score": 0.86, "id_product": 7, "name": "Splendor", "players": [2, 3, 4], "players_display": "2-4", "duration_min": 30, "complexity": "Leggero", "tags": ["Costruzione Motore", "Gestione Risorse"], "categoria": "Giochi da tavolo"},
+      {"score": 0.83, "id_product": 2, "name": "Carcassonne", "players": [2, 3, 4, 5], "players_display": "2-5", "duration_min": 40, "complexity": "Leggero", "tags": ["Piazzamento Tessere", "Controllo Aree"], "categoria": "Giochi da tavolo"},
+      {"score": 0.79, "id_product": 3, "name": "Azul", "players": [2, 3, 4], "players_display": "2-4", "duration_min": 40, "complexity": "Leggero", "tags": ["Drafting", "Pattern Building", "Astratto"], "categoria": "Giochi da tavolo"}
+    ],
+    "note": "Hesitant beginner couple mid-conversation: GUIDED with history; the wavering answer must produce a narrowing question, not a wall of options."
+  },
+  {
+    "id": "guided-advanced-tra-due-generi",
+    "strategy": "GUIDED",
+    "expertise_level": "advanced",
+    "message": "Sono indeciso: vorrei un gestionale impegnativo, ma ultimamente mi attirano anche i giochi con forte interazione e controllo del territorio. Non so su cosa orientarmi.",
+    "history": null,
+    "hits": [
+      {"score": 0.92, "id_product": 13, "name": "Terraforming Mars", "players": [1, 2, 3, 4, 5], "players_display": "1-5", "duration_min": 120, "complexity": "Impegnativo", "tags": ["Gestione Risorse", "Costruzione Motore", "Fantascienza"], "categoria": "Giochi da tavolo"},
+      {"score": 0.89, "id_product": 14, "name": "Scythe", "players": [1, 2, 3, 4, 5], "players_display": "1-5", "duration_min": 115, "complexity": "Impegnativo", "tags": ["Controllo Aree", "Gestione Risorse"], "categoria": "Giochi da tavolo"},
+      {"score": 0.85, "id_product": 12, "name": "Spirit Island", "players": [1, 2, 3, 4], "players_display": "1-4", "duration_min": 120, "complexity": "Impegnativo", "tags": ["Cooperativo", "Controllo Aree"], "categoria": "Giochi da tavolo"},
+      {"score": 0.82, "id_product": 18, "name": "Brass Birmingham", "players": [2, 3, 4], "players_display": "2-4", "duration_min": 120, "complexity": "Impegnativo", "tags": ["Economico", "Costruzione Reti"], "categoria": "Giochi da tavolo"},
+      {"score": 0.77, "id_product": 8, "name": "Wingspan", "players": [1, 2, 3, 4, 5], "players_display": "1-5", "duration_min": 70, "complexity": "Medio", "tags": ["Costruzione Motore", "Set Collection", "Gestione della Mano"], "categoria": "Giochi da tavolo"}
+    ],
+    "note": "Advanced player torn between two genres: GUIDED must still narrow to 1-2 picks and ask one question; precise terminology is allowed here."
+  },
+  {
+    "id": "explanatory-beginner-cooperativo",
+    "strategy": "EXPLANATORY",
+    "expertise_level": "beginner",
+    "message": "Cooperativo in che senso? Cioè come funziona di preciso? Mi incuriosisce!",
+    "history": "utente: cerco un gioco da fare con i miei figli di 10 e 12 anni\nbot: Posso proporti qualcosa di cooperativo, così giocate tutti insieme invece che uno contro l'altro.",
+    "hits": [
+      {"score": 0.93, "id_product": 4, "name": "Pandemic", "players": [2, 3, 4], "players_display": "2-4", "duration_min": 45, "complexity": "Medio", "tags": ["Cooperativo", "Gestione della Mano", "Punto di Azione"], "categoria": "Giochi da tavolo"},
+      {"score": 0.88, "id_product": 15, "name": "The Crew", "players": [2, 3, 4, 5], "players_display": "2-5", "duration_min": 20, "complexity": "Leggero", "tags": ["Cooperativo", "Gioco di Prese"], "categoria": "Giochi da tavolo"},
+      {"score": 0.84, "id_product": 16, "name": "Hanabi", "players": [2, 3, 4, 5], "players_display": "2-5", "duration_min": 25, "complexity": "Leggero", "tags": ["Cooperativo", "Deduzione", "Memoria"], "categoria": "Giochi da tavolo"},
+      {"score": 0.76, "id_product": 12, "name": "Spirit Island", "players": [1, 2, 3, 4], "players_display": "1-4", "duration_min": 120, "complexity": "Impegnativo", "tags": ["Cooperativo", "Controllo Aree"], "categoria": "Giochi da tavolo"}
+    ],
+    "note": "Curious beginner asking what 'cooperative' means: EXPLANATORY should explain the mechanic with plain analogies and keep the reply jargon-free."
+  },
+  {
+    "id": "explanatory-intermediate-motore-di-carte",
+    "strategy": "EXPLANATORY",
+    "expertise_level": "intermediate",
+    "message": "Ho giocato a Splendor e mi è piaciuto un sacco il meccanismo di comprare carte che ti fanno comprare altre carte. Ci sono altri giochi che funzionano così? Come si chiama questa cosa?",
+    "history": null,
+    "hits": [
+      {"score": 0.94, "id_product": 8, "name": "Wingspan", "players": [1, 2, 3, 4, 5], "players_display": "1-5", "duration_min": 70, "complexity": "Medio", "tags": ["Costruzione Motore", "Set Collection", "Gestione della Mano"], "categoria": "Giochi da tavolo"},
+      {"score": 0.9, "id_product": 7, "name": "Splendor", "players": [2, 3, 4], "players_display": "2-4", "duration_min": 30, "complexity": "Leggero", "tags": ["Costruzione Motore", "Gestione Risorse"], "categoria": "Giochi da tavolo"},
+      {"score": 0.87, "id_product": 17, "name": "Everdell", "players": [1, 2, 3, 4], "players_display": "1-4", "duration_min": 80, "complexity": "Medio", "tags": ["Costruzione Motore", "Piazzamento Lavoratori"], "categoria": "Giochi da tavolo"},
+      {"score": 0.83, "id_product": 25, "name": "Race for the Galaxy", "players": [2, 3, 4], "players_display": "2-4", "duration_min": 45, "complexity": "Medio", "tags": ["Costruzione Motore", "Fantascienza"], "categoria": "Giochi da tavolo"},
+      {"score": 0.79, "id_product": 6, "name": "7 Wonders", "players": [3, 4, 5, 6, 7], "players_display": "3-7", "duration_min": 30, "complexity": "Medio", "tags": ["Drafting", "Costruzione Motore", "Civilizzazione"], "categoria": "Giochi da tavolo"}
+    ],
+    "note": "Intermediate customer who discovered engine building without knowing the name: EXPLANATORY may use the term but should explain it on first use."
+  },
+  {
+    "id": "explanatory-advanced-confronto-gestionali",
+    "strategy": "EXPLANATORY",
+    "expertise_level": "advanced",
+    "message": "Mi spieghi le differenze di meccaniche tra i gestionali pesanti che avete? Mi interessa capire dove sta la profondità di ognuno.",
+    "history": null,
+    "hits": [
+      {"score": 0.91, "id_product": 13, "name": "Terraforming Mars", "players": [1, 2, 3, 4, 5], "players_display": "1-5", "duration_min": 120, "complexity": "Impegnativo", "tags": ["Gestione Risorse", "Costruzione Motore", "Fantascienza"], "categoria": "Giochi da tavolo"},
+      {"score": 0.89, "id_product": 18, "name": "Brass Birmingham", "players": [2, 3, 4], "players_display": "2-4", "duration_min": 120, "complexity": "Impegnativo", "tags": ["Economico", "Costruzione Reti"], "categoria": "Giochi da tavolo"},
+      {"score": 0.86, "id_product": 19, "name": "Agricola", "players": [1, 2, 3, 4], "players_display": "1-4", "duration_min": 90, "complexity": "Impegnativo", "tags": ["Piazzamento Lavoratori", "Gestione Risorse"], "categoria": "Giochi da tavolo"},
+      {"score": 0.82, "id_product": 14, "name": "Scythe", "players": [1, 2, 3, 4, 5], "players_display": "1-5", "duration_min": 115, "complexity": "Impegnativo", "tags": ["Controllo Aree", "Gestione Risorse"], "categoria": "Giochi da tavolo"},
+      {"score": 0.78, "id_product": 8, "name": "Wingspan", "players": [1, 2, 3, 4, 5], "players_display": "1-5", "duration_min": 70, "complexity": "Medio", "tags": ["Costruzione Motore", "Set Collection", "Gestione della Mano"], "categoria": "Giochi da tavolo"}
+    ],
+    "note": "Advanced mechanics deep-dive over five similar heavy games: stresses id grounding while EXPLANATORY pushes for longer prose."
+  },
+  {
+    "id": "discovery-beginner-tema-natura",
+    "strategy": "DISCOVERY",
+    "expertise_level": "beginner",
+    "message": "Che belli questi giochi! Io amo la natura, gli animali, le passeggiate nei boschi... c'è qualcosa che mi farebbe sognare un po'?",
+    "history": null,
+    "hits": [
+      {"score": 0.92, "id_product": 8, "name": "Wingspan", "players": [1, 2, 3, 4, 5], "players_display": "1-5", "duration_min": 70, "complexity": "Medio", "tags": ["Costruzione Motore", "Set Collection", "Natura"], "categoria": "Giochi da tavolo"},
+      {"score": 0.89, "id_product": 20, "name": "Cascadia", "players": [1, 2, 3, 4], "players_display": "1-4", "duration_min": 45, "complexity": "Leggero", "tags": ["Piazzamento Tessere", "Pattern Building", "Natura"], "categoria": "Giochi da tavolo"},
+      {"score": 0.85, "id_product": 17, "name": "Everdell", "players": [1, 2, 3, 4], "players_display": "1-4", "duration_min": 80, "complexity": "Medio", "tags": ["Costruzione Motore", "Piazzamento Lavoratori", "Animali"], "categoria": "Giochi da tavolo"},
+      {"score": 0.81, "id_product": 21, "name": "Photosynthesis", "players": [2, 3, 4], "players_display": "2-4", "duration_min": 60, "complexity": "Medio", "tags": ["Astratto", "Natura"], "categoria": "Giochi da tavolo"},
+      {"score": 0.74, "id_product": 3, "name": "Azul", "players": [2, 3, 4], "players_display": "2-4", "duration_min": 40, "complexity": "Leggero", "tags": ["Drafting", "Pattern Building", "Astratto"], "categoria": "Giochi da tavolo"}
+    ],
+    "note": "Enthusiastic nature-loving beginner: DISCOVERY free-form evocative pitch that must stay jargon-free despite mechanics-heavy hits."
+  },
+  {
+    "id": "discovery-intermediate-serate-amici",
+    "strategy": "DISCOVERY",
+    "expertise_level": "intermediate",
+    "message": "Un po' tutte e due! L'ultima volta abbiamo giocato a Lupus e si è scatenato il finimondo, ci siamo divertiti tantissimo.",
+    "history": "utente: il sabato sera ci troviamo sempre in sei o sette a casa mia\nbot: Bella tradizione! Di solito cosa vi piace fare: ridere e scherzare o qualcosa di più competitivo?",
+    "hits": [
+      {"score": 0.9, "id_product": 10, "name": "Codenames", "players": [4, 5, 6, 7, 8], "players_display": "4-8", "duration_min": 15, "complexity": "Leggero", "tags": ["Party Game", "Deduzione", "Squadre"], "categoria": "Giochi da tavolo"},
+      {"score": 0.87, "id_product": 9, "name": "Dixit", "players": [3, 4, 5, 6], "players_display": "3-6", "duration_min": 30, "complexity": "Leggero", "tags": ["Party Game", "Storytelling", "Deduzione"], "categoria": "Giochi da tavolo"},
+      {"score": 0.84, "id_product": 23, "name": "Just One", "players": [3, 4, 5, 6, 7], "players_display": "3-7", "duration_min": 20, "complexity": "Leggero", "tags": ["Party Game", "Cooperativo"], "categoria": "Giochi da tavolo"},
+      {"score": 0.8, "id_product": 22, "name": "King of Tokyo", "players": [2, 3, 4, 5, 6], "players_display": "2-6", "duration_min": 30, "complexity": "Leggero", "tags": ["Dadi", "Party Game"], "categoria": "Giochi da tavolo"},
+      {"score": 0.76, "id_product": 6, "name": "7 Wonders", "players": [3, 4, 5, 6, 7], "players_display": "3-7", "duration_min": 30, "complexity": "Medio", "tags": ["Drafting", "Costruzione Motore", "Civilizzazione"], "categoria": "Giochi da tavolo"},
+      {"score": 0.72, "id_product": 24, "name": "Sushi Go", "players": [2, 3, 4, 5], "players_display": "2-5", "duration_min": 15, "complexity": "Leggero", "tags": ["Drafting", "Set Collection"], "categoria": "Giochi da tavolo"}
+    ],
+    "note": "Storytelling customer with a big weekly group: DISCOVERY should pick up the party register; 6 hits stress id grounding."
+  },
+  {
+    "id": "discovery-advanced-fantascienza",
+    "strategy": "DISCOVERY",
+    "expertise_level": "advanced",
+    "message": "Sono un patito di fantascienza: colonizzazione spaziale, civiltà che si espandono, quel senso di epica. Stupiscimi.",
+    "history": null,
+    "hits": [
+      {"score": 0.93, "id_product": 13, "name": "Terraforming Mars", "players": [1, 2, 3, 4, 5], "players_display": "1-5", "duration_min": 120, "complexity": "Impegnativo", "tags": ["Gestione Risorse", "Costruzione Motore", "Fantascienza"], "categoria": "Giochi da tavolo"},
+      {"score": 0.9, "id_product": 26, "name": "Eclipse", "players": [2, 3, 4, 5, 6], "players_display": "2-6", "duration_min": 150, "complexity": "Impegnativo", "tags": ["Fantascienza", "Civilizzazione", "Controllo Aree"], "categoria": "Giochi da tavolo"},
+      {"score": 0.86, "id_product": 25, "name": "Race for the Galaxy", "players": [2, 3, 4], "players_display": "2-4", "duration_min": 45, "complexity": "Medio", "tags": ["Costruzione Motore", "Fantascienza"], "categoria": "Giochi da tavolo"},
+      {"score": 0.79, "id_product": 14, "name": "Scythe", "players": [1, 2, 3, 4, 5], "players_display": "1-5", "duration_min": 115, "complexity": "Impegnativo", "tags": ["Controllo Aree", "Gestione Risorse"], "categoria": "Giochi da tavolo"},
+      {"score": 0.73, "id_product": 6, "name": "7 Wonders", "players": [3, 4, 5, 6, 7], "players_display": "3-7", "duration_min": 30, "complexity": "Medio", "tags": ["Drafting", "Costruzione Motore", "Civilizzazione"], "categoria": "Giochi da tavolo"}
+    ],
+    "note": "Advanced sci-fi enthusiast asking to be surprised: DISCOVERY creative pitch over thematically close heavy games."
+  },
+  {
+    "id": "quick-match-beginner-regalo-fretta",
+    "strategy": "QUICK_MATCH",
+    "expertise_level": "beginner",
+    "message": "Vado di fretta: mi serve un regalo per una collega che non gioca mai, sui 25-30 euro, qualcosa di sicuro. Cosa mi consigli?",
+    "history": null,
+    "hits": [
+      {"score": 0.91, "id_product": 9, "name": "Dixit", "players": [3, 4, 5, 6], "players_display": "3-6", "duration_min": 30, "complexity": "Leggero", "tags": ["Party Game", "Storytelling", "Deduzione"], "categoria": "Giochi da tavolo"},
+      {"score": 0.88, "id_product": 3, "name": "Azul", "players": [2, 3, 4], "players_display": "2-4", "duration_min": 40, "complexity": "Leggero", "tags": ["Drafting", "Pattern Building", "Astratto"], "categoria": "Giochi da tavolo"},
+      {"score": 0.85, "id_product": 10, "name": "Codenames", "players": [4, 5, 6, 7, 8], "players_display": "4-8", "duration_min": 15, "complexity": "Leggero", "tags": ["Party Game", "Deduzione", "Squadre"], "categoria": "Giochi da tavolo"},
+      {"score": 0.81, "id_product": 5, "name": "Ticket to Ride", "players": [2, 3, 4, 5], "players_display": "2-5", "duration_min": 60, "complexity": "Leggero", "tags": ["Set Collection", "Costruzione Percorsi"], "categoria": "Giochi da tavolo"},
+      {"score": 0.77, "id_product": 2, "name": "Carcassonne", "players": [2, 3, 4, 5], "players_display": "2-5", "duration_min": 40, "complexity": "Leggero", "tags": ["Piazzamento Tessere", "Controllo Aree"], "categoria": "Giochi da tavolo"}
+    ],
+    "note": "Decided beginner in a hurry: QUICK_MATCH should propose 3-4 concrete games with punchy one-liners, jargon-free."
+  },
+  {
+    "id": "quick-match-intermediate-stasera-in-quattro",
+    "strategy": "QUICK_MATCH",
+    "expertise_level": "intermediate",
+    "message": "Dai, dimmi direttamente cosa prendere, devo passare in negozio entro un'ora.",
+    "history": "utente: stasera viene gente a cena, saremo in quattro\nbot: Perfetto! Che tipo di serata immagini: qualcosa di leggero per chiacchierare o un gioco con un po' più di sostanza?\nutente: leggero ma non banale\nbot: Ottimo, ho qualche idea.",
+    "hits": [
+      {"score": 0.9, "id_product": 10, "name": "Codenames", "players": [4, 5, 6, 7, 8], "players_display": "4-8", "duration_min": 15, "complexity": "Leggero", "tags": ["Party Game", "Deduzione", "Squadre"], "categoria": "Giochi da tavolo"},
+      {"score": 0.87, "id_product": 22, "name": "King of Tokyo", "players": [2, 3, 4, 5, 6], "players_display": "2-6", "duration_min": 30, "complexity": "Leggero", "tags": ["Dadi", "Party Game"], "categoria": "Giochi da tavolo"},
+      {"score": 0.84, "id_product": 7, "name": "Splendor", "players": [2, 3, 4], "players_display": "2-4", "duration_min": 30, "complexity": "Leggero", "tags": ["Costruzione Motore", "Gestione Risorse"], "categoria": "Giochi da tavolo"},
+      {"score": 0.8, "id_product": 24, "name": "Sushi Go", "players": [2, 3, 4, 5], "players_display": "2-5", "duration_min": 15, "complexity": "Leggero", "tags": ["Drafting", "Set Collection"], "categoria": "Giochi da tavolo"},
+      {"score": 0.75, "id_product": 6, "name": "7 Wonders", "players": [3, 4, 5, 6, 7], "players_display": "3-7", "duration_min": 30, "complexity": "Medio", "tags": ["Drafting", "Costruzione Motore", "Civilizzazione"], "categoria": "Giochi da tavolo"}
+    ],
+    "note": "Conversation forced to a close after several turns: the customer demands immediate concrete picks (>= 3 expected from 5 hits)."
+  },
+  {
+    "id": "quick-match-advanced-gestionale-pesante",
+    "strategy": "QUICK_MATCH",
+    "expertise_level": "advanced",
+    "message": "Voglio un gestionale bello pesante, di quelli da tre ore con mille decisioni. Ho già giocato a tutto il parco medio, spara i titoli.",
+    "history": null,
+    "hits": [
+      {"score": 0.93, "id_product": 18, "name": "Brass Birmingham", "players": [2, 3, 4], "players_display": "2-4", "duration_min": 120, "complexity": "Impegnativo", "tags": ["Economico", "Costruzione Reti"], "categoria": "Giochi da tavolo"},
+      {"score": 0.9, "id_product": 19, "name": "Agricola", "players": [1, 2, 3, 4], "players_display": "1-4", "duration_min": 90, "complexity": "Impegnativo", "tags": ["Piazzamento Lavoratori", "Gestione Risorse"], "categoria": "Giochi da tavolo"},
+      {"score": 0.88, "id_product": 13, "name": "Terraforming Mars", "players": [1, 2, 3, 4, 5], "players_display": "1-5", "duration_min": 120, "complexity": "Impegnativo", "tags": ["Gestione Risorse", "Costruzione Motore", "Fantascienza"], "categoria": "Giochi da tavolo"},
+      {"score": 0.84, "id_product": 14, "name": "Scythe", "players": [1, 2, 3, 4, 5], "players_display": "1-5", "duration_min": 115, "complexity": "Impegnativo", "tags": ["Controllo Aree", "Gestione Risorse"], "categoria": "Giochi da tavolo"},
+      {"score": 0.8, "id_product": 12, "name": "Spirit Island", "players": [1, 2, 3, 4], "players_display": "1-4", "duration_min": 120, "complexity": "Impegnativo", "tags": ["Cooperativo", "Controllo Aree"], "categoria": "Giochi da tavolo"}
+    ],
+    "note": "Decided advanced heavy-euro hunter: QUICK_MATCH with precise terminology allowed and >= 3 concrete proposals expected."
+  }
+]

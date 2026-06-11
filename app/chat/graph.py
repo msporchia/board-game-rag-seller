@@ -102,15 +102,38 @@ CONVERSAZIONE FINORA:
 ULTIMO MESSAGGIO DEL CLIENTE:
 {message}
 
+Hai DUE compiti, entrambi obbligatori: (1) profilare il cliente su quattro dimensioni;
+(2) decidere se questo turno va escalato al modello più capace. Compila TUTTI i campi.
+
 Valuta SOLO dal testo del cliente:
 - enthusiasm: low/medium/high — quanto è coinvolto.
-- decisiveness: undecided/moderate/decided — quanto ha le idee chiare su cosa vuole.
-- expertise_level: beginner/intermediate/advanced — dai termini che usa (es. "worker placement"
-  → advanced; "un gioco da fare in famiglia" senza termini tecnici → beginner).
+- decisiveness: undecided/moderate/decided — quanto ha le idee chiare su COSA comprare:
+  - decided: ha scelto un titolo preciso e agisce: chiede se c'è, lo compra, lo prenota.
+    Chiedere disponibilità o prezzo di un titolo specifico È decided, non un dubbio.
+  - moderate: sa in parte cosa vuole. Due forme tipiche: vincoli concreti (giocatori, budget,
+    durata) ma nessun titolo; oppure un titolo o un'opzione preferita ma con un dubbio residuo
+    (andrà bene per noi? quale edizione? prima voglio saperne di più).
+  - undecided: nessun criterio concreto: vago, si affida del tutto al negozio, non sa da dove
+    partire.
+  Attenzione a non sottostimare: chi esprime una preferenza o vincoli concreti NON è undecided;
+  chi ha già scelto il titolo NON è moderate solo perché fa una domanda.
+- expertise_level: beginner/intermediate/advanced — dal vocabolario: beginner = registro
+  quotidiano, nessun termine tecnico (citare un titolo famoso senza capirlo non alza il
+  livello); intermediate = conosce i classici introduttivi, termini di categoria usati in modo
+  generico, meccaniche descritte a parole sue; advanced = gergo da hobbista preciso (nomi di
+  meccaniche come "worker placement", giudizi di peso/complessità, la propria collezione).
 - reply_style: short/long — lunghezza e ricchezza delle sue risposte.
-- escalate: true SOLO se la conversazione è complessa o il cliente sembra pronto all'acquisto
-  (budget, numero di giocatori, urgenza) e merita il modello più capace. Motiva in
-  escalation_reason e indica la tua confidence (0-1)."""
+- escalate: true/false — serve il modello più capace per rispondere a QUESTO turno?
+  Metti true se l'ultimo messaggio contiene ALMENO UNO di questi segnali:
+  - vincoli d'acquisto concreti dichiarati (budget in euro, numero di giocatori, una
+    scadenza o urgenza);
+  - intenzione esplicita di comprare ora, prenotare, o scegliere quale comprare tra le
+    opzioni proposte;
+  - un confronto tra più titoli con più vincoli incrociati (giocatori, durata, prezzo).
+  Questi segnali valgono anche se compaiono già nel primissimo messaggio.
+  Metti false per curiosità generica, chiacchiere, navigazione senza impegno, o cifre citate
+  solo come ipotesi futura senza intenzione di comprare.
+  Compila SEMPRE escalation_reason (una frase) e confidence (0-1), anche con escalate=false."""
 
     def _analyze(self, state: ChatState) -> dict:
         """One structured LLM call reading the user; on failure keep the previous analysis."""

@@ -8,7 +8,7 @@ import pytest
 from app.ingestion.enricher.augment import AugmentEnricher
 from app.ingestion.enricher.extract import ExtractEnricher
 from app.ingestion.enricher.gapfill import GapFillEnricher
-from tests.factories import make_game
+from tests.factories.game import make_game
 
 
 class TestUnimplementedEnrichers:

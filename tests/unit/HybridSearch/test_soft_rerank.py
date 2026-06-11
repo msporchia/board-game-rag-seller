@@ -1,14 +1,9 @@
-"""Purpose: SOFT constraints (soft=True) promote matching games but never exclude.
+"""Purpose: `rerank_soft` (pure) — a satisfied soft predicate boosts the score enough to
+overtake a higher-ranked non-match; non-matching points (incl. those missing the field) keep
+their score and stay in the list (no drop).
 
-What it tests:
-- `rerank_soft` (pure): a satisfied soft predicate boosts the score enough to overtake a
-  higher-ranked non-match; non-matching points (incl. those missing the field) keep their score
-  and stay in the list (no drop).
-- End-to-end via in-memory Qdrant: the SAME constraint as hard excludes, as soft keeps the whole
-  corpus — that is the hard/soft contract.
-
-How: the pure part builds (doc, score) tuples directly (no embedding needed); the integration
-part reuses the conftest store.
+How: builds (doc, score) tuples directly (no embedding needed). The hard/soft end-to-end
+contract lives in `test_soft_vs_hard.py`.
 """
 
 from app.rag.filters.rerank import SOFT_BOOST, rerank_soft
@@ -44,16 +39,3 @@ class TestRerankSoftPure:
     def test_no_predicates_is_identity(self):
         items = [(_Doc({"x": 1}), 0.5), (_Doc({"x": 2}), 0.4)]
         assert rerank_soft(items, []) == items
-
-
-class TestSoftVsHardEndToEnd:
-    def test_hard_excludes_soft_keeps(self, retriever):
-        # players=[2] as HARD → only the games that support 2 players
-        hard = {h.id_product for h in retriever.search(
-            "gioco", k=10, filters=SearchFilters.from_dict({"players": {"vals": [2]}}))}
-        assert hard == {1, 2, 4, 6}
-
-        # SAME constraint as SOFT → nothing excluded, the whole corpus comes back
-        soft = {h.id_product for h in retriever.search(
-            "gioco", k=10, filters=SearchFilters.from_dict({"players": {"vals": [2], "soft": True}}))}
-        assert soft == {1, 2, 3, 4, 5, 6}

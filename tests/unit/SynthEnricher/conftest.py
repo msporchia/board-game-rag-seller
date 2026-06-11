@@ -8,7 +8,7 @@ emits plain text, not JSON), so it is passed through raw.
 import pytest
 
 from app.ingestion.enricher.synth import SynthEnricher
-from tests.factories import FakeLLM
+from tests.factories.llm import FakeLLM
 
 
 @pytest.fixture

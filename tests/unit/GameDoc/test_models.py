@@ -1,6 +1,6 @@
 """Two-part model: original (hard-truth) / enriched (working copy)."""
 
-from tests.factories import make_game
+from tests.factories.game import make_game
 
 
 class TestGameDoc:

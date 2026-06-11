@@ -11,7 +11,7 @@ HOW: direct method calls (no LLM).
 """
 
 from app.ingestion.enricher.curator import CuratorEnricher
-from tests.factories import make_game
+from tests.factories.game import make_game
 
 
 class TestCuratorPromptBuilders:

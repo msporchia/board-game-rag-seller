@@ -14,33 +14,12 @@ are tested separately because each has its own goal (see the 3 `test_*.py`):
 import json
 from pathlib import Path
 
-from app.core.web_search.provider import WebSearchProvider
 from app.core.web_search.result import SearchResult
-from app.ingestion.enricher.web import WebEnricher
 from app.models.game_doc import GameDoc
+from tests.eval.WebEnricher.replay_enricher import ReplayWebEnricher
+from tests.eval.WebEnricher.replay_search import ReplaySearch
 
 FIXTURES = Path(__file__).parent / "fixtures"
-
-
-class ReplaySearch(WebSearchProvider):
-    """Returns RECORDED search results (zero network)."""
-
-    def __init__(self, results: list[dict]):
-        self._results = [SearchResult(**r) for r in results]
-
-    def search(self, query: str, max_results: int) -> list[SearchResult]:
-        return self._results[:max_results]
-
-
-class ReplayWebEnricher(WebEnricher):
-    """WebEnricher with `_fetch` served from RECORDED pages: the only live part is the LLM."""
-
-    def __init__(self, pages: dict[str, str], **kwargs):
-        super().__init__(**kwargs)
-        self._pages = pages
-
-    def _fetch(self, url: str) -> str:
-        return self._pages.get(url, "")
 
 
 def make_game(fix: dict) -> GameDoc:

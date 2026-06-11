@@ -1,20 +1,19 @@
-"""CuratorEnricher — `assess()`: dynamic list + verbatim quote validation.
+"""CuratorEnricher — `assess()`: contract + dynamic labels + prompt fidelity over real inputs.
 
 PURPOSE
 -------
 In the new Curator the LLM does NOT receive the CERTAIN DATA: it reads ONLY the description.
-For each label it produces `{citazione, valore_normalizzato}`; `assess()` (a) asks ONLY the
-labels that are needed (descriptive always + structured missing in the DTO), (b) chunks into
-batches of `max_per_call`, (c) VALIDATES the verbatim quote → degrades if fabricated, (d)
-derives `{estratti, presenti, mancanti}` with `presenti` also including the structurally-present
-ones (not asked to the LLM).
+For each label it produces `{citazione, valore_normalizzato}`; `assess()` asks ONLY the labels
+that are needed (descriptive always + structured missing in the DTO) and derives
+`{estratti, presenti, mancanti}` with `presenti` also including the structurally-present ones
+(not asked to the LLM). Quote validation and chunking are covered by the sibling files
+`test_assess_validation.py` / `test_assess_chunking.py`.
 
 WHAT IT TESTS
 - Canonical contract (3 keys) over 10 real DTOs.
 - The prompt sent to the LLM contains a snippet of the real description.
 - The LLM is called only on the `needed_labels` (the dynamic list).
 - Structured ones already in the DTO go straight to `presenti` (no LLM call needed).
-- ANTI-FABRICATION: a fabricated quote (not in the desc) → label in mancanti.
 
 HOW: fake LLM via `make_curator(payload)`. The LOCAL fixture provides 10 real DTOs; the
 `per_label(...)` payload simulates the LLM response in the new {citazione, valore_normalizzato} schema.
@@ -26,7 +25,6 @@ from pathlib import Path
 import pytest
 
 from app.ingestion.sources.json_source import JsonSource
-from tests.factories import make_game
 
 FIXTURE = Path(__file__).parent / "fixtures" / "games.json"
 _DTOS = json.loads(FIXTURE.read_text(encoding="utf-8"))
@@ -95,80 +93,3 @@ class TestCuratorAssess:
         # the descriptive ones are always there
         assert "- ambientazione/tema" in all_calls
         assert "- genere" in all_calls
-
-
-class TestCuratorAssessValidation:
-    """The key INVARIANT: no fabricated quote survives."""
-
-    def test_fabricated_citation_degrades_to_mancanti(self, make_curator, per_label):
-        """The LLM quotes "mitologia greca" but the desc doesn't say it → degrade to mancanti."""
-        payload = per_label(**{
-            "ambientazione/tema": {"citazione": "mitologia greca",
-                                    "valore_normalizzato": "greco"},   # FABRICATED
-        })
-        g = make_game(description="Un gioco generico senza dettagli.")
-        a = make_curator(payload).assess(g)
-        assert "ambientazione/tema" in a["mancanti"]
-        assert "ambientazione/tema" not in a["presenti"]
-        assert "ambientazione/tema" not in a["estratti"]
-
-    def test_valid_text_citation_goes_to_presenti_and_estratti(self, make_curator, per_label):
-        """VERBATIM quote in the description → present + value in estratti."""
-        payload = per_label(**{
-            "ambientazione/tema": {"citazione": "mitologia greca",
-                                    "valore_normalizzato": "mitologia greca"},
-        })
-        g = make_game(description="Un gioco di mitologia greca antica.")
-        a = make_curator(payload).assess(g)
-        assert "ambientazione/tema" in a["presenti"]
-        assert a["estratti"]["ambientazione/tema"] == "mitologia greca"
-
-    def test_nessuno_value_goes_to_mancanti(self, make_curator, per_label):
-        """`valore_normalizzato: "NESSUNO"` → label in mancanti, nothing in estratti."""
-        payload = per_label(**{
-            "ambientazione/tema": {"citazione": "", "valore_normalizzato": "NESSUNO"},
-        })
-        a = make_curator(payload).assess(make_game(description="qualcosa"))
-        assert "ambientazione/tema" in a["mancanti"]
-        assert "ambientazione/tema" not in a["estratti"]
-
-    def test_fallback_to_citation_when_value_empty(self, make_curator, per_label):
-        """If the LLM leaves `valore_normalizzato=""` but quotes a valid passage, we use the
-        quote as the value (better something quoted than nothing)."""
-        payload = per_label(**{
-            "ambientazione/tema": {"citazione": "mitologia greca", "valore_normalizzato": ""},
-        })
-        g = make_game(description="Mitologia greca antica.")
-        a = make_curator(payload).assess(g)
-        assert a["estratti"]["ambientazione/tema"] == "mitologia greca"
-
-    def test_meccaniche_text_value_is_split_into_list(self, make_curator, per_label):
-        """For 'meccaniche principali' the extracted string becomes a LIST."""
-        payload = per_label(**{
-            "meccaniche principali": {"citazione": "cooperativo, lancio di dadi",
-                                       "valore_normalizzato": "Cooperativo, Lancio di dadi"},
-        })
-        g = make_game(description="cooperativo, lancio di dadi", tags=[])
-        a = make_curator(payload).assess(g)
-        assert a["estratti"]["meccaniche principali"] == ["Cooperativo", "Lancio di dadi"]
-
-
-class TestCuratorChunking:
-    """When `needed_labels` exceeds `max_per_call`, the LLM is called multiple times and the
-    results merged. On production DTOs (all fields present) a SINGLE call suffices (3 descriptive
-    labels); chunking is for the eval cases with multiple strips."""
-
-    def test_one_call_when_few_labels(self, make_curator, per_label):
-        """Complete DTO → 3 labels → a single call (≤ max_per_call=4)."""
-        g = make_game(tags=["X"], players=[2], duration_min=60, complexity="Medio")
-        c = make_curator(per_label())
-        c.assess(g)
-        assert len(c._llm.calls) == 1
-
-    def test_chunked_calls_when_many_labels(self, make_curator, per_label):
-        """Fully bare DTO (no struct) → 7 needed → max_per_call=4 → 2 batches."""
-        g = make_game(tags=[], players=[], duration_min=None, complexity=None,
-                      description="qualcosa")
-        c = make_curator(per_label(), max_per_call=4)
-        c.assess(g)
-        assert len(c._llm.calls) == 2  # 4 + 3

@@ -31,10 +31,10 @@ docker exec seller-api python -m tests.e2e.enrichment record --ids 160,22,21
 
 | module | class | job |
 |---|---|---|
-| `cases.py` | `GameCase` | the declarative case: corpus DTO + recorded scraping + oracle |
-| `rails.py` | `Rails` | pins the web: query-routed provider + page-cache seed + fetch guard; derails on any unexpected network |
-| `harness.py` | `EnrichmentHarness` → `RunResult` | the single real ingest (full + base + distractors) on throwaway stores |
-| `scorecard.py` | `Scorecard`, `Baseline` | run metrics + improved/regressed gate vs the versioned `baseline.json` |
+| `game_case.py` + `cases.py` | `GameCase` + loaders | the declarative case: corpus DTO + recorded scraping + oracle |
+| `rails.py` (+ `railed_search.py`, `railed_fetcher.py`, `out_of_rails.py`) | `Rails` | pins the web: query-routed provider + injected fetch guard + page-cache seed; derails on any unexpected network |
+| `harness.py` + `run_result.py` | `EnrichmentHarness` → `RunResult` | the single real ingest (full + base + distractors) on throwaway stores |
+| `scorecard/` | `Scorecard`, `Baseline` (one class per module) | run metrics + improved/regressed gate vs the versioned `baseline.json` |
 | `recorder.py` | `Recorder` | freezes the scraping (live web → fixtures), preserving the oracle |
 | `__main__.py` | — | single CLI: `record` \| `run [--update-baseline]` |
 

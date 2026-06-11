@@ -7,7 +7,7 @@ is off). HOW: we isolate enrich() by feeding a known assessment (no network, no 
 merge logic is under examination.
 """
 
-from tests.factories import make_game
+from tests.factories.game import make_game
 
 
 def _assessment(game):

@@ -18,7 +18,7 @@ validation matters, we build a `make_game(description=...)` consistent with the 
 quote.
 """
 
-from tests.factories import make_game
+from tests.factories.game import make_game
 
 
 class TestCuratorEnrich:

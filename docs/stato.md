@@ -31,7 +31,7 @@ measure), `note.md` (ideas), `seller.md` (overview).
   with an opening docstring of purpose/what-it-tests/how):
   - `tests/unit/` (**115 pass**, DETERMINISTIC, no Ollama/Qdrant): contract/invariants of each
     step. LOCAL fixtures in each unit's `conftest.py` (`make_curator`, `store`, `make_web`);
-    cross-unit helpers (`make_game`, `FakeLLM`) in `tests/factories.py`. For the LLM steps the
+    cross-unit helpers (`make_game`, `FakeLLM`) in `tests/factories/` (one per module). For the LLM steps the
     model is faked: `CuratorEnricher/` (test_enrich = hard-truth intact, certain data wins;
     test_assess = contract over **10 REAL DTOs** from the core suite + fail-safe parsing;
     test_prompt_builders = pure functions), `WebEnricher/` (test_guard, test_discovery =

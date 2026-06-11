@@ -13,7 +13,7 @@ import json
 import pytest
 
 from app.ingestion.enricher.curator import CuratorEnricher
-from tests.factories import FakeLLM
+from tests.factories.llm import FakeLLM
 
 
 @pytest.fixture

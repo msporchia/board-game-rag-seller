@@ -14,7 +14,7 @@ testpaths = tests/unit). Run it explicitly:
 import pytest
 
 from tests.e2e.enrichment.harness import EnrichmentHarness
-from tests.e2e.enrichment.scorecard import Scorecard
+from tests.e2e.enrichment.scorecard.scorecard import Scorecard
 
 COLLECTION_FULL = "e2e_enrichment_full"
 COLLECTION_BASE = "e2e_enrichment_base"

@@ -7,7 +7,7 @@ WHAT IT TESTS: with no `missing_info` the step is a no-op and triggers neither s
 HOW: a GameDoc with no `missing_info`, a fake LLM and an inert search (see conftest).
 """
 
-from tests.factories import make_game
+from tests.factories.game import make_game
 
 
 class TestWebEnricherGuard:

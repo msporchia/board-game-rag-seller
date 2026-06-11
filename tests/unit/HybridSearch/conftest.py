@@ -13,7 +13,7 @@ from qdrant_client import QdrantClient
 
 from app.core.vector_store import GameVectorStore
 from app.rag.retriever import GameRetriever
-from tests.factories import FakeEmbeddings
+from tests.factories.embeddings import FakeEmbeddings
 
 # Known corpus: each game's payload is fixed so the expected filter results are unambiguous.
 # Note D has duration_min/complexity_level = None (missing data) and E is an expansion.

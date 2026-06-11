@@ -8,7 +8,7 @@ commit it — git history becomes the quality trend.
 
 import pytest
 
-from tests.e2e.enrichment.scorecard import Baseline
+from tests.e2e.enrichment.scorecard.baseline import Baseline
 
 pytestmark = pytest.mark.e2e
 

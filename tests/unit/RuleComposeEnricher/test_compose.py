@@ -3,7 +3,7 @@
 import pytest
 
 from app.ingestion.enricher.compose import RuleComposeEnricher
-from tests.factories import make_game
+from tests.factories.game import make_game
 
 
 class TestRuleComposeEnricher:

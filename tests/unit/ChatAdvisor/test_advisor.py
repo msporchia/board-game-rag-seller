@@ -19,7 +19,7 @@ from app.chat.advisor import _NO_MATCH
 from app.chat.models.recommendation import ChatRecommendation
 from app.chat.models.reply import ChatReply
 
-from .conftest import make_hit
+from tests.unit.ChatAdvisor.fakes import make_hit
 
 
 def rec(id: int, pitch: str) -> ChatRecommendation:

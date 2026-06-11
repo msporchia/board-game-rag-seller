@@ -3,7 +3,7 @@
 from app.ingestion.enricher.compose import RuleComposeEnricher
 from app.ingestion.enricher.pipeline import EnrichmentPipeline
 from app.ingestion.enricher.trim import TrimEnricher
-from tests.factories import make_game
+from tests.factories.game import make_game
 
 
 class TestEnrichmentPipeline:

@@ -20,7 +20,8 @@ from pathlib import Path
 
 from tests.e2e.enrichment.harness import EnrichmentHarness
 from tests.e2e.enrichment.recorder import DEFAULT_IDS, Recorder
-from tests.e2e.enrichment.scorecard import Baseline, Scorecard
+from tests.e2e.enrichment.scorecard.baseline import Baseline
+from tests.e2e.enrichment.scorecard.scorecard import Scorecard
 
 
 def _cmd_record(args) -> int:

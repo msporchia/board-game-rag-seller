@@ -9,7 +9,7 @@ HOW: deterministic synthetic inputs, no Ollama.
 """
 
 from app.ingestion.enricher.trim import TrimEnricher
-from tests.factories import make_game
+from tests.factories.game import make_game
 
 
 class TestTrimEnricher:

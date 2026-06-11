@@ -1,21 +1,15 @@
 """Shared support for the deterministic WebEnricher tests.
 
-Builds a WebEnricher with a fake LLM (`FakeLLM`) and an inert search (`NoSearch`): this way the
-tests never touch the network and the model output is predictable, leaving only the step's
-LOGIC under examination (guard, ranking, quote validation).
+Builds a WebEnricher with a fake LLM (`FakeLLM`) and an inert search (`fakes.NoSearch`): this
+way the tests never touch the network and the model output is predictable, leaving only the
+step's LOGIC under examination (guard, ranking, quote validation).
 """
 
 import pytest
 
 from app.ingestion.enricher.web import WebEnricher
-from tests.factories import FakeLLM
-
-
-class NoSearch:
-    """Inert search provider: no network call in the deterministic tests."""
-
-    def search(self, *args, **kwargs):
-        return []
+from tests.factories.llm import FakeLLM
+from tests.unit.WebEnricher.fakes import NoSearch
 
 
 @pytest.fixture

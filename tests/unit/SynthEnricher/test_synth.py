@@ -13,7 +13,7 @@ judge the prose quality (that's the per-step eval's job), but we CAN pin the con
     docker compose exec seller-api python -m pytest tests/unit/SynthEnricher -q
 """
 
-from tests.factories import make_game
+from tests.factories.game import make_game
 
 
 class TestSynthContract:

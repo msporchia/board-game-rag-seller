@@ -4,15 +4,15 @@
     "onitama": {
       "web_fired": true,
       "n_extractions": 3,
-      "embed_len_full": 1056,
+      "embed_len_full": 947,
       "embed_len_base": 470,
-      "avg_rank_full": 1.33,
+      "avg_rank_full": 1.0,
       "avg_rank_base": 7.0,
       "queries_in_screen_full": 3,
       "n_queries": 3,
       "ranks_full": [
         1,
-        2,
+        1,
         1
       ],
       "ranks_base": [
@@ -23,16 +23,16 @@
     },
     "terraforming-mars": {
       "web_fired": true,
-      "n_extractions": 0,
-      "embed_len_full": 1300,
+      "n_extractions": 3,
+      "embed_len_full": 1202,
       "embed_len_base": 603,
-      "avg_rank_full": 4.0,
+      "avg_rank_full": 3.33,
       "avg_rank_base": 42.33,
       "queries_in_screen_full": 3,
       "n_queries": 3,
       "ranks_full": [
         1,
-        10,
+        8,
         1
       ],
       "ranks_base": [
@@ -44,16 +44,16 @@
     "viticulture": {
       "web_fired": false,
       "n_extractions": 0,
-      "embed_len_full": 1207,
+      "embed_len_full": 1201,
       "embed_len_base": 2395,
-      "avg_rank_full": 2.33,
+      "avg_rank_full": 1.67,
       "avg_rank_base": 1.0,
       "queries_in_screen_full": 3,
       "n_queries": 3,
       "ranks_full": [
         1,
-        5,
-        1
+        2,
+        2
       ],
       "ranks_base": [
         1,

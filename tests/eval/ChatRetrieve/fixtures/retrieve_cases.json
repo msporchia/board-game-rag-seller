@@ -1,0 +1,145 @@
+[
+  {
+    "id": "onitama-due-veloce-astratto",
+    "history": [
+      "utente: ciao, cerco qualcosa da giocare con mia moglie, siamo solo in due la sera",
+      "bot: Volentieri! In due si gioca benissimo. Preferite qualcosa di leggero o una bella sfida di strategia?"
+    ],
+    "message": "una sfida di testa, ma veloce: qualcosa di astratto che finisca in dieci minuti",
+    "choices": [],
+    "strategy": "QUICK_MATCH",
+    "k": null,
+    "expect_id": 160,
+    "note": "Identifying info split across turns: 2 players (turn 1) + fast and abstract (turn 3). Tao Long is the in-corpus 2-player abstract confounder; Spirits of the Forest the light abstract one. The query assembly must carry 'in due' forward."
+  },
+  {
+    "id": "terraforming-engine-spazio",
+    "history": [
+      "utente: con il mio gruppo giochiamo roba impegnativa, gestionali tosti da tre ore",
+      "bot: Ottimo, allora possiamo guardare ai gestionali più strategici del catalogo. Avete un tema che vi attira di più?"
+    ],
+    "message": "ci piace la fantascienza: qualcosa dove sviluppi un motore di carte e risorse, magari ambientato nello spazio",
+    "choices": [],
+    "strategy": "DISCOVERY",
+    "k": 5,
+    "expect_id": 21,
+    "note": "Heavy-gamer context from turn 1 + sci-fi engine-building from the current message. Progetto Gaia and Mercanti di Venere are the space-econ confounders."
+  },
+  {
+    "id": "carcassonne-tessere-in-due",
+    "history": [
+      "utente: vorrei un gioco rilassante da fare dopo cena, niente di competitivo all'ultimo sangue",
+      "bot: Capito, qualcosa di tranquillo! Quanto tempo avete a disposizione e in quanti siete di solito?"
+    ],
+    "message": "qualcosa dove costruisci piazzando tessere, semplice da spiegare anche a chi non gioca mai",
+    "choices": ["per 2 giocatori", "max 60 minuti"],
+    "strategy": "QUICK_MATCH",
+    "k": null,
+    "expect_id": 34,
+    "note": "Two quick-reply clicks become REAL hard filters (players=2, duration<=60). Without them the other tile-layers (Orbis, Fairy Tile, Altiplano) and longer games compete on the 'tessere' query."
+  },
+  {
+    "id": "pandemic-regalo-cooperativo",
+    "history": [
+      "utente: cerco un regalo per mia sorella, gioca spesso a giochi da tavolo con i figli di 8 e 11 anni",
+      "bot: Che bel regalo! Che genere di giochi piacciono in famiglia? Più strategia o più divertimento veloce?"
+    ],
+    "message": "preferirei un gioco collaborativo, dove si vince o si perde tutti insieme, così i bambini non litigano",
+    "choices": [],
+    "strategy": "GUIDED",
+    "k": null,
+    "expect_id": 3,
+    "note": "GUIDED puts only 2 games on the table. The corpus has six cooperatives; the family-with-kids context lives ONLY in turn 1, the coop request only in turn 3 — the assembly must combine them to beat the 14+ horror coops."
+  },
+  {
+    "id": "bang-serata-tanti-amici",
+    "history": [
+      "utente: sabato organizzo una serata a casa, saremo in sette o otto amici e vogliamo soprattutto ridere",
+      "bot: Perfetto! Per i gruppi numerosi ci sono party game e giochi di carte molto divertenti. Che stile preferite?"
+    ],
+    "message": "boh, scegli tu, basta che faccia divertire tutti",
+    "choices": [],
+    "strategy": "QUICK_MATCH",
+    "k": null,
+    "expect_id": 51,
+    "note": "The current message ALONE is useless ('scegli tu'): player count (7-8) and mood (laughing) live entirely in turn 1. A single-message test could never pass this; it isolates the history contribution to the query."
+  },
+  {
+    "id": "agricola-fattoria-in-due",
+    "history": [
+      "utente: a me e alla mia ragazza piacciono i gestionali a tema campagna",
+      "bot: Bella scelta! Vi piace di più coltivare i campi, allevare animali o commerciare i raccolti?"
+    ],
+    "message": "qualcosa dove mandi avanti una fattoria, con gli animali e i campi da coltivare",
+    "choices": ["per 2 giocatori"],
+    "strategy": "QUICK_MATCH",
+    "k": null,
+    "expect_id": 29,
+    "note": "The click 'per 2 giocatori' becomes a hard players filter. Viticulture (vineyard) and Stone Age are the farming-flavored confounders that survive the filter; the query must pick the farm-with-animals one."
+  },
+  {
+    "id": "star-wars-legion-miniature",
+    "history": [
+      "utente: cerco un regalo per mio fratello, passa i weekend a dipingere miniature",
+      "bot: Allora un gioco di miniature è la strada giusta! Di solito gioca da solo o con qualcuno?"
+    ],
+    "message": "gioca quasi sempre con un amico: vorrebbe grandi battaglie strategiche tra due eserciti",
+    "choices": [],
+    "strategy": "DISCOVERY",
+    "k": 5,
+    "expect_id": 6,
+    "note": "Miniatures hobby from turn 1 + two-player army battles from turn 3. Warhammer Heroes of Black Reach is the direct 2-player wargame confounder; Massive Darkness has miniatures but is cooperative."
+  },
+  {
+    "id": "king-of-tokyo-dadi-mostri",
+    "history": [
+      "utente: i miei figli vogliono un gioco scatenato, niente di troppo serio o ragionato",
+      "bot: Capito, qualcosa di veloce e divertente per tutta la famiglia! Cosa li diverte di più quando giocano?"
+    ],
+    "message": "tirare tanti dadi, e se ci sono i mostri ancora meglio",
+    "choices": ["max 30 minuti"],
+    "strategy": "QUICK_MATCH",
+    "k": null,
+    "expect_id": 54,
+    "note": "The click 'max 30 minuti' becomes a hard duration filter that cuts away the long dice-chuckers (Massive Darkness, Talisman); dice + monsters + kids should then pin King of Tokyo."
+  },
+  {
+    "id": "trono-di-spade-intrighi",
+    "history": [
+      "utente: siamo un gruppo di giocatori navigati, le partite lunghe e pesanti non ci spaventano",
+      "bot: Ottimo, allora possiamo puntare sui titoli più impegnativi del catalogo. Che ambientazione vi attira?"
+    ],
+    "message": "fantasy, ma con tanta politica: alleanze, tradimenti e guerre tra grandi casate",
+    "choices": [],
+    "strategy": "DISCOVERY",
+    "k": null,
+    "expect_id": 31,
+    "note": "Experienced big-group context (turn 1) + political fantasy warfare (turn 3). Schönbrunn (diplomacy) and Overseers (bluff) are the politics confounders; null k exercises the DISCOVERY default of 5."
+  },
+  {
+    "id": "ticket-to-ride-treni-genitori",
+    "history": [
+      "utente: mi serve un gioco da fare quando vengono a trovarci i miei genitori, niente di complicato",
+      "bot: Capisco, meglio un gioco con regole semplici e immediate. C'è un tema che potrebbe piacere a tutti?"
+    ],
+    "message": "a mio padre piacciono i treni e i viaggi",
+    "choices": [],
+    "strategy": "GUIDED",
+    "k": null,
+    "expect_id": 40,
+    "note": "GUIDED k=2 with two trains games in the corpus: Ticket to Ride Europa (45 min, simple — fits 'niente di complicato' from turn 1) vs Vagoni & Velieri (90 min). The simplicity cue lives only in the earlier turn."
+  },
+  {
+    "id": "dead-mans-doubloons-click-pirati",
+    "history": [
+      "utente: vorrei regalare qualcosa di avventuroso a un amico",
+      "bot: Abbiamo tanti giochi d'avventura! Ti attira più l'esplorazione, il combattimento o un tema particolare?"
+    ],
+    "message": "vediamo un po', cosa mi consigli?",
+    "choices": ["a tema pirati"],
+    "strategy": "QUICK_MATCH",
+    "k": null,
+    "expect_id": 46,
+    "note": "The click 'a tema pirati' does NOT parse into a structured filter: it must survive as a query leftover. The current message carries no signal, so this isolates the leftovers path of the query assembly."
+  }
+]

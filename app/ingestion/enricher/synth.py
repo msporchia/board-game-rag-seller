@@ -28,7 +28,7 @@ from langchain_ollama import ChatOllama
 
 from app.config import settings
 from app.core.logging import get_logger
-from app.core.tracing import get_trace_callbacks
+from app.core.tracing.callbacks import get_trace_callbacks
 from app.ingestion.enricher.enricher import Enricher
 from app.models.game_data import GameData
 from app.models.game_doc import GameDoc

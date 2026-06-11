@@ -7,7 +7,7 @@ The parser tests do not need langgraph; the graph-level ones use the shared fixt
 """
 
 from app.chat.choices import parse_choices
-from app.rag.filters import SearchFilters
+from app.rag.filters.search_filters import SearchFilters
 
 
 class TestParseChoices:

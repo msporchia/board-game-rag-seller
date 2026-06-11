@@ -12,7 +12,8 @@ from langchain_core.language_models import FakeListLLM
 from langchain_core.messages import AIMessage
 from langchain_core.outputs import ChatGeneration, Generation, LLMResult
 
-from app.core.tracing import SQLiteTraceHandler, TraceStore
+from app.core.tracing.handler import SQLiteTraceHandler
+from app.core.tracing.store import TraceStore
 
 
 @pytest.fixture

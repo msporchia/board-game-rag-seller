@@ -20,6 +20,7 @@ from typing import Optional
 
 from qdrant_client import models as qm
 
+from app.rag.filters.errors import UnknownFilterError
 from app.rag.filters.bool.expansions_filter import ExpansionsFilter
 from app.rag.filters.filter import Filter
 from app.rag.filters.range.age_filter import AgeFilter
@@ -43,10 +44,6 @@ REGISTRY: dict[str, type[Filter]] = {
     "rating": RatingFilter,
     "expansions": ExpansionsFilter,
 }
-
-
-class UnknownFilterError(ValueError):
-    """Raised when a spec names a filter not in REGISTRY."""
 
 
 class SearchFilters:

@@ -12,7 +12,7 @@ from fastapi import APIRouter, HTTPException, Query
 from app.core.logging import get_logger
 
 from app.models.game_hit import GameHit
-from app.rag.filters import SearchFilters
+from app.rag.filters.search_filters import SearchFilters
 from app.rag.retriever import GameRetriever
 
 logger = get_logger(__name__)

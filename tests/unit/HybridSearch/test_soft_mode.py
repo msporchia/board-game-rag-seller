@@ -11,7 +11,8 @@ How: the pure part builds (doc, score) tuples directly (no embedding needed); th
 part reuses the conftest store.
 """
 
-from app.rag.filters import SOFT_BOOST, SearchFilters, rerank_soft
+from app.rag.filters.rerank import SOFT_BOOST, rerank_soft
+from app.rag.filters.search_filters import SearchFilters
 
 
 def players_predicate(vals):

@@ -10,7 +10,7 @@ assert the returned id set. Order is irrelevant here (the filter excludes; the r
 so we compare sets. The query text is a fixed dummy — only the filter decides membership.
 """
 
-from app.rag.filters import SearchFilters
+from app.rag.filters.search_filters import SearchFilters
 
 Q = "gioco"  # dummy semantic query; the filter is what we assert
 

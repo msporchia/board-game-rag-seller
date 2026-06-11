@@ -12,7 +12,8 @@ How: no Qdrant server — we inspect the objects built by `SearchFilters.from_di
 import pytest
 from qdrant_client import models as qm
 
-from app.rag.filters import SearchFilters, UnknownFilterError
+from app.rag.filters.errors import UnknownFilterError
+from app.rag.filters.search_filters import SearchFilters
 
 
 def hard(spec):

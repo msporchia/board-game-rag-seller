@@ -22,7 +22,7 @@ from langchain_ollama import ChatOllama
 from app.config import settings
 from app.core.enrichment_store import EnrichmentStore
 from app.core.logging import get_logger
-from app.core.tracing import get_trace_callbacks
+from app.core.tracing.callbacks import get_trace_callbacks
 from app.core.web_search.ddgs import DdgsSearch
 from app.core.web_search.fetcher import PageFetcher
 from app.core.web_search.provider import WebSearchProvider

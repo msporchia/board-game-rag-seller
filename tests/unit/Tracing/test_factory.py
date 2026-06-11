@@ -5,7 +5,8 @@ monkeypatch the setting — no env juggling, no I/O (the handler opens its store
 """
 
 from app.config import settings
-from app.core.tracing import SQLiteTraceHandler, get_trace_callbacks
+from app.core.tracing.callbacks import get_trace_callbacks
+from app.core.tracing.handler import SQLiteTraceHandler
 
 
 def test_sqlite_backend_returns_tagged_handler(monkeypatch):

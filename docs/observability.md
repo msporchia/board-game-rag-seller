@@ -13,7 +13,7 @@ caught, not just tooling for its own sake.
 | Per-step LLM evals | `tests/eval.py --pipeline …` | each enrichment step measured against hand-written oracles |
 | Invariants in code | `WebEnricher` (quote verification), `ChatAdvisor` (id grounding) | anti-hallucination enforced at runtime, not just tested |
 | Structured logging | `app/core/logging.py` (structlog) + per-module loggers | every log is an EVENT with FIELDS (`enrich_step`, `game=2845`, `duration_ms=140`): step, game id, duration, outcome for every pipeline step; query/k/filters/hits/latency for every search; failed LLM/web calls log a warning instead of vanishing. `LOG_FORMAT=json` makes the same events machine-shippable |
-| LLM call tracing | `app/core/tracing.py` (`traces` table in `data/seller.db`) | every Curator/Web/Synth call recorded: component, model, prompt size+preview, response size, latency, token counts |
+| LLM call tracing | `app/core/tracing/` (`traces` table in `data/seller.db`) | every Curator/Web/Synth call recorded: component, model, prompt size+preview, response size, latency, token counts |
 
 ## What we are blind to
 
@@ -49,7 +49,7 @@ The handler is fail-safe by design — its writes are wrapped, a tracing failure
 warning and never breaks the model call.
 
 **The swap path** (the same provider-agnostic discipline as embeddings/LLM/search):
-`get_trace_callbacks()` in `app/core/tracing.py` is the only place that knows which backend
+`get_trace_callbacks()` in `app/core/tracing/callbacks.py` is the only place that knows which backend
 records traces. `TRACE_BACKEND=sqlite` (default) returns the local `SQLiteTraceHandler`;
 `off` disables tracing; moving to Langfuse (self-hosted, fits the no-cloud-keys constraint)
 or LangSmith is **one new branch** returning that provider's handler — nothing else changes.
@@ -74,7 +74,7 @@ FROM traces GROUP BY component ORDER BY avg_ms DESC;
 - [x] **Structured logging** across pipeline and API: step, game id, duration, outcome.
       (`app/core/logging.py` — see Design below.)
 - [x] **LLM call tracing**: every Curator/Web/Synth call traced with prompt, latency,
-      tokens, behind a swappable factory (`app/core/tracing.py`); local SQLite backend now,
+      tokens, behind a swappable factory (`app/core/tracing/`); local SQLite backend now,
       Langfuse/LangSmith = one new factory branch. Chat-advisor calls still to be wired
       (the chat module is being reworked).
 - [ ] **Trace dashboard** — when canned SQL stops being enough: Arize Phoenix as a

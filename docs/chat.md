@@ -123,7 +123,7 @@ on the 8B is now the bottleneck; see fruit #2 (stronger model).
 
 ## Architecture (Phase 5) — the stateful conversation
 
-A deliberately small `StateGraph` (`app/chat/graph.py`) around the Phase 4 core. The advisor's
+A deliberately small `StateGraph` (`app/chat/graph.py`, with state/routing/checkpointer as sibling modules) around the Phase 4 core. The advisor's
 grounding validation, deterministic fallback, message assembly and prompt assembly stay in ONE
 place (`ChatAdvisor.pitch`); the graph adds what a single stateless turn cannot have: memory, a
 read of the user, and a strategy.

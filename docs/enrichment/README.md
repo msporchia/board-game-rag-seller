@@ -6,7 +6,9 @@ Why this exists, in two parts:
 clean structured fields, others are a wall of marketing, and the useful facts are scattered
 across fields, free-text, and multiple source descriptions — or missing entirely. Fed raw to
 the system, games with gaps get mis-weighted, dropped, or compared unfairly with the
-well-described ones.
+well-described ones — and that violates the project's principle: **no game is penalized for
+its source**. Every game must be equally findable and sellable; if one is to outrank another,
+it must be intentional (margin, sales, a promotion), never inherited from data quality.
 
 **Retrieval quality is decided by the text we embed**, not only by the embedding model. A raw
 marketing description ("epic legendary adventure") flattens into a vague centroid — so a search

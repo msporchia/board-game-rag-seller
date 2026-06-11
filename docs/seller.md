@@ -20,8 +20,8 @@ varied. We want a bot that:
   not just links two titles;
 - recommends **only games actually in the catalog and available** (never hallucinate titles).
 
-Side goal (important): it is also a project to practice with **LangChain + RAG** ahead of
-interviews. So we proceed in stages, each one understandable.
+Side goal (important): it is also a project to practice **LangChain + RAG** in depth. So we
+proceed in stages, each one understandable.
 
 ---
 

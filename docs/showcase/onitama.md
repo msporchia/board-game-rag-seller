@@ -40,7 +40,7 @@ Onitama's catalog record is *not* thin — it has a full marketing description a
 
 The prose sells *atmosphere* but is vague on **what kind of game it is**. The genre slot is the
 one the Curator can't confirm from the text — so it goes to `missing_info` and the Web step
-fires (verified in [`FINDINGS.md`](../../tests/e2e/enrichment/FINDINGS.md) §3: Onitama → Web
+fires (verified in [`e2e-findings.md`](../enrichment/e2e-findings.md) §3: Onitama → Web
 fires; a rich game like Viticulture → it doesn't).
 
 ## ② Baseline — the marketing centroid

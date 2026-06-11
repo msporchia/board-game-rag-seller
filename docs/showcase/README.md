@@ -4,11 +4,16 @@
 > This folder shows *what it does to a real game* — the same record **before** and **after**
 > the pipeline, with the measured effect on retrieval.
 
-The whole project rests on one claim:
+The whole project rests on one principle and the claim that makes it enforceable:
 
-> **Retrieval quality is decided by the text we embed, not only by the embedding model.**
-> Shape the text well and a cheap embedder finds the right game; feed it raw marketing and even
-> a great embedder can't.
+> **Principle — no game is penalized for its source.** Records arrive with wildly different
+> quality; every game must be equally findable and equally sellable. Any deliberate ranking
+> (margin, sales history, a promotion) belongs in an explicit layer — it must never be an
+> accident of data entry.
+
+> **Claim — retrieval quality is decided by the text we embed**, not only by the embedding
+> model. Shape the text well and a cheap embedder finds the right game; feed it raw marketing
+> and even a great embedder can't. Enrichment is the equalizer.
 
 These three walkthroughs are the proof. Each takes a **real catalog game**, runs it through
 `Curator → Web → Synth → Compose`, and reports the **rank the real retriever** gives it on
@@ -20,6 +25,9 @@ distractors, in two indexes identical except for the target game's text.
 | 🚀 [**Terraforming Mars**](terraforming-mars.md) | enrichment **recovers** a thin catalog entry | rank **#45 → #1** after the Web step fills the gaps |
 | 🔬 [**Onitama**](onitama.md) | the **anti-hallucination** discipline: every recovered fact carries a verbatim quote | a gap filled *with evidence*, fabrications dropped |
 | ⚖️ [**Viticulture**](viticulture.md) | an **honest regression** we measured and didn't hide | full pipeline ranks **worse** than the baseline — and the open test that tracks it |
+
+The conversational layer will get the same treatment — one customer's session, before → after,
+enforced vs generated: [**Chat**](chat.md) (🚧 structure staged, awaiting a real recorded session).
 
 ## How to read each file
 
@@ -40,7 +48,7 @@ flowchart LR
 - **③** mixes *exact* evidence (the Web facts are verbatim quotes from the recorded source pages)
   with one *representative* element (the Synth prose — an LLM step, so the wording varies between
   runs; the example shows the shape, not a frozen string).
-- **⑤** is *measured*: the ranks come from [`tests/e2e/enrichment/FINDINGS.md`](../../tests/e2e/enrichment/FINDINGS.md),
+- **⑤** is *measured*: the ranks come from [`e2e-findings.md`](../enrichment/e2e-findings.md),
   produced by the real `GameRetriever` over the frozen corpus.
 
 Where something is illustrative rather than a literal frozen output, it is labelled inline.

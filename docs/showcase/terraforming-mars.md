@@ -5,7 +5,7 @@
 > web, the same game returns to the **first screen**: **#1 / #26 / #1**.
 
 This is the value of enrichment in production, where many products have **thin descriptions**.
-Source: [`tests/e2e/enrichment/FINDINGS.md`](../../tests/e2e/enrichment/FINDINGS.md) §2,
+Source: [`e2e-findings.md`](../enrichment/e2e-findings.md) §2,
 measured by the real `GameRetriever`.
 
 ```mermaid

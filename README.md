@@ -12,13 +12,66 @@ A conversational "salesperson" for a board-game shop: instead of a keyword searc
 concrete criteria (players, duration, complexity), and recommends **only real, in-stock games**
 — never a hallucinated title.
 
-But the chatbot is the easy half. The hard, interesting half — and the heart of this repo — is
-the **enrichment pipeline** that decides *what text gets embedded*. That's where the quality
-comes from, and where the engineering is.
+The repo is two stories. **Part 1 — the retrieval engine**: done, measured, and the heart of
+the project. **Part 2 — the conversational seller** on top of it: working end-to-end, being
+finalized, measured the same way. Results first; how we got there comes after.
 
 ---
 
-## The one idea this project is built on
+## The results, on real games 🔍
+
+Three real catalog games, carried end-to-end through the enrichment pipeline and ranked by the
+**real retriever** on a frozen 50-game corpus. Same embedding model, same queries — only the
+embedded text changes:
+
+| | Game | Before | After |
+|---|------|--------|-------|
+| 🚀 | [**Terraforming Mars**](docs/showcase/terraforming-mars.md) — thin entry, no description | rank **#45 / #47 / #47** of 50 | rank **#1 / #26 / #1** |
+| 🔬 | [**Onitama**](docs/showcase/onitama.md) — rich prose, all atmosphere | genre invisible to search | genre recovered — **every fact carries a verbatim citation** |
+| ⚖️ | [**Viticulture**](docs/showcase/viticulture.md) — already well-described | rank **#4** | rank **#23** — *worse*: an honest regression, kept visible |
+
+What happens to each game, in plain words (every step linked if you want the mechanics):
+
+- **Terraforming Mars** arrives with *no description* — to the embedder it's a spec sheet, and
+  the query *"gioco di fantascienza per terraformare marte"* ranks it **#45**. The
+  [Curator](docs/enrichment/01-curator.md) flags what's missing; the
+  [Web step](docs/enrichment/02-web.md) recovers the missing facts from trusted reviews
+  (*marte, ossigeno, oceani* — each backed by a quoted source); the
+  [Synth step](docs/enrichment/03-synth.md) weaves them into clean prose. Same game, same
+  embedder, same query: **#1**.
+- **Onitama** has plenty of prose, but it's marketing (*"la magia… un viaggio nel cuore delle
+  arti marziali"*) and never says *what kind of game it is*. The Web step fills exactly that
+  gap — and keeps **only facts whose quote is literally present in the source page**; a model
+  guess with no quote is thrown away, not embedded. The embedded text finally says it plainly:
+  an abstract duel for two, decided by cards that pass to your opponent.
+- **Viticulture** was already rich — and the pipeline made it **worse**. Synth compressed
+  ~2300 chars to ~1200 and dropped *vino / toscana* signal, so a common query slipped off the
+  first screen (#4 → #23). We kept the failure: it's written down in
+  [`e2e-findings.md`](docs/enrichment/e2e-findings.md) and pinned by an `xfail` test that turns
+  green only when it's fixed. A showcase that only shows wins is a sales brochure.
+
+Each walkthrough shows the exact DTO in, the real computed baseline `embed_text`, the
+verbatim-cited facts the pipeline adds, and the measured rank delta.
+→ [Start here](docs/showcase/README.md).
+
+---
+
+# Part 1 — the retrieval engine
+
+## The principle this project is built on
+
+A real catalog is **heterogeneous and incomplete**: records arrive from different sources with
+wildly different quality — some games richly described, many just a name and a few fields. Fed
+raw to an embedder, that difference silently *becomes* the ranking: well-documented games
+surface, thin ones disappear. Terraforming Mars at **#45** wasn't less relevant — it just had a
+thinner record. That's not a ranking; it's a data-entry accident.
+
+> **Every game must be equally findable and equally sellable, whatever the quality of its
+> source data.** The system must never penalize a game for where its record came from. If one
+> game is to outrank another, it must be **intentional** — margin, recent sales, a promotion —
+> applied as an explicit layer, never inherited from data quality.
+
+The lever that makes the principle enforceable:
 
 > **Retrieval quality is decided by the text you embed — not only by the embedding model.**
 
@@ -26,19 +79,11 @@ An embedding is a *lossy semantic centroid* of its input (see [`docs/valutazione
 Feed it three paragraphs of marketing (*"epic legendary adventure!"*) and the centroid lands on
 "vague epic", so a search for *"cooperative dungeon crawler"* can't tell the right game from the
 wrong one. The embedder is fixed and query-agnostic; the **text** is the lever we control.
-
-Real catalogs make this worse: they're **heterogeneous and incomplete** — some games are richly
-described, many are a name and a few fields. Fed raw, the thin ones get buried and the verbose
-ones get diluted.
-
-**Enrichment** is the set of steps that turn that messy input into *uniform, dense, factual,
-search-friendly* records before embedding — adding signal, never inventing. This is
-**representation engineering**, and it's measurable:
-
-> A thin catalog entry for **Terraforming Mars** ranks **#45 / #47 / #47** out of 50.
-> After the pipeline recovers its missing facts from the web, the *same game* ranks
-> **#1 / #26 / #1** — no change of embedding model, no change of query.
-> → [See the full walkthrough](docs/showcase/terraforming-mars.md).
+**Enrichment is the equalizer**: it turns the uneven input into *uniform, dense, factual,
+search-friendly* records before embedding — adding signal, never inventing — so the retriever
+ranks the *games*, not their data entry. (No intentional boost layer exists yet; today the
+ranking is pure relevance, by design.) This is **representation engineering**, and the table
+above is it, measured.
 
 > #### 🇮🇹 Why the data, prompts and queries are in Italian
 > The **code and docs are in English**; the **catalog text, LLM prompts and embedded/queried
@@ -47,8 +92,6 @@ search-friendly* records before embedding — adding signal, never inventing. Th
 > and frozen as-is. Translating them, or hand-crafting tidy English toy data, would quietly defeat
 > the experiment — you'd be proving a *tailored* example works, not that the mechanism survives the
 > messy, redundant, real-world prose it's actually built to handle. The realism **is** the test.
-
----
 
 ## Architecture
 
@@ -64,7 +107,7 @@ flowchart TB
 
     subgraph SERVE["💬 Serving (online)"]
         direction LR
-        USER(["User query"]) --> API["FastAPI<br/>/search"]
+        USER(["User query"]) --> API["FastAPI<br/>/search · /chat"]
         API --> RET["Hybrid retriever<br/>semantic + payload filters"]
     end
     QD --> RET
@@ -81,9 +124,7 @@ flowchart TB
 | Vector store | **Qdrant** (Docker) | same (managed) |
 | Embeddings | `nomic-embed-text` (Ollama) | OpenAI `text-embedding-3` / `bge-m3` |
 | LLM | `llama3.1` 8B (Ollama) | a stronger model (Claude / GPT-4-class) |
-| Orchestration | LangChain · FastAPI | same |
-
----
+| Orchestration | LangChain · LangGraph · FastAPI | same |
 
 ## The enrichment pipeline
 
@@ -116,24 +157,6 @@ flowchart LR
 
 → Full rationale, data model, and per-step metrics: [`docs/enrichment/`](docs/enrichment/README.md).
 
----
-
-## See it on a real game 🔍
-
-The claim above isn't a slogan — here are three real games carried **before → after** through
-the pipeline, each with the measured effect on retrieval:
-
-| Walkthrough | Shows | Headline |
-|-------------|-------|----------|
-| 🚀 [**Terraforming Mars**](docs/showcase/terraforming-mars.md) | enrichment **recovers** a thin entry | rank **#45 → #1** |
-| 🔬 [**Onitama**](docs/showcase/onitama.md) | the **anti-hallucination** discipline | every recovered fact carries a verbatim quote |
-| ⚖️ [**Viticulture**](docs/showcase/viticulture.md) | an **honest regression** we measured | full pipeline ranks *worse* — and the open test that tracks it |
-
-Each shows the exact DTO in, the real (computed) baseline `embed_text`, the verbatim-cited facts
-the pipeline adds, and the rank delta from the real retriever. → [Start here](docs/showcase/README.md).
-
----
-
 ## We decide with numbers, not vibes
 
 Three evaluation levels, each with a distinct job — so a gain in one step can't hide a loss in
@@ -142,7 +165,7 @@ another:
 ```mermaid
 flowchart TB
     U["① Unit tests — offline, deterministic, fast<br/><i>contracts & invariants: 'certain data wins', 'a fact needs a verbatim quote'</i>"]
-    Q["② Per-step quality — real LLM, vs a hand-written oracle<br/><i>each step's goal in isolation (slot-filling F-score, etc.)</i>"]
+    Q["② Per-step quality — real LLM, vs a hand-written oracle<br/><i>each step's goal in isolation — pipeline steps and chat steps alike</i>"]
     R["③ Retrieval scorecard — end-to-end<br/><i>Recall@K, Precision@K, inversions on a frozen corpus</i>"]
     U --> Q --> R
     style U fill:#1f5c1f,color:#fff
@@ -156,30 +179,63 @@ Two principles run through all of it:
 
 And when the numbers say we **lost**, we write it down. The
 [Synth-compresses-rich-DTOs regression](docs/showcase/viticulture.md) is documented in
-[`FINDINGS.md`](tests/e2e/enrichment/FINDINGS.md) and pinned by an `xfail` test that turns green
-only when it's fixed. The honest failures are part of the showcase on purpose.
+[`e2e-findings.md`](docs/enrichment/e2e-findings.md) and pinned by an `xfail` test that turns
+green only when it's fixed. The honest failures are part of the showcase on purpose.
 
 ---
 
-## 💬 The chatbot — 🚧 in progress
+# Part 2 — the conversational seller 💬 — 🚧 being finalized
 
-The retrieval layer (this repo's focus) is the foundation; the conversational "salesperson" on
-top is the next stage, built in two steps:
+The retrieval engine is the foundation; the "salesperson" on top reuses it, turn by turn.
+Built in two phases, **both implemented**:
 
-- **✅ Phase 4 — grounded pitch (first cut).** A stateless `POST /chat` retrieves real games and
-  has the LLM write a short Italian sales pitch + quick-reply buttons, in a structured
-  `{message, games, quick_replies}` contract. Two invariants are enforced in code, not trusted to
-  the model: **anti-hallucination** (a featured game must be in the retrieved set — invented ids
-  are dropped) and a **deterministic fallback** when the 8B's structured output fails.
-- **🚧 Phase 5 — conversation.** A stateful LangGraph over that core: session memory, adaptive
-  strategy routing, quick-reply clicks turned into filters, live price/stock from PrestaShop, and
-  Haiku→Sonnet model tiering.
+- **✅ Phase 4 — grounded pitch (stateless).** `POST /chat`: one turn → hybrid retrieval → a
+  short Italian sales pitch over the retrieved games + quick-reply buttons, in a structured
+  `{message, games, quick_replies}` contract. Two invariants are enforced in code, never
+  trusted to the model: **anti-hallucination** (a pitched game must be in the retrieved set —
+  invented ids are dropped) and a **deterministic fallback** when structured output fails.
+- **✅ Phase 5 — conversation (stateful).** Send a `session_id` and the same core runs inside a
+  small LangGraph: session memory (SQLite checkpointer), a per-turn read of the customer
+  (enthusiasm, decisiveness, expertise), deterministic strategy routing
+  (GUIDED / EXPLANATORY / DISCOVERY / QUICK MATCH), and quick-reply clicks parsed into real
+  search filters. Without a `session_id`, the request takes the Phase 4 path unchanged.
 
-The honest first-run findings (grounding holds; the 8B can't keep prose and card-selection
-coherent — a stronger model fixes it) are written up, before→after, in
-[`docs/chat.md`](docs/chat.md). Design in [`docs/seller.md`](docs/seller.md).
+Status: the *mechanics* hold end-to-end (grounding, memory, fallback, traces — no 500s).
+The first measured failure — prose and cards describing different games — is now
+**structurally impossible**: each pitch is bound to its game id and the customer message is
+assembled in code, so the text can only describe games that are in the cards. The open
+bottleneck is pitch *quality* on the local 8B — exactly the project's stance: *if it works on
+the 8B, it flies on a stronger model*. Full findings, before → after:
+[`docs/chat.md`](docs/chat.md) · design: [`docs/seller.md`](docs/seller.md).
 
-*A demo GIF of a simulated chat will land here once the conversational layer is wired up.*
+The chat is measured with the same per-step discipline as the pipeline (real LLM, hand-written
+oracles, no end-to-end blob):
+
+| Suite | What it measures |
+|-------|------------------|
+| [TurnAnalyzer](tests/eval/TurnAnalyzer) | reading the customer: per-dimension accuracy (enthusiasm, decisiveness, expertise, …) vs labeled turns |
+| [ChatPitch](tests/eval/ChatPitch) | the pitch: how often the model delivers a *grounded* recommendation instead of the fallback, per strategy |
+| [ChatRetrieve](tests/eval/ChatRetrieve) | conversational query assembly: recall@k of the games the turn should surface |
+
+### What a session looks like
+
+*Simulated transcript — it shows the target shape and will be replaced by a real recorded
+session once the layer is finalized; the before → after walkthrough is staged in
+[`docs/showcase/chat.md`](docs/showcase/chat.md).*
+
+> 🧑 *«Cerco un gioco cooperativo per due, niente di troppo impegnativo»*
+>
+> 🤖 *«Se giocate in due e volete collaborare, ho due proposte: **Pandemic** — si vince o si
+> perde insieme, regole spiegate in dieci minuti — e **Codenames Duet**, perfetto se vi
+> piacciono i giochi di parole.»*
+> &nbsp;&nbsp;🎴 `[Pandemic] [Codenames Duet]` · quick replies: `[max 30 minuti] [più strategico] [un'altra idea]`
+>
+> 🧑 click su `max 30 minuti`
+>
+> 🤖 *«Allora **Codenames Duet** è il candidato perfetto: partite da un quarto d'ora e tanta
+> voglia di rivincita.»* — il click è diventato un filtro `duration ≤ 30` sulla ricerca reale.
+
+*A demo GIF of a real session will land here.*
 
 ---
 
@@ -203,6 +259,10 @@ docker compose exec seller-api python -m app.ingestion.ingester
 
 # 4. Search
 curl "http://localhost:8000/search?q=cooperativo+fantasy+per+due&k=5"
+
+# 5. Chat (stateless; add "session_id" to the body for the stateful conversation)
+curl -X POST http://localhost:8000/chat -H "Content-Type: application/json" \
+     -d '{"message": "un gioco cooperativo per due, non troppo lungo"}'
 ```
 
 **Verify:** Seller API → http://localhost:8000/health · Mock → http://localhost:8001/health ·
@@ -212,12 +272,14 @@ Qdrant → http://localhost:6333/dashboard · Ollama → http://localhost:11434
 
 ```bash
 docker compose exec seller-api python -m pytest tests/unit -q                          # deterministic, offline
+docker compose exec seller-api python -m pytest tests/eval/ChatPitch -q                 # per-step quality, real LLM (one suite per step)
 docker compose exec -e PYTHONPATH=/app seller-api python tests/eval.py --suite core --k 5 --pipeline synth  # retrieval scorecard
 docker exec seller-api python -m pytest tests/e2e/enrichment -v                         # real end-to-end (LLM + web replay)
 ```
 
-What we measure today, what we're still blind to, and the roadmap (logging, tracing,
-chat-level evals): [`docs/observability.md`](docs/observability.md).
+Observability is in place — structured logging (structlog) and swappable LLM call tracing —
+and what we measure vs what we're still blind to is tracked in
+[`docs/observability.md`](docs/observability.md).
 
 ## Project structure
 
@@ -228,19 +290,20 @@ seller/
 ├── app/
 │   ├── config.py               # env: Qdrant/Ollama/models/source
 │   ├── api/                    # FastAPI routers (/health, /search, /chat)
-│   ├── chat/                   # conversational advisor: retrieve → grounded pitch (Phase 4)
+│   ├── chat/                   # advisor (grounded pitch) + LangGraph conversation (state · routing · memory)
 │   ├── ingestion/
 │   │   ├── enricher/           # the pipeline: curator · web · synth · compose
 │   │   ├── ingester.py         # build_pipeline() + run
 │   │   └── serializer.py       # GameDoc → embeddable Document
-│   ├── core/                   # vector store · enrichment store · web search
-│   └── rag/                    # retriever
+│   ├── core/                   # vector store · enrichment store · web search · logging · tracing
+│   └── rag/                    # hybrid retriever + filters
 ├── docs/
 │   ├── enrichment/             # one doc per pipeline step (the "why & how we know")
 │   ├── showcase/               # before → after walkthroughs on real games  ← start here
+│   ├── chat.md                 # the conversational layer: design, findings, eval
 │   ├── valutazione.md          # how embeddings work & how we measure
 │   └── observability.md        # eval & observability: status and roadmap
-└── tests/                      # unit (deterministic) · eval (LLM, record/replay) · e2e
+└── tests/                      # unit (deterministic) · eval (real LLM, one suite per step) · e2e
 ```
 
 ## Data source

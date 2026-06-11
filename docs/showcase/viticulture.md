@@ -37,7 +37,7 @@ of the right signal:
 ```
 
 The Curator confirms the setting **from the description itself** → no gap → the **Web step
-correctly does not fire** (verified in [`FINDINGS.md`](../../tests/e2e/enrichment/FINDINGS.md)
+correctly does not fire** (verified in [`e2e-findings.md`](../enrichment/e2e-findings.md)
 §3). There's nothing to recover. So what could enrichment possibly add? On this game — *the
 problem isn't what it adds, it's what it removes.*
 
@@ -82,14 +82,15 @@ trade is invisible (there's no rich text to lose); on a rich one it's a real reg
 
 ## How we treat a finding like this
 
-This is the part worth hiring for. The failure isn't a footnote — it's wired into the test suite:
+This is where the engineering discipline shows. The failure isn't a footnote — it's wired into
+the test suite:
 
 1. **A test asserts the *fixed* behaviour, marked `xfail`** —
    `test_phase3_retrieval::test_synth_does_not_degrade_rich_dto`. It's red today and will turn
    green when Synth stops compressing. The suite *expects* the bug until it's fixed, so a real
    fix is provable and a regression can't sneak back.
 2. **The cause is written down**, with the measured numbers, in
-   [`FINDINGS.md`](../../tests/e2e/enrichment/FINDINGS.md) §1.
+   [`e2e-findings.md`](../enrichment/e2e-findings.md) §1.
 3. **The fix direction is scoped**: calibrate Synth's budget to the embedder's real useful
    capacity, and never drop below the baseline's thematic signal ("rewrite, not compress").
 

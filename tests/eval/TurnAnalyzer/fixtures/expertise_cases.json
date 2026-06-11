@@ -1,0 +1,116 @@
+[
+  {
+    "id": "regalo-natale-nonni",
+    "dimension": "expertise_level",
+    "history": [],
+    "message": "Buongiorno, cerco un gioco da fare a Natale con i nonni e i nipoti, niente di complicato, qualcosa che si impara in cinque minuti.",
+    "expect": "beginner",
+    "note": "Pure family/holiday register, zero technical terms, asks explicitly for something simple."
+  },
+  {
+    "id": "primo-gioco-coppia",
+    "dimension": "expertise_level",
+    "history": [
+      "utente: vorrei comprare un gioco da fare in due con la mia ragazza la sera",
+      "bot: Che bello! Avete già giocato a qualche gioco da tavolo insieme? Così capisco da dove partire."
+    ],
+    "message": "No, a parte i classici tipo Monopoli e Uno non ne abbiamo mai provati, quindi qualcosa di semplice va benissimo.",
+    "expect": "beginner",
+    "note": "Only mass-market classics as reference, self-declares no experience, asks for simple."
+  },
+  {
+    "id": "boundary-cita-catan-senza-capirlo",
+    "dimension": "expertise_level",
+    "history": [],
+    "message": "Un mio collega parla sempre di Catan ma io non ho capito bene come funziona, c'è qualcosa di più facile per iniziare?",
+    "expect": "beginner",
+    "note": "Boundary case: mentions a famous hobby title but admits not understanding it and asks for easier — the name-drop must not inflate the level."
+  },
+  {
+    "id": "gioco-vacanza-bambini",
+    "dimension": "expertise_level",
+    "history": [
+      "utente: avete giochi da portare in viaggio?",
+      "bot: Certo! Dipende un po' da chi gioca: adulti, bambini, gruppo misto?"
+    ],
+    "message": "Andiamo al mare con due bambini di 6 e 8 anni, servono regole facilissime perché si stancano subito.",
+    "expect": "beginner",
+    "note": "Family vacation framing, age-of-children focus, explicit request for very easy rules, no hobby vocabulary."
+  },
+  {
+    "id": "tipo-catan-piu-strategico",
+    "dimension": "expertise_level",
+    "history": [],
+    "message": "Abbiamo giocato parecchio a Catan e Carcassonne e ci piacciono, vorrei qualcosa tipo Catan ma un po' più strategico, però non troppo complesso.",
+    "expect": "intermediate",
+    "note": "Knows the gateway classics by name and wants a step up, but describes it vaguely (più strategico / non troppo complesso) without real jargon."
+  },
+  {
+    "id": "oltre-ticket-to-ride",
+    "dimension": "expertise_level",
+    "history": [
+      "utente: giochiamo spesso a Ticket to Ride in famiglia",
+      "bot: Ottima base! Vi piace più la parte di pianificazione dei percorsi o la corsa contro gli altri?"
+    ],
+    "message": "Ormai lo conosciamo a memoria, vorremmo fare il passo successivo, qualcosa con più scelte da fare ma che si spieghi in un quarto d'ora.",
+    "expect": "intermediate",
+    "note": "Has worn out one gateway title and asks for the next step, measures complexity in teach time rather than mechanics — typical intermediate."
+  },
+  {
+    "id": "gestionali-detti-male",
+    "dimension": "expertise_level",
+    "history": [],
+    "message": "Mi hanno detto che i giochi gestionali sono belli, tipo quelli dove costruisci cose e raccogli risorse, ne ho provato uno a casa di amici ma non ricordo il nome.",
+    "expect": "intermediate",
+    "note": "Uses a semi-technical word (gestionali) imprecisely and paraphrases mechanics in everyday language; has some exposure but no precise vocabulary."
+  },
+  {
+    "id": "cooperativo-dopo-pandemic",
+    "dimension": "expertise_level",
+    "history": [
+      "utente: cerco un gioco per la mia compagnia di amici, siamo in quattro",
+      "bot: Perfetto, quattro è un numero comodo. Preferite competere o collaborare?"
+    ],
+    "message": "Ho giocato un paio di volte a Pandemic e mi è piaciuto giocare tutti insieme contro il gioco, cercavo un altro cooperativo, magari non troppo difficile da imparare.",
+    "expect": "intermediate",
+    "note": "Knows one mainstream hobby title and the category word cooperativo, but with shallow experience (a couple of plays) and still asks for easy to learn."
+  },
+  {
+    "id": "worker-placement-peso-bgg",
+    "dimension": "expertise_level",
+    "history": [],
+    "message": "Cerco un worker placement con peso BGG sopra 3, magari con una componente di engine building; ho già Agricola e Caverna quindi qualcosa di diverso.",
+    "expect": "advanced",
+    "note": "Precise hobbyist jargon (worker placement, engine building, BGG weight) plus ownership of heavy euros."
+  },
+  {
+    "id": "deck-builder-con-draft",
+    "dimension": "expertise_level",
+    "history": [
+      "utente: sto guardando la sezione dei giochi di carte",
+      "bot: C'è parecchia scelta: preferisci giochi di carte tradizionali o qualcosa di più moderno?"
+    ],
+    "message": "Pensavo a un deck builder con draft; Dominion ormai l'ho spremuto e Clank mi è sembrato troppo leggero.",
+    "expect": "advanced",
+    "note": "Names the mechanic combination precisely and judges known titles by weight — clear hobbyist vocabulary and calibration."
+  },
+  {
+    "id": "controllo-aree-interazione",
+    "dimension": "expertise_level",
+    "history": [
+      "utente: cerco qualcosa di nuovo per il mio gruppo di gioco del giovedì",
+      "bot: Che tipo di giochi girano di solito al vostro tavolo?"
+    ],
+    "message": "Preferisco i giochi di controllo aree e maggioranze, con interazione diretta: il multiplayer solitaire alla lunga mi annoia.",
+    "expect": "advanced",
+    "note": "Uses niche analytical terms (controllo aree, maggioranze, multiplayer solitaire) that only an experienced hobbyist would use."
+  },
+  {
+    "id": "eurogamer-prova-ameritrash",
+    "dimension": "expertise_level",
+    "history": [],
+    "message": "Nella mia collezione ho quasi solo eurogame a punti vittoria, vorrei provare un ameritrash con dadi e miniature, e non mi spaventano setup lunghi.",
+    "expect": "advanced",
+    "note": "Talks about a collection, contrasts euro vs ameritrash by design philosophy, accepts long setup — deep hobby fluency."
+  }
+]

@@ -1,0 +1,117 @@
+[
+  {
+    "id": "voglio-catan-ce-l-avete",
+    "dimension": "decisiveness",
+    "history": [],
+    "message": "Voglio Catan, ce l'avete?",
+    "expect": "decided",
+    "note": "First turn, names one specific game and asks for availability: nothing to clarify, ready to buy."
+  },
+  {
+    "id": "azul-base-lo-prendo-oggi",
+    "dimension": "decisiveness",
+    "history": [],
+    "message": "Cerco Azul, versione base, per un regalo. Se ce l'avete lo prendo oggi.",
+    "expect": "decided",
+    "note": "Specific title, specific edition, explicit intent to purchase today."
+  },
+  {
+    "id": "prendo-dixit-da-parte",
+    "dimension": "decisiveness",
+    "history": [
+      "utente: cerco un gioco da regalare a mia sorella, qualcosa di non troppo complicato",
+      "bot: Posso proporti Dixit, un gioco di carte illustrate molto adatto come regalo, oppure Ticket to Ride, un classico accessibile a tutti."
+    ],
+    "message": "Perfetto, prendo Dixit allora. Me lo potete mettere da parte?",
+    "expect": "decided",
+    "note": "Multi-turn: the customer was browsing, now commits to one title and asks to reserve it."
+  },
+  {
+    "id": "il-secondo-lo-prendo",
+    "dimension": "decisiveness",
+    "history": [
+      "utente: avete qualcosa da portare in vacanza, che occupi poco spazio?",
+      "bot: Certo: ti propongo Hive Pocket, un astratto compatto per due, oppure Love Letter, un mazzetto di carte che sta in tasca.",
+      "utente: quanto costano?",
+      "bot: Hive Pocket è sui 25 euro, Love Letter sui 12."
+    ],
+    "message": "Il secondo, quello di carte. Lo prendo.",
+    "expect": "decided",
+    "note": "Multi-turn: after comparing, picks one option with no residual doubt."
+  },
+  {
+    "id": "carcassonne-pero-non-so",
+    "dimension": "decisiveness",
+    "history": [],
+    "message": "Pensavo a Carcassonne, però non so se può andare bene per noi... voi che dite?",
+    "expect": "moderate",
+    "note": "Boundary case: names a specific game but immediately wavers and asks for validation."
+  },
+  {
+    "id": "vincoli-chiari-nessun-titolo",
+    "dimension": "decisiveness",
+    "history": [],
+    "message": "Cerco un gioco per due persone, sui 30 euro, niente di troppo lungo. Non ho un titolo in mente.",
+    "expect": "moderate",
+    "note": "Clear constraints (players, budget, duration) but no specific product: knows what kind, not which one."
+  },
+  {
+    "id": "mi-tenta-il-primo-ma",
+    "dimension": "decisiveness",
+    "history": [
+      "utente: cerco un gioco da fare la sera con mia moglie",
+      "bot: Ti propongo Patchwork, un gioco per due giocatori di circa mezz'ora, oppure Jaipur, un gioco di carte di scambi e commercio."
+    ],
+    "message": "Mi tenta il primo, ma vorrei sapere qualcosa in più prima di decidere.",
+    "expect": "moderate",
+    "note": "Multi-turn: leaning towards one option but explicitly not ready to decide yet."
+  },
+  {
+    "id": "ticket-to-ride-quale-versione",
+    "dimension": "decisiveness",
+    "history": [
+      "utente: vorrei un gioco da fare con i miei figli di 10 e 12 anni",
+      "bot: Ticket to Ride è una scelta molto adatta a quell'età: si collegano città con vagoni colorati, le regole si imparano in dieci minuti."
+    ],
+    "message": "Volevo prendere proprio quello, però ho visto che ci sono tante versioni e non so quale scegliere.",
+    "expect": "moderate",
+    "note": "Boundary case: committed to the game family, undecided on which edition."
+  },
+  {
+    "id": "mah-qualcosa-per-la-famiglia",
+    "dimension": "decisiveness",
+    "history": [],
+    "message": "Mah, non saprei, qualcosa per la famiglia...",
+    "expect": "undecided",
+    "note": "Canonical undecided: vague hedge, no constraints beyond 'family'."
+  },
+  {
+    "id": "regalo-nipote-nessuna-idea",
+    "dimension": "decisiveness",
+    "history": [],
+    "message": "Devo fare un regalo a mio nipote ma non ho proprio idea di cosa gli possa piacere.",
+    "expect": "undecided",
+    "note": "Gift purchase with zero criteria: the customer states explicitly they have no idea."
+  },
+  {
+    "id": "boh-fate-voi",
+    "dimension": "decisiveness",
+    "history": [
+      "utente: cerco un gioco da portare a una cena con amici",
+      "bot: Volentieri. Quanti sarete più o meno? E preferite qualcosa di veloce o un gioco più lungo?",
+      "utente: saremo in sei o sette, credo",
+      "bot: Perfetto. Vi piacciono di più i giochi di parole, di bluff, o qualcosa di più strategico?"
+    ],
+    "message": "Boh, davvero non saprei... fate voi, qualcosa che vada bene un po' per tutti.",
+    "expect": "undecided",
+    "note": "Multi-turn: even after the bot's narrowing questions, the customer delegates the choice entirely."
+  },
+  {
+    "id": "prima-volta-non-so-da-dove-cominciare",
+    "dimension": "decisiveness",
+    "history": [],
+    "message": "È la prima volta che entro in un negozio del genere, non so nemmeno da dove cominciare.",
+    "expect": "undecided",
+    "note": "No goal, no criteria, openly lost: the floor of the scale."
+  }
+]

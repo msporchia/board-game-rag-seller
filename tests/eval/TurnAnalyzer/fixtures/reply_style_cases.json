@@ -1,0 +1,78 @@
+[
+  {
+    "id": "regalo-cognato-sfogo-svogliato",
+    "dimension": "reply_style",
+    "history": [],
+    "message": "Allora, devo trovare un regalo di compleanno per mio cognato e sinceramente non saprei proprio. Lui ogni Natale tira fuori questi giochi da tavolo interminabili e io francamente mi annoio, però mia sorella dice che ci tiene tantissimo, quindi eccomi qua. L'anno scorso gli abbiamo regalato un libro e non l'ha mai aperto, due anni fa una bottiglia di vino e l'ha rigirata a qualcun altro, quindi quest'anno tocca per forza al gioco da tavolo, anche se per me sono tutti uguali. L'unica cosa che vi chiedo è di non andare oltre i cinquanta euro.",
+    "expect": "long",
+    "note": "Boundary case: long, rambling, dutiful gift hunt with clearly LOW enthusiasm. reply_style must read long anyway — this is the mirror of the short-but-excited case, keeping the two dimensions separable."
+  },
+  {
+    "id": "famiglia-domenica-pomeriggio",
+    "dimension": "reply_style",
+    "history": [],
+    "message": "Le racconto un attimo la situazione: siamo una famiglia di quattro persone, i bambini hanno 8 e 11 anni, e da quando abbiamo provato Ticket to Ride a casa dei cugini abbiamo preso l'abitudine di giocare la domenica pomeriggio. Abbiamo già Carcassonne e Ubongo, ma ormai li conosciamo a memoria. Vorremmo qualcosa di nuovo che duri al massimo un'ora, perché il più piccolo dopo un po' perde la pazienza, e possibilmente senza troppa lettura di carte.",
+    "expect": "long",
+    "note": "Customer narrates context unprompted: household composition, kids' ages, games already owned, habits, constraints. Rich descriptive paragraph."
+  },
+  {
+    "id": "gruppo-storico-risposta-dettagliata",
+    "dimension": "reply_style",
+    "history": [
+      "utente: cerco un gioco nuovo per il mio gruppo",
+      "bot: Volentieri! Mi racconti un po' del gruppo? In quanti siete e a cosa giocate di solito?"
+    ],
+    "message": "Siamo un gruppo storico di cinque amici, ci troviamo più o meno ogni due settimane dal liceo. Negli anni siamo passati da Risiko alle cose più moderne: ultimamente girano parecchio Azul e 7 Wonders, e l'inverno scorso abbiamo finito una campagna intera di Pandemic Legacy, che ci è piaciuta da morire. Il problema è che uno di noi si è trasferito e spesso siamo in quattro, quindi cercherei qualcosa che renda bene sia in quattro che in cinque, di peso medio, niente partite da quattro ore.",
+    "expect": "long",
+    "note": "Answers the bot's question with a full portrait of the group: history, titles played, the logistics problem. Long-form respondent even in mid-conversation."
+  },
+  {
+    "id": "amica-collezionista-ritratto",
+    "dimension": "reply_style",
+    "history": [],
+    "message": "Cerco un regalo per la mia migliore amica, che di giochi se ne intende molto più di me. A casa ha una libreria intera: so per certo che ha Wingspan, Everdell e una cosa con le carte e i mostri di cui non ricordo il nome. Le piacciono i giochi belli da vedere, con tante illustrazioni, e ultimamente parlava spesso di giochi in solitario perché il compagno lavora su turni. Il budget non è un problema, mi importa solo non regalarle un doppione o una cosa banale.",
+    "expect": "long",
+    "note": "Detailed portrait of the gift recipient: collection, tastes, life context, priorities. Naturally verbose customer."
+  },
+  {
+    "id": "quattro-giocatori-trenta-euro",
+    "dimension": "reply_style",
+    "history": [
+      "utente: mi serve un gioco per il weekend",
+      "bot: Perfetto! In quanti sareste a giocare, e hai un budget in mente?"
+    ],
+    "message": "4 giocatori, max 30 euro.",
+    "expect": "short",
+    "note": "Telegraphic answer to a direct question: just the two data points, no framing sentence."
+  },
+  {
+    "id": "avete-catan",
+    "dimension": "reply_style",
+    "history": [],
+    "message": "Avete Catan?",
+    "expect": "short",
+    "note": "Two-word opening message. Terse availability check, nothing else offered."
+  },
+  {
+    "id": "va-bene-quello",
+    "dimension": "reply_style",
+    "history": [
+      "utente: cerco un gioco di strategia per due, sui 40 euro",
+      "bot: Ti proporrei Targi: strategico per due giocatori, piazzamento pedine sul confine, rientra nel budget."
+    ],
+    "message": "Va bene quello.",
+    "expect": "short",
+    "note": "Accepts the proposal in three words. Flat-toned but the dimension under test is only the brevity."
+  },
+  {
+    "id": "top-lo-prendo",
+    "dimension": "reply_style",
+    "history": [
+      "utente: c'è qualcosa tipo Dixit ma per gruppi grandi?",
+      "bot: Sì! Ti consiglio Mysterium: illustrazioni oniriche come Dixit, ma cooperativo e ottimo fino a 7 giocatori."
+    ],
+    "message": "Top! Lo prendo subito!",
+    "expect": "short",
+    "note": "Mirror boundary: clearly enthusiastic but still terse. reply_style must read short despite the excitement — brevity, not mood, is the signal."
+  }
+]

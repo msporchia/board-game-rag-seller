@@ -1,0 +1,108 @@
+[
+  {
+    "id": "budget-giocatori-scadenza",
+    "dimension": "escalate",
+    "history": [
+      "utente: Ciao, cerco un gioco da regalare a degli amici",
+      "bot: Volentieri! Mi dici qualcosa in più? In quanti giocherebbero e che genere preferiscono?"
+    ],
+    "message": "Allora: budget 60 euro, siamo in 5, e mi serve per sabato sera che abbiamo la cena. Cosa mi consigli?",
+    "expect": true,
+    "note": "Textbook purchase-ready: explicit budget, player count and a hard deadline in one message."
+  },
+  {
+    "id": "lo-prendo-subito-quale-dei-due",
+    "dimension": "escalate",
+    "history": [
+      "utente: Cerco un gioco veloce da fare in due con la mia ragazza",
+      "bot: Ti propongo due classici moderni: Azul, astratto ed elegante, oppure Splendor, motore di gemme molto scorrevole. Entrambi girano benissimo in due.",
+      "utente: Belli entrambi, lei ama le cose colorate"
+    ],
+    "message": "Dai, lo prendo subito: quale dei due mi consigli tra Azul e Splendor?",
+    "expect": true,
+    "note": "Boundary true: no budget stated, but explicit immediate purchase intent choosing between two proposals."
+  },
+  {
+    "id": "confronto-multi-vincolo",
+    "dimension": "escalate",
+    "history": [
+      "utente: Cerco un gestionale impegnativo per mio fratello, è un giocatore esperto",
+      "bot: Ottimo! A che titoli stavi pensando? Così ti aiuto a confrontarli."
+    ],
+    "message": "Tra Brass Birmingham, Terraforming Mars e Ark Nova: quale regge meglio in due giocatori, sta sotto le tre ore e si trova sotto i 90 euro? Lui gioca quasi solo gestionali pesanti.",
+    "expect": true,
+    "note": "Complex multi-constraint comparison across three named games (player count, duration, price ceiling)."
+  },
+  {
+    "id": "regalo-urgente-compleanno",
+    "dimension": "escalate",
+    "history": [],
+    "message": "Aiuto, il compleanno di mia moglie è domani e non ho ancora niente! Siamo 4 adulti, massimo 40 euro: cosa avete di pronto da incartare?",
+    "expect": true,
+    "note": "Urgency (tomorrow) plus budget and player count, already at the first message."
+  },
+  {
+    "id": "gruppo-misto-vincoli-accumulati",
+    "dimension": "escalate",
+    "history": [
+      "utente: Cerco qualcosa per le vacanze in montagna con la famiglia allargata",
+      "bot: Che bello! Quante persone sarete e di che età?",
+      "utente: Saremo in 7, dai nonni di 70 anni a mia nipote di 9, e i cognati si annoiano in fretta",
+      "bot: Capito, serve qualcosa di accessibile ma non banale. Avete preferenze su durata o tipo di gioco?",
+      "utente: Massimo un'ora a partita, niente regolamenti lunghi, e i nonni non vedono benissimo le carte piccole"
+    ],
+    "message": "Partiamo venerdì, quindi dovrei ordinarlo oggi: stando sui 50 euro, cosa mi fai portare in valigia?",
+    "expect": true,
+    "note": "Complex conversation: many accumulated constraints (group size, ages, duration, accessibility) closing with budget and deadline."
+  },
+  {
+    "id": "curiosita-generica",
+    "dimension": "escalate",
+    "history": [],
+    "message": "Ciao! Che giochi da tavolo vanno di moda ultimamente?",
+    "expect": false,
+    "note": "Single vague question, no constraints, no purchase intent: idle curiosity."
+  },
+  {
+    "id": "small-talk-iniziale",
+    "dimension": "escalate",
+    "history": [],
+    "message": "Buongiorno! È la prima volta che scrivo qui... ma voi vendete anche puzzle o solo giochi da tavolo?",
+    "expect": false,
+    "note": "Early small talk about the shop itself, conversation has not even started on games."
+  },
+  {
+    "id": "navigazione-pigra",
+    "dimension": "escalate",
+    "history": [
+      "utente: Ciao, sto guardando un po' di giochi",
+      "bot: Benvenuto! Cerchi qualcosa di particolare? Posso consigliarti in base a gusti, numero di giocatori o budget.",
+      "utente: Mah, niente di preciso"
+    ],
+    "message": "Boh, non saprei... sto solo dando un'occhiata, grazie.",
+    "expect": false,
+    "note": "Idle browsing: the customer explicitly declines to engage, no constraints emerge."
+  },
+  {
+    "id": "budget-sognando",
+    "dimension": "escalate",
+    "history": [
+      "utente: Che bello Gloomhaven, l'ho provato da un amico",
+      "bot: Grande titolo! È un dungeon crawler con campagna lunghissima. Ti interessa qualcosa del genere?"
+    ],
+    "message": "Eh, magari! Un giorno con 200 euro mi farei tutta la collezione, scatole e espansioni... chissà. Vabbè, per ora guardo soltanto.",
+    "expect": false,
+    "note": "Boundary false: a budget figure is mentioned but it is daydreaming ('un giorno', 'per ora guardo soltanto'), not purchase intent."
+  },
+  {
+    "id": "domanda-singola-vaga",
+    "dimension": "escalate",
+    "history": [
+      "utente: Ciao, un mio collega parla sempre di giochi cooperativi",
+      "bot: Sì, sono giochi dove si vince o si perde tutti insieme: Pandemic è l'esempio classico. Vuoi qualche consiglio?"
+    ],
+    "message": "Ah ok. Ma in generale sono lunghi come partite?",
+    "expect": false,
+    "note": "Single generic follow-up question about a category, no budget, players or urgency."
+  }
+]

@@ -1,0 +1,116 @@
+[
+  {
+    "id": "bellissimo-lo-voglio",
+    "dimension": "enthusiasm",
+    "history": [
+      "utente: cerco un gioco di piazzamento tessere da fare in due",
+      "bot: Ti propongo Cascadia: piazzamento tessere rilassante, perfetto in due, partite da 30-45 minuti con un bel colpo d'occhio sul tavolo."
+    ],
+    "message": "Bellissimo! Lo voglio!",
+    "expect": "high",
+    "note": "Boundary case: very short message but unmistakably excited (exclamations, immediate want). Enthusiasm must read high even though reply_style would read short."
+  },
+  {
+    "id": "scoperta-serata-tra-amici",
+    "dimension": "enthusiasm",
+    "history": [],
+    "message": "Ciao!! Sabato ho giocato per la prima volta a un gioco da tavolo 'vero' a casa di amici e me ne sono innamorato, abbiamo fatto le tre di notte! Voglio assolutamente prenderne uno anche io, da dove comincio?",
+    "expect": "high",
+    "note": "Fresh convert gushing about a first game night: exclamations, 'me ne sono innamorato', eager to buy. Decisiveness stays low (no idea what to get), only excitement is marked."
+  },
+  {
+    "id": "racconta-racconta-draghi",
+    "dimension": "enthusiasm",
+    "history": [
+      "utente: cerco qualcosa di fantasy da fare in gruppo",
+      "bot: Potresti guardare Le Case della Follia oppure un classico come Talisman: avventura fantasy, mostri e missioni a volontà."
+    ],
+    "message": "Che bello! E la parte dei mostri come funziona? Ci sono anche i draghi? Racconta tutto!",
+    "expect": "high",
+    "note": "Asks eagerly to know more ('racconta tutto!'), piles up questions out of excitement rather than due diligence."
+  },
+  {
+    "id": "dixit-successone-ne-voglio-ancora",
+    "dimension": "enthusiasm",
+    "history": [],
+    "message": "Devo proprio dirvelo: Dixit che mi avevate consigliato è stato un successone, lo tiriamo fuori ogni venerdì sera! Adesso ne voglio subito un altro dello stesso genere, sono curiosissimo di vedere cosa mi proponete!",
+    "expect": "high",
+    "note": "Returning customer celebrating a past purchase and eager for the next one; spontaneous storytelling plus exclamations."
+  },
+  {
+    "id": "cena-con-amici-qualcosa-di-carino",
+    "dimension": "enthusiasm",
+    "history": [],
+    "message": "Buongiorno, ogni tanto vengono degli amici a cena e vorrei tenere in casa un gioco da tavolo per il dopocena. Cosa avete di carino?",
+    "expect": "medium",
+    "note": "Polite, functional interest: a real intent to buy, normal courteous tone, no excitement markers and no flatness either."
+  },
+  {
+    "id": "quanto-dura-una-partita",
+    "dimension": "enthusiasm",
+    "history": [
+      "utente: cerco un gioco per la famiglia, bambini dalle elementari in su",
+      "bot: Ti consiglierei Ticket to Ride: regole semplici, adatto dagli 8 anni, molto amato dalle famiglie."
+    ],
+    "message": "Interessante, grazie. Quanto dura più o meno una partita?",
+    "expect": "medium",
+    "note": "Engaged enough to follow up with a practical question, but tone is measured: 'interessante, grazie' is courtesy, not excitement."
+  },
+  {
+    "id": "serate-famiglia-qualche-idea",
+    "dimension": "enthusiasm",
+    "history": [],
+    "message": "Sto pensando di prendere un gioco per le serate in famiglia, niente di troppo impegnativo. Mi dareste qualche idea?",
+    "expect": "medium",
+    "note": "Ordinary shopper voice: genuine but unhurried interest, asks for ideas without either eagerness or reluctance."
+  },
+  {
+    "id": "potrebbe-andare-altre-opzioni",
+    "dimension": "enthusiasm",
+    "history": [
+      "utente: mi servirebbe un gioco di carte da portare in viaggio",
+      "bot: Ti propongo The Crew: scatola piccola, cooperativo, partite veloci, perfetto in treno o in vacanza."
+    ],
+    "message": "Sì, potrebbe andare. Ce ne sono altri simili, così confronto un attimo?",
+    "expect": "medium",
+    "note": "Lukewarm but cooperative: accepts the pitch tentatively and keeps the conversation going. Functional comparison shopping, neither excited nor checked out."
+  },
+  {
+    "id": "regalo-nipote-non-so-da-dove-iniziare",
+    "dimension": "enthusiasm",
+    "history": [],
+    "message": "Devo fare un regalo a mio nipote per il compleanno, non so nemmeno da dove iniziare. Ditemi voi qualcosa, basta che facciamo in fretta.",
+    "expect": "low",
+    "note": "Dragged-along gift buyer: duty ('devo'), zero personal interest, wants it over with ('basta che facciamo in fretta')."
+  },
+  {
+    "id": "boh-uno-vale-laltro",
+    "dimension": "enthusiasm",
+    "history": [
+      "utente: serve un gioco per stasera",
+      "bot: Volentieri! Che genere vi piacerebbe? Un party game, qualcosa di strategico, un cooperativo?"
+    ],
+    "message": "Boh, uno vale l'altro.",
+    "expect": "low",
+    "note": "Monosyllabic disinterest: shrugs off the bot's engaging question, refuses to invest anything in the choice."
+  },
+  {
+    "id": "mandato-dalla-moglie",
+    "dimension": "enthusiasm",
+    "history": [],
+    "message": "Mia moglie mi ha mandato qui a prendere un gioco per la festa di domani. Io di queste cose non ne capisco e nemmeno mi interessano, fate voi.",
+    "expect": "low",
+    "note": "Explicitly declares disinterest ('nemmeno mi interessano') and delegates the whole decision. Flat errand-running tone."
+  },
+  {
+    "id": "pausa-pranzo-colleghi-insistono",
+    "dimension": "enthusiasm",
+    "history": [
+      "utente: cercavo informazioni sui giochi da fare in pausa pranzo",
+      "bot: Certo! Ci sono ottimi giochi rapidi da 15-20 minuti. Preferireste qualcosa di competitivo o un cooperativo?"
+    ],
+    "message": "Mah, non saprei. A me i giochi da tavolo non hanno mai detto granché, sono i colleghi che insistono.",
+    "expect": "low",
+    "note": "External pressure, no personal involvement: 'mah', 'non mi hanno mai detto granché', the colleagues want it, not the speaker."
+  }
+]

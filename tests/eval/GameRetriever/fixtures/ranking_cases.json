@@ -1,0 +1,74 @@
+[
+  {
+    "id": "coop-famiglia-figli",
+    "query": "Vorrei un gioco cooperativo da fare con i miei figli, niente di troppo lungo o complicato",
+    "oracle": [3, 48, 1],
+    "note": "Six cooperatives in the corpus; the family constraint orders them: Pandemic (45min, medium-light) > Pandemic La Caduta di Roma (60min, medium) > Massive Darkness (coop but a 120min dungeon crawler). The horror coops (Case della Follia, Fireteam Zero) and the heavy First Martians must stay below the oracle."
+  },
+  {
+    "id": "fattoria-piazzamento-lavoratori",
+    "query": "Un gestionale di piazzamento lavoratori dove costruisco la mia fattoria con gli animali",
+    "oracle": [29, 22, 20],
+    "note": "Agricola is the literal answer (farm + animals + worker placement) > Viticulture (a farm too, but a vineyard) > Stone Age (worker placement with farming, prehistoric civ). La Festa per Odino matches the theme but is an EXPANSION — if it outranks base games that is the anomaly to read."
+  },
+  {
+    "id": "astratto-due-veloce",
+    "query": "Un gioco astratto veloce per due, tipo scacchi ma che duri dieci minuti",
+    "oracle": [160, 47, 43],
+    "note": "Onitama is exact (2p, 10min, chess-like abstract) > Tao Long (2p, 20min abstract duel) > Spirits of the Forest (light abstract, but 1-4p and not a duel)."
+  },
+  {
+    "id": "spazio-gestionale-impegnativo",
+    "query": "Un gestionale impegnativo di colonizzazione spaziale, qualcosa che faccia pensare",
+    "oracle": [12, 21, 9],
+    "note": "Progetto Gaia (medium-heavy, space civ) > Terraforming Mars (medium, space terraforming/industry) > Mercanti di Venere (space economy, but pick-up-and-deliver adventure). First Martians just below would be acceptable (space survival coop, not a 'gestionale')."
+  },
+  {
+    "id": "mitologia-greca",
+    "query": "Qualcosa ambientato nella mitologia greca, con gli dèi dell'Olimpo",
+    "oracle": [2, 49],
+    "note": "Lords of Hellas is explicit Greek mythology (Zeus, Athena, monuments) > Orbis (generic god-and-creation mythology). Amun-Re is Egyptian: above Orbis would be a near-miss, above Hellas a real error."
+  },
+  {
+    "id": "horror-cooperativo-indagine",
+    "query": "Un cooperativo horror investigativo, con atmosfera tesa e misteri da risolvere",
+    "oracle": [4, 11, 1],
+    "note": "Le Case della Follia is exact (Lovecraftian horror, investigation, coop) > Fireteam Zero (WW2 horror coop, combat-heavy, no investigation) > Massive Darkness (dark dungeon crawler, not horror)."
+  },
+  {
+    "id": "serata-tanti-amici",
+    "query": "Stasera siamo tanti, anche sette o otto, serve qualcosa di semplice che faccia ridere",
+    "oracle": [51, 37, 41],
+    "note": "BANG! Deluxe (3-8p, bluff, humor) > Fantascatti (2-8p, frantic dexterity party) > Dixit (party humor but caps at fewer players). King of Tokyo near Dixit is a near-miss (fun but caps at 6)."
+  },
+  {
+    "id": "treni-famiglia-percorsi",
+    "query": "Un gioco di treni per la famiglia, dove si costruiscono i percorsi sulla mappa",
+    "oracle": [40, 13],
+    "note": "Two train games in the corpus: Ticket to Ride Europa is the pure-trains classic asked for > Vagoni & Velieri (the trains-plus-ships variant)."
+  },
+  {
+    "id": "deck-building-dungeon",
+    "query": "Un deck building d'avventura, esplorare un sotterraneo e arraffare tesori prima degli altri",
+    "oracle": [27, 18, 33],
+    "note": "Clank! is the literal answer (deck building + dungeon delve + treasure race) > Altiplano (bag building economy, no dungeon) > Newton (deck/pool building, scientific travel). The order of the last two is mechanical-affinity grading, a swap there is a minor deviation."
+  },
+  {
+    "id": "tessere-medioevo-famiglia",
+    "query": "Un gioco di piazzamento tessere ambientato nel medioevo, semplice, per la famiglia",
+    "oracle": [34, 56, 49],
+    "note": "Carcassonne is exact (medieval tile placement, family weight) > Fairy Tile (family tile placement, fairy-tale medieval) > Orbis (tile placement, but mythology and more thinky)."
+  },
+  {
+    "id": "wargame-scifi-due-miniature",
+    "query": "Un wargame di fantascienza con le miniature, per giocare in due",
+    "oracle": [6, 16],
+    "note": "Star Wars Legion (2p sci-fi miniatures wargame, explicit miniatures) > Warhammer 40k Heroes of Black Reach (2p sci-fi wargame, counters/dice). Both fit; Legion is the stronger miniatures match."
+  },
+  {
+    "id": "pirati-navi-tesori",
+    "query": "Un gioco di pirati, con le navi e la caccia al tesoro",
+    "oracle": [46, 13],
+    "note": "Dead Man's Doubloons is the only pirate game (ships, treasure race) > Ticket to Ride Vagoni & Velieri (the only other ships game, graded relevance only)."
+  }
+]

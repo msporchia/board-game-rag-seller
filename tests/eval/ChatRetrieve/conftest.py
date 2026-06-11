@@ -11,10 +11,12 @@ Scoring and run persistence live in `report.RetrieveReport` (shared mechanics in
 `tests/eval/report/eval_report.py`); this conftest only wires fixtures and delegates the
 session hooks.
 
-The corpus collection is built ONCE per session from the shared fixture corpus
-(tests/fixtures/suites/core/games.json) through the exact deterministic recipe the e2e harness
-uses for its distractors: `RuleComposeEnricher` (no LLM) → `DocumentSerializer` →
-`GameVectorStore.index(recreate=True)` — on a DEDICATED throwaway collection
+The corpus collection is built ONCE per session from the FROZEN post-pipeline corpus
+(tests/fixtures/suites/core/games_enriched.json — the shared 50 games after the offline
+production chain, see tests/eval/GameRetriever/freeze_corpus.py): the retrieve node must be
+measured over the text it searches in PRODUCTION, not over raw catalog marketing run through
+the rule-only e2e distractor recipe (which this suite used before — that baseline is not
+comparable). Indexing happens on a DEDICATED throwaway collection
 (`games_eval_chat_retrieve`), deleted at teardown. The production `games` collection is never
 touched.
 
@@ -28,7 +30,7 @@ import pytest
 
 from tests.eval.ChatRetrieve.report import RetrieveReport
 
-CORPUS = Path(__file__).resolve().parents[2] / "fixtures" / "suites" / "core" / "games.json"
+FROZEN = Path(__file__).resolve().parents[2] / "fixtures" / "suites" / "core" / "games_enriched.json"
 COLLECTION = "games_eval_chat_retrieve"
 
 
@@ -66,18 +68,17 @@ def graph():
     from app.chat.graph import ChatGraph
     from app.chat.models.reply import ChatReply
     from app.core.vector_store import GameVectorStore
-    from app.ingestion.enricher.compose import RuleComposeEnricher
     from app.ingestion.serializer import DocumentSerializer
     from app.models.game_doc import GameDoc
     from app.rag.retriever import GameRetriever
     from tests.unit.ChatGraph.fakes import FakeAnalyzeLLM, FakeGenLLM
 
-    # --- corpus → throwaway collection, the e2e distractor recipe (NO LLM, embeddings only) --
-    compose = RuleComposeEnricher()
+    # --- frozen post-pipeline corpus → throwaway collection (embeddings only, no LLM) -------
+    if not FROZEN.exists():
+        pytest.skip("frozen corpus missing — run: docker compose exec seller-api "
+                    "python -m tests.eval.GameRetriever.freeze_corpus")
     serializer = DocumentSerializer()
-    games = [GameDoc.from_dto(dto)
-             for dto in json.loads(CORPUS.read_text(encoding="utf-8"))]
-    composed = [compose.enrich(g) for g in games]
+    composed = [GameDoc(**d) for d in json.loads(FROZEN.read_text(encoding="utf-8"))]
     documents = [serializer.to_document(g) for g in composed]
     ids = [GameVectorStore.point_id(g.id_product) for g in composed]
 

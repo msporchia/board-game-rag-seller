@@ -1,11 +1,15 @@
-"""Persistence + scoring of the ChatRetrieve eval (embeddings + Qdrant, NO generation LLM).
+"""Fixtures of the ChatRetrieve eval (embeddings + Qdrant, NO generation LLM).
 
 The retrieve node of the stateful chat is the step that decides WHICH games even get a chance
 to be pitched: it assembles the query from the conversation (previous user turns + current
 message + unparsed click leftovers), merges quick-reply clicks into structured filters, and
 runs the hybrid search. This suite measures that step in isolation, against a real ~50-game
 corpus indexed with real embeddings — no analyze/generate LLM in the loop, so a run is fast
-and near-deterministic (embeddings are the only model involved, at temperature-free inference).
+and near-deterministic.
+
+Scoring and run persistence live in `report.RetrieveReport` (shared mechanics in
+`tests/eval/report/eval_report.py`); this conftest only wires fixtures and delegates the
+session hooks.
 
 The corpus collection is built ONCE per session from the shared fixture corpus
 (tests/fixtures/suites/core/games.json) through the exact deterministic recipe the e2e harness
@@ -14,41 +18,37 @@ uses for its distractors: `RuleComposeEnricher` (no LLM) → `DocumentSerializer
 (`games_eval_chat_retrieve`), deleted at teardown. The production `games` collection is never
 touched.
 
-Scoring is recall@k (the headline: did the expected game make it onto the table at the k the
-strategy dictates?) plus the mean rank of the targets that were found. Like the sibling evals,
-there is no acceptance threshold yet: the first runs establish the baseline, the diff vs the
-previous run flags regressions (`runs/retrieve_<timestamp>.json` + `runs/last.json`,
-gitignored).
-
     docker exec seller-api python -m pytest tests/eval/ChatRetrieve -q
 """
 
 import json
-import time
 from pathlib import Path
 
 import pytest
 
-RUNS = Path(__file__).parent / "runs"
+from tests.eval.ChatRetrieve.report import RetrieveReport
+
 CORPUS = Path(__file__).resolve().parents[2] / "fixtures" / "suites" / "core" / "games.json"
 COLLECTION = "games_eval_chat_retrieve"
 
 
 def pytest_sessionstart(session):
-    RUNS.mkdir(exist_ok=True)
-    # Suite-namespaced (not `_eval_records`): every eval conftest's hooks fire in a combined
+    # One report per suite, suite-namespaced: every eval conftest's hooks fire in a combined
     # `pytest tests/eval` session, so a shared attribute would mix the suites' records.
-    session._chat_retrieve_records: list[dict] = []
-    session._chat_retrieve_started = time.strftime("%Y%m%d-%H%M%S")
+    session._chat_retrieve_report = RetrieveReport(Path(__file__).parent / "runs")
+
+
+def pytest_sessionfinish(session, exitstatus):
+    report = getattr(session, "_chat_retrieve_report", None)
+    if report is not None:
+        report.finish(int(exitstatus))
 
 
 @pytest.fixture
 def record_retrieval(request):
     """Tests record one entry per case:
     {case, expected_id, k_used, rank (1-based or null), hit, note}."""
-    def _record(entry: dict) -> None:
-        request.session._chat_retrieve_records.append(entry)
-    return _record
+    return request.session._chat_retrieve_report.record
 
 
 @pytest.fixture(scope="session")
@@ -95,86 +95,3 @@ def graph():
         yield graph
     finally:
         store.client.delete_collection(COLLECTION)
-
-
-# ---- scoring ----------------------------------------------------------------
-
-def _aggregate(records: list[dict]) -> dict:
-    """recall@k (the headline) + mean rank of the found targets."""
-    n = len(records)
-    found = [r["rank"] for r in records if r["rank"] is not None]
-    hits = sum(int(r["hit"]) for r in records)
-    return {
-        "n_cases": n,
-        "recall_at_k": round(hits / n, 4) if n else 0.0,
-        "found": len(found),
-        "mean_rank": round(sum(found) / len(found), 2) if found else None,
-    }
-
-
-def _previous_metrics() -> dict | None:
-    timestamped = sorted(p for p in RUNS.glob("retrieve_*.json"))
-    if not timestamped:
-        return None
-    try:
-        prev = json.loads(timestamped[-1].read_text(encoding="utf-8"))
-    except Exception:                       # noqa: BLE001  corrupted file → ignore
-        return None
-    return prev.get("metrics")
-
-
-def _format_delta(curr: float, prev: float | None) -> str:
-    if prev is None:
-        return f"{curr:.3f}"
-    d = curr - prev
-    arrow = "→" if abs(d) < 1e-4 else ("↑" if d > 0 else "↓")
-    return f"{curr:.3f} {arrow} (Δ {d:+.3f}, was: {prev:.3f})"
-
-
-def _print_summary(metrics: dict, prev: dict | None, records: list[dict], model: str) -> None:
-    print("\n" + "=" * 70)
-    print(f"  EVAL ChatRetrieve — _retrieve | embeddings: {model} | recall@k")
-    print("=" * 70)
-    print(f"  Cases: {metrics['n_cases']}   "
-          f"recall@k: {_format_delta(metrics['recall_at_k'], (prev or {}).get('recall_at_k'))}")
-    mean_rank = metrics["mean_rank"]
-    prev_rank = (prev or {}).get("mean_rank")
-    rank_note = f" (was: {prev_rank})" if prev_rank is not None else ""
-    print(f"  Found: {metrics['found']}/{metrics['n_cases']}   "
-          f"mean rank of found: {mean_rank}{rank_note}")
-    print()
-    for rec in records:
-        mark = "✓" if rec["hit"] else "✗"
-        rank = rec["rank"] if rec["rank"] is not None else "—"
-        print(f"  {mark} {rec['case']:38s} rank {rank!s:>2s} / k={rec['k_used']}")
-    print("=" * 70 + "\n")
-
-
-def pytest_sessionfinish(session, exitstatus):
-    records = getattr(session, "_chat_retrieve_records", None)
-    if not records:
-        return
-    timestamp = session._chat_retrieve_started
-    metrics = _aggregate(records)
-    prev_metrics = _previous_metrics()
-
-    payload = {
-        "session": timestamp,
-        "model": _peek_model(),
-        "exit_status": int(exitstatus),
-        "metrics": metrics,
-        "records": records,
-    }
-    text = json.dumps(payload, ensure_ascii=False, indent=2)
-    (RUNS / f"retrieve_{timestamp}.json").write_text(text, encoding="utf-8")
-    (RUNS / "last.json").write_text(text, encoding="utf-8")
-
-    _print_summary(metrics, prev_metrics, records, payload["model"])
-
-
-def _peek_model() -> str:
-    try:
-        from app.config import settings
-        return settings.embedding_model
-    except Exception:                       # noqa: BLE001  settings unavailable → unknown
-        return "unknown"

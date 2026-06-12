@@ -274,10 +274,19 @@ context requires it; **LOW** = nice-to-have / when scaling.
      by session hash, canary on escalated sessions first (the `escalate` signal generalizes
      from "swap the model on one node" to "swap the whole path"; see §L tier-routing, §O
      swappable policies).
+- **Candidate primary model**: `gpt-oss:20b` (agentic-native, open weights, runs on the dev
+  box with RAM freed; `qwen3:14b` as the lighter alternative). NOT to be tested by swapping it
+  into the pipeline slots as a fix — the convergence failures are architectural (re-retrieval
+  condition, GUIDED k, embedder paraphrase gap) and a stronger model in the same cage fixes
+  none of them. The experiment that matters is the unified tool-calling prompt: the agent's
+  unique value is deciding WHEN to search and WITH WHAT WORDS (it translates customer
+  paraphrase into catalog language — the lexical gap the embedder can't bridge).
 - **Measure**: ChatConversation is the arbiter — same fixtures, swap the `graph` conftest
-  fixture, compare RESULTS deltas; the agent ships only when it beats the pipeline. In
-  production the guard metric is the primary-degradation rate per window: above threshold the
-  breaker opens on its own; open for days means "wrong model", i.e. an env-level decision.
+  fixture, compare RESULTS deltas; the agent ships only when it beats the pipeline. Run the
+  strong model in the pipeline slots ONCE as the control group: same model caged vs free
+  isolates architecture weight from model weight — that attribution is the finding to record.
+  In production the guard metric is the primary-degradation rate per window: above threshold
+  the breaker opens on its own; open for days means "wrong model", i.e. an env-level decision.
 
 ---
 

@@ -25,7 +25,7 @@ class TestSessionRouting:
 
         monkeypatch.setattr(chat_api, "_advisor", FakeAdvisor())
         monkeypatch.setattr(chat_api, "_get_engine",
-                            lambda: pytest.fail("a stateless request must not build the engine"))
+                            lambda name: pytest.fail("a stateless request must not build the engine"))
 
         res = chat_api.chat(ChatRequest(message="ciao"))
 
@@ -44,7 +44,7 @@ class TestSessionRouting:
                 return ChatResponse(message="stateful")
 
         fake = FakeEngine()
-        monkeypatch.setattr(chat_api, "_get_engine", lambda: fake)
+        monkeypatch.setattr(chat_api, "_get_engine", lambda name: fake)
         monkeypatch.setattr(
             chat_api, "_advisor",
             type("Boom", (), {"reply": lambda *a, **kw: pytest.fail("graph path expected")})())

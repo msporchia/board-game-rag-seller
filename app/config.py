@@ -18,6 +18,11 @@ class Settings(BaseSettings):
     # CONTRACT is exercised end-to-end as a no-op; in production point it at a stronger model
     # (e.g. a larger local model, or Sonnet behind a provider-swappable transport).
     llm_model_strong: str = ""
+    # Stateful chat engine (docs/idee.md §Q): "pipeline" = the decomposed graph (every decision
+    # in code), "piloted" = arm B (the model reformulates the search query, the code fetches).
+    # Env-level structural default; ChatRequest.engine overrides it per request (shadow runs,
+    # tests) without env churn. Unknown values fall back to "pipeline".
+    chat_engine: str = "pipeline"
 
     # Qdrant collection that holds the games
     collection_name: str = "games"

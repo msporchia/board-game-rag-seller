@@ -1,3 +1,5 @@
+from typing import Literal
+
 from pydantic import BaseModel, Field
 
 
@@ -10,3 +12,7 @@ class ChatRequest(BaseModel):
     # Present → stateful Phase 5 path (LangGraph with session memory, keyed by this id).
     # Absent → the original stateless Phase 4 behavior, unchanged.
     session_id: str | None = None
+    # Per-request engine override (docs/idee.md §Q): None → the CHAT_ENGINE env default.
+    # Only meaningful on the stateful path; what makes shadow runs and A/B tests possible
+    # without env churn.
+    engine: Literal["pipeline", "piloted"] | None = None

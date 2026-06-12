@@ -281,7 +281,9 @@ context requires it; **LOW** = nice-to-have / when scaling.
   none of them. The experiment that matters is the unified tool-calling prompt: the agent's
   unique value is deciding WHEN to search and WITH WHAT WORDS (it translates customer
   paraphrase into catalog language — the lexical gap the embedder can't bridge).
-- **Arm B — the code-piloted agent loop (weak model, build BEFORE the autonomous agent)**:
+- **Arm B — the code-piloted agent loop (weak model, build BEFORE the autonomous agent) —
+  BUILT and measured (app/chat/piloted.py, selector `CHAT_ENGINE=pipeline|piloted` +
+  per-request `engine` override; 2026-06-12, ChatConversation)**:
   same loop shape as the agent, but the graph orchestrates and the weak model does one
   constrained job per step. Each turn: (1) the model expresses its recommendation INTENT as
   structured output ("I'd suggest something like…": query + extracted constraints — the
@@ -296,6 +298,23 @@ context requires it; **LOW** = nice-to-have / when scaling.
   hence structured query + code-side filter merge. This is also why today's design can't
   answer "is game X in the catalog": absence-from-hits ≠ absence-from-catalog; arm B's
   explicit result count is what makes honesty knowledge instead of luck.
+  **Measured (same fixtures, pipeline run then piloted run, llama3.1 both, 2026-06-12)**:
+  case pass 0.700 → **0.800**, convergence 5/8 → **6/8**; cost 43 → 47 LLM calls (+4: the
+  zero-result retries actually firing) and 56 992 → 46 726 tokens (−18%: the intent prompt is
+  leaner than the analyze rubric). Δquality/Δcost: +0.100 case pass for +4 calls and −10k
+  tokens. Per failure class: *terraforming* RECOVERED (turn 2 — fresh intent re-retrieves on
+  the text-borne refinement) and *contrordine* RECOVERED (turn 1 — the model declared age=8
+  and it became a hard filter; request-k replaced GUIDED's k=2). *pandemic* moved, not fixed:
+  the reformulation ("gioco cooperativo per famiglie…, senza vincitori e vinti" + age≤8) DID
+  put Pandemic 10th Anniversary on the table (hit 3 of 5 — the paraphrase gap closed as
+  designed), but the PITCH step picked Fairy Tile/Fantascatti off the table — the failure
+  migrated from retrieval to generation, outside arm B's loop. One REGRESSION, the predicted
+  one: *carcassonne-cliente-deciso* (title lookup) — the intent step abstracted "Carcassonne"
+  into a generic description AND invented players=2/max-30-min constraints; its own invented
+  duration filter excluded Carcassonne (45 min). The 8B losing/inventing constraints is now a
+  measured failure mode, not a hypothesis; next experiments: keep customer-named titles
+  verbatim in the query (title-availability as its own intent shape), and judge the pitch
+  pick separately from retrieval (the pandemic lesson).
 - **Measure**: ChatConversation is the arbiter — same fixtures, swap the `graph` conftest
   fixture, compare RESULTS deltas. THREE arms, not two: today's pipeline (baseline) vs the
   piloted loop (arm B, weak model) vs the autonomous agent (arm A, strong model). Same loop
@@ -308,13 +327,15 @@ context requires it; **LOW** = nice-to-have / when scaling.
 - **Operational pattern (industry-grounded)**: the three arms COEXIST in code behind a
   selector — `CHAT_ENGINE=pipeline|piloted|agent` env default + an optional per-request
   `engine` override on ChatRequest (what makes shadow runs and tests possible without env
-  churn). A pivot is a config flip plus a later dedicated removal commit, never a git revert.
+  churn) — BUILT for pipeline|piloted (app/api/chat.py: one TieredChat per arm, the selected
+  engine primary over the pipeline fallback, ONE shared checkpointer). A pivot is a config flip plus a later dedicated removal commit, never a git revert.
   Measurement grammar: one goal metric (convergence/case-pass) + guardrail metrics that must
   not regress (tokens/conversation, LLM calls/turn, latency, fallback rate) — the deciding
   number is Δquality/Δcost, never Δquality alone. Instrumentation: `traces` gains an engine
   tag + token counts (Ollama's prompt_eval_count/eval_count via usage_metadata), so
   cost-per-conversation-per-arm is one query; ChatConversation records LLM calls + tokens per
-  conversation so RESULTS compares arms with the cost denominator inline. Endgame per the
+  conversation so RESULTS compares arms with the cost denominator inline — the suite half is
+  BUILT (LLMUsageTracker + engine-tagged runs); the `traces` engine tag is still to do. Endgame per the
   cascade/router literature (FrugalGPT, RouteLLM): the arms are TIERS of a cascade routed per
   turn — `escalate` is the embryonic router — not three alternative futures.
 - **Client-closed conversion loop (STRUCTURAL, build the seam from day one)**: conversions

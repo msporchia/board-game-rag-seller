@@ -4,7 +4,8 @@ Purpose: lock the advisor's two invariants and its contract, with the model fake
 What it tests:
   - Anti-hallucination grounding: featured games are exactly the retrieved ids the LLM cited;
     a recommendation with an invented id is dropped from BOTH the cards and the assembled
-    message (its pitch goes with it); LLM order is preserved.
+    message (its pitch goes with it); LLM order is preserved; a duplicated id keeps only its
+    first citation (found live by the ChatConversation eval: the 8B pitched a game twice).
   - Coherence by construction: the customer message is assembled in code as intro + the pitch
     of each surviving recommendation, in LLM order.
   - Honest empty-retrieval path (no LLM call, no invented alternatives).
@@ -51,6 +52,21 @@ class TestChatAdvisor:
         res = advisor.reply("qualcosa")
 
         assert [g.id_product for g in res.games] == [30, 10]
+
+    def test_duplicate_ids_keep_first_citation_only(self, make_advisor):
+        hits = [make_hit(10, "Alpha"), make_hit(20, "Bravo")]
+        reply = ChatReply(
+            intro="Ecco.",
+            recommendations=[rec(10, "Alpha è perfetto."), rec(20, "Bravo è veloce."),
+                             rec(10, "Alpha, di nuovo!")],
+        )
+        advisor, _, _ = make_advisor(hits=hits, reply=reply)
+
+        res = advisor.reply("qualcosa")
+
+        # The same game can be cited once: the duplicate card AND its second pitch are dropped.
+        assert [g.id_product for g in res.games] == [10, 20]
+        assert "di nuovo" not in res.message
 
     def test_message_is_intro_plus_surviving_pitches_in_order(self, make_advisor):
         hits = [make_hit(1, "Alpha"), make_hit(2, "Bravo")]

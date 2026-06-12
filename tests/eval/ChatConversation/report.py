@@ -1,5 +1,7 @@
 """ConversationReport — scoring of the conversation eval (see eval_report.EvalReport)."""
 
+import re
+
 from tests.eval.report.eval_report import EvalReport
 
 
@@ -77,8 +79,11 @@ class ConversationReport(EvalReport):
         passes = []
         for rec in self.records:
             if self._passed(rec):
-                passes.append({"case": rec["case"],
-                               "turns_to_converge": rec["turns_to_converge"]})
+                passes.append({
+                    "case": rec["case"],
+                    "converged turn": rec["turns_to_converge"],
+                    "trajectory": self._compact_trajectory(rec["trajectory"]),
+                })
                 continue
             failures.append({
                 "case": rec["case"],
@@ -100,17 +105,37 @@ class ConversationReport(EvalReport):
             failed.append("forced proposal")
         return failed
 
-    @staticmethod
-    def _render_trajectory(trajectory: list[dict]) -> list[str]:
+    def _render_trajectory(self, trajectory: list[dict]) -> list[str]:
         lines = []
         for t in trajectory:
             clicks = f" + click {t['choices']}" if t["choices"] else ""
-            marks = "".join([" ESC" if t["escalate"] else "",
-                             " FALLBACK" if t["fallback"] else ""])
-            games = ", ".join(t["games"]) if t["games"] else "no games"
+            games = ", ".join(self._short_name(n) for n in t["games"]) or "no games"
             lines.append(f"{t['turn']}. utente: {t['user']}{clicks}")
-            lines.append(f"   [{t['strategy']}{marks}] {games} — bot: {t['bot'][:160]}")
+            lines.append(f"   [{t['strategy']}{self._marks(t)}] {games} — bot: {t['bot'][:160]}")
         return lines
+
+    def _compact_trajectory(self, trajectory: list[dict]) -> list[str]:
+        """One line per turn for the passes section: the ask, the routed strategy and the
+        games on the table — the shape of a good conversation at a glance."""
+        lines = []
+        for t in trajectory:
+            user = t["user"] if len(t["user"]) <= 58 else t["user"][:57] + "…"
+            clicks = f" + click {t['choices']}" if t["choices"] else ""
+            games = ", ".join(self._short_name(n) for n in t["games"]) or "no games"
+            lines.append(f"{t['turn']}. «{user}»{clicks} → "
+                         f"{t['strategy']}{self._marks(t)}: {games}")
+        return lines
+
+    @staticmethod
+    def _marks(turn: dict) -> str:
+        return ("".join([" ESC" if turn["escalate"] else "",
+                         " FALLBACK" if turn["fallback"] else ""]))
+
+    @staticmethod
+    def _short_name(name: str) -> str:
+        """Catalog names are full marketing titles ('Massive Darkness - Gioco Cooperativo
+        Fantasy con…'); keep the part before the first dash/pipe separator."""
+        return re.split(r"\s+[-|–]\s+", name)[0].strip()
 
     def summary_lines(self, metrics: dict, prev: dict | None) -> list[str]:
         lines = [f"  Conversations: {metrics['n_cases']}   turns: {metrics['n_turns']}   "

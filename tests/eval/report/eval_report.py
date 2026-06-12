@@ -140,6 +140,7 @@ class EvalReport:
             "```",
             "",
             *self._markdown_failures(),
+            *self._markdown_passes(),
             "The cases live in [fixtures/](fixtures/) (each one carries its oracle `note`); "
             "the machine-readable history stays in `runs/` (local, gitignored).",
             "",
@@ -167,6 +168,31 @@ class EvalReport:
                 else:
                     lines.append(f"- {key}: {self._md_value(val)}")
             lines.append("")
+        return lines
+
+    def _markdown_passes(self) -> list[str]:
+        """Successes below the failures, one compact entry each: less relevant than the
+        failures, but they show what the good cases look like without drowning the page.
+        String entries render as one line; dict entries as one line of scalar fields plus
+        nested lines for list-valued fields (e.g. a compact trajectory)."""
+        passes = self.sections().get("passes") or {}
+        grouped = passes if isinstance(passes, dict) else {None: passes}
+        entries = [(g, e) for g, lst in grouped.items() for e in lst]
+        if not entries:
+            return []
+        lines = [f"## Passes ({len(entries)})", ""]
+        for group, entry in entries:
+            prefix = f"{group} — " if group else ""
+            if not isinstance(entry, dict):
+                lines.append(f"- {prefix}{entry}")
+                continue
+            scalars = [f"{k} {v}" for k, v in entry.items()
+                       if k != "case" and not isinstance(v, list) and v not in (None, "")]
+            lines.append(f"- {prefix}**{entry.get('case', '?')}**"
+                         + (f" — {', '.join(scalars)}" if scalars else ""))
+            for val in (v for v in entry.values() if isinstance(v, list)):
+                lines += [f"  - {self._md_value(v)}" for v in val]
+        lines.append("")
         return lines
 
     @staticmethod

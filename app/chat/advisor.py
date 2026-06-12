@@ -204,10 +204,15 @@ FORMATO DELLA RISPOSTA (JSON, TUTTI i campi obbligatori):
             return self._fallback(hits)
 
         # Anti-hallucination: keep only recommendations whose id was actually retrieved,
-        # preserving the LLM order. An invented id loses its pitch too — the assembled message
-        # can therefore only ever describe games that are in the cards (coherence by construction).
+        # preserving the LLM order, each id at most once (small models sometimes pitch the same
+        # game twice). An invented id loses its pitch too — the assembled message can therefore
+        # only ever describe games that are in the cards (coherence by construction).
         by_id = {h.id_product: h for h in hits}
-        kept = [r for r in (reply.recommendations or []) if r.id in by_id]
+        kept, seen = [], set()
+        for r in reply.recommendations or []:
+            if r.id in by_id and r.id not in seen:
+                kept.append(r)
+                seen.add(r.id)
         if not kept:  # nothing valid → no grounded pitch to show, degrade to the deterministic reply
             return self._fallback(hits)
         games = [by_id[r.id] for r in kept]

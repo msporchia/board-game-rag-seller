@@ -241,6 +241,44 @@ context requires it; **LOW** = nice-to-have / when scaling.
   distributed locking until there are multiple API replicas.
 - **Measure**: none — robustness. A unit test with two interleaved turns documents the limit.
 
+## Q. Tiered chat engine: agentic retrieval behind the pipeline — MEDIUM (seam built, agent later)
+
+- **What**: two chat engines behind one stable contract (`reply(message, choices, k,
+  session_id) → ChatResponse`): today's decomposed pipeline (weak local model, every decision
+  in code) and a future **agentic** engine — strong model, a `search_catalog` tool wrapping
+  GameRetriever+SearchFilters, the model decides *when and what* to search, iterating.
+  `TieredChat` (app/chat/tiered.py — BUILT, primary slot empty) is the seam: a primary that
+  MAY fail wrapped over a fallback that must not.
+- **Why**: the ChatConversation eval showed the convergence misses are partly structural —
+  GUIDED never re-retrieves on text-borne refinements, the model has no agency over retrieval.
+  An agent fixes the *class* of failures, but llama3.1-8B can't drive tools reliably, so the
+  tier must be optional and safely degradable. Note the cost asymmetry: a failed agent turn is
+  the MOST expensive turn (N tool loops on the strong model + timeout + then the pipeline) —
+  the circuit breaker below is what makes the wrapper viable, not an optimization.
+- **How (when the agent exists)**:
+  1. the three invariants stay in CODE at the boundary, identical for both engines: grounding
+     validated against the **union** of everything the agent's tool calls returned, the
+     ChatReply/ChatResponse contract, the honest no-match + deterministic fallback;
+  2. **ChatState stays the lingua franca**: the agent reads history/filters_spec in, writes
+     them back out — this is what makes any single turn servable by either engine, i.e. what
+     makes per-turn fallback possible at all;
+  3. failure = mechanical criteria only: tool-loop budget (2-3), timeout, final output not
+     validating the schema, zero grounded ids. Deterministic failures (schema, grounding)
+     weigh more in the breaker window than transient ones (timeout, transport);
+  4. **circuit breaker** in TieredChat: sliding window of primary outcomes → open (skip the
+     primary entirely, no wasted call) → half-open probes after a cool-down (1 turn in M) →
+     close on recovery. Hysteresis prevents flapping;
+  5. rollout ladder: `CHAT_ENGINE=pipeline|agent|auto` env switch (structural decisions,
+     human, hours) above the breaker (incidents, automatic, seconds) above the per-turn
+     budget (milliseconds); ramp-up — shadow replay of real sessions scored offline, then A/B
+     by session hash, canary on escalated sessions first (the `escalate` signal generalizes
+     from "swap the model on one node" to "swap the whole path"; see §L tier-routing, §O
+     swappable policies).
+- **Measure**: ChatConversation is the arbiter — same fixtures, swap the `graph` conftest
+  fixture, compare RESULTS deltas; the agent ships only when it beats the pipeline. In
+  production the guard metric is the primary-degradation rate per window: above threshold the
+  breaker opens on its own; open for days means "wrong model", i.e. an env-level decision.
+
 ---
 
 ## Red lines I would NOT change

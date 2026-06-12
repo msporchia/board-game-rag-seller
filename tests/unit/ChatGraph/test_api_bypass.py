@@ -1,9 +1,9 @@
 """`POST /chat` routing — Phase 4/Phase 5 split on `session_id` (backward compatibility).
 
 Purpose: lock that a request WITHOUT `session_id` takes the original stateless advisor path and
-never touches the graph (no checkpointer, no langgraph import), while a request WITH it goes to
-the graph keyed by that id. The handler is called directly with fakes monkeypatched in — no
-HTTP, no Ollama, no Qdrant.
+never touches the engine (no checkpointer, no langgraph import), while a request WITH it goes to
+the tiered engine (TieredChat over the graph) keyed by that id. The handler is called directly
+with fakes monkeypatched in — no HTTP, no Ollama, no Qdrant.
 """
 
 import pytest
@@ -24,18 +24,18 @@ class TestSessionRouting:
                 return ChatResponse(message="stateless")
 
         monkeypatch.setattr(chat_api, "_advisor", FakeAdvisor())
-        monkeypatch.setattr(chat_api, "_get_graph",
-                            lambda: pytest.fail("a stateless request must not build the graph"))
+        monkeypatch.setattr(chat_api, "_get_engine",
+                            lambda: pytest.fail("a stateless request must not build the engine"))
 
         res = chat_api.chat(ChatRequest(message="ciao"))
 
         assert res.message == "stateless"
         assert calls == [("ciao", [], 5)]
 
-    def test_session_id_routes_to_the_graph(self, monkeypatch):
+    def test_session_id_routes_to_the_engine(self, monkeypatch):
         import app.api.chat as chat_api
 
-        class FakeGraph:
+        class FakeEngine:
             def __init__(self):
                 self.calls = []
 
@@ -43,8 +43,8 @@ class TestSessionRouting:
                 self.calls.append((message, session_id))
                 return ChatResponse(message="stateful")
 
-        fake = FakeGraph()
-        monkeypatch.setattr(chat_api, "_get_graph", lambda: fake)
+        fake = FakeEngine()
+        monkeypatch.setattr(chat_api, "_get_engine", lambda: fake)
         monkeypatch.setattr(
             chat_api, "_advisor",
             type("Boom", (), {"reply": lambda *a, **kw: pytest.fail("graph path expected")})())

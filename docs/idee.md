@@ -317,6 +317,19 @@ context requires it; **LOW** = nice-to-have / when scaling.
   conversation so RESULTS compares arms with the cost denominator inline. Endgame per the
   cascade/router literature (FrugalGPT, RouteLLM): the arms are TIERS of a cascade routed per
   turn — `escalate` is the embryonic router — not three alternative futures.
+- **Client-closed conversion loop (STRUCTURAL, build the seam from day one)**: conversions
+  (card click, add-to-cart, purchase) happen in the CLIENT, so the A/B must close through the
+  contract. Arm assignment is server-side and sticky per session (deterministic hash of
+  session_id over config weights — reweighting never redeploys the client); the per-request
+  `engine` override stays as a QA/shadow tool only. ChatResponse ECHOES the assigned arm: the
+  client doesn't choose it, it reports it back on its analytics events together with
+  session_id — a two-field client contract. Ingestion: storefront analytics joined on
+  session_id, or a minimal `POST /events` (session_id, type, id_product) → events table; with
+  arm-tagged traces and per-turn last_recommended_ids, conversion-per-arm (even per card
+  position) is one query. The assigner sits in front of engine selection from day one, even
+  with one arm at 100% — adding an arm becomes config. Two-level OEC: offline stays
+  ChatConversation convergence (cost guardrails), online becomes conversion per arm. Same
+  mechanism §O needs for strategy-policy experiments — build once, reuse.
 
 ---
 

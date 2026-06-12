@@ -305,6 +305,18 @@ context requires it; **LOW** = nice-to-have / when scaling.
   finding to record.
   In production the guard metric is the primary-degradation rate per window: above threshold
   the breaker opens on its own; open for days means "wrong model", i.e. an env-level decision.
+- **Operational pattern (industry-grounded)**: the three arms COEXIST in code behind a
+  selector — `CHAT_ENGINE=pipeline|piloted|agent` env default + an optional per-request
+  `engine` override on ChatRequest (what makes shadow runs and tests possible without env
+  churn). A pivot is a config flip plus a later dedicated removal commit, never a git revert.
+  Measurement grammar: one goal metric (convergence/case-pass) + guardrail metrics that must
+  not regress (tokens/conversation, LLM calls/turn, latency, fallback rate) — the deciding
+  number is Δquality/Δcost, never Δquality alone. Instrumentation: `traces` gains an engine
+  tag + token counts (Ollama's prompt_eval_count/eval_count via usage_metadata), so
+  cost-per-conversation-per-arm is one query; ChatConversation records LLM calls + tokens per
+  conversation so RESULTS compares arms with the cost denominator inline. Endgame per the
+  cascade/router literature (FrugalGPT, RouteLLM): the arms are TIERS of a cascade routed per
+  turn — `escalate` is the embryonic router — not three alternative futures.
 
 ---
 

@@ -281,10 +281,28 @@ context requires it; **LOW** = nice-to-have / when scaling.
   none of them. The experiment that matters is the unified tool-calling prompt: the agent's
   unique value is deciding WHEN to search and WITH WHAT WORDS (it translates customer
   paraphrase into catalog language — the lexical gap the embedder can't bridge).
+- **Arm B — the code-piloted agent loop (weak model, build BEFORE the autonomous agent)**:
+  same loop shape as the agent, but the graph orchestrates and the weak model does one
+  constrained job per step. Each turn: (1) the model expresses its recommendation INTENT as
+  structured output ("I'd suggest something like…": query + extracted constraints — the
+  generate-then-retrieve / HyDE family: the query becomes the model's reformulation, never
+  the user's verbatim text); (2) code fetches with it (clicks stay hard filters, code-managed
+  — the model proposes, the code disposes); (3) zero/poor results loop back explicitly:
+  "this path returned nothing — reformulate, or tell the customer honestly?" — the no-match
+  becomes informed (the model SAW the result count) instead of guessed from a k-sized list.
+  Subsumes the planned re-retrieval fix (searching every turn on fresh intent replaces the
+  smarter skip-condition) and fixes the paraphrase gap with the weak model. Costs to measure:
+  +1 LLM call per turn, +1 per retry; risk: the 8B reformulation losing user constraints —
+  hence structured query + code-side filter merge. This is also why today's design can't
+  answer "is game X in the catalog": absence-from-hits ≠ absence-from-catalog; arm B's
+  explicit result count is what makes honesty knowledge instead of luck.
 - **Measure**: ChatConversation is the arbiter — same fixtures, swap the `graph` conftest
-  fixture, compare RESULTS deltas; the agent ships only when it beats the pipeline. Run the
-  strong model in the pipeline slots ONCE as the control group: same model caged vs free
-  isolates architecture weight from model weight — that attribution is the finding to record.
+  fixture, compare RESULTS deltas. THREE arms, not two: today's pipeline (baseline) vs the
+  piloted loop (arm B, weak model) vs the autonomous agent (arm A, strong model). Same loop
+  shape between A and B means the A-vs-B delta isolates "who drives" from "model quality";
+  running the strong model in the pipeline slots ONCE stays the control group for
+  caged-vs-free. That attribution — how much is architecture, how much is model — is the
+  finding to record.
   In production the guard metric is the primary-degradation rate per window: above threshold
   the breaker opens on its own; open for days means "wrong model", i.e. an env-level decision.
 

@@ -51,3 +51,11 @@ class ChatState(TypedDict, total=False):
     hits: list[GameHit]              # the games currently "on the table"
     last_recommended_ids: list[int]  # ids featured in the last reply
     response: ChatResponse           # this turn's output
+
+    # piloted engine (arm B, app/chat/piloted.py) — per-turn scratch, reset by its intent
+    # node every turn; the pipeline graph never reads or writes these channels.
+    intent_query: str        # the model's reformulated search query (never the user verbatim)
+    proposed_spec: dict      # model-proposed constraints (clicks override them per dimension)
+    searches_used: int       # searches spent this turn (budget: MAX_SEARCHES_PER_TURN)
+    gave_up: bool            # the retry step chose the honest no-match
+    turn_searches: list[dict]  # this turn's searches {query, filters, n_hits} — eval/debugging

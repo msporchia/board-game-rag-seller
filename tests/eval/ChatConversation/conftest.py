@@ -1,24 +1,27 @@
-"""Fixtures of the ChatConversation eval (FULL production graph, ALL models real).
+"""Fixtures of the ChatConversation eval (FULL production engine, ALL models real).
 
-ChatConversation replays scripted multi-turn conversations through the production ChatGraph —
-real analyze LLM, real generate LLM, real embeddings + Qdrant over the frozen 50-game corpus,
-real checkpointer-backed memory. It is the only suite where the whole turn lifecycle
-(analyze → route → retrieve → generate, with state accumulating across turns) runs end-to-end:
-TurnAnalyzer/ChatRetrieve/ChatPitch each measure one node in isolation; this one measures
-whether the conversation HOLDS UP.
+ChatConversation replays scripted multi-turn conversations through the production engine of
+the arm under eval (docs/idee.md §Q) — real LLM steps, real embeddings + Qdrant over the
+frozen 50-game corpus, real checkpointer-backed memory. It is the only suite where the whole
+turn lifecycle runs end-to-end with state accumulating across turns: the per-node suites
+measure one step in isolation; this one measures whether the conversation HOLDS UP.
 
-Scoring and run persistence live in `report.ConversationReport` (shared mechanics in
-`tests/eval/report/eval_report.py`); this conftest only wires fixtures and delegates the
-session hooks. The checks and the case taxonomy are documented in `test_conversation.py`.
+THE ARM IS SWITCHED BY ENV, same knob as production (`CHAT_ENGINE`, read through settings):
+- pipeline (default): the decomposed graph — analyze → route → retrieve → generate.
+- piloted: arm B — intent → search → explicit zero-result retry → generate.
+Same fixtures, same corpus, same oracles: the RESULTS delta between two consecutive runs IS
+the arm comparison. Every real model carries the LLMUsageTracker callback, so each
+conversation records its LLM calls and Ollama token counts — the cost denominator next to the
+quality numbers.
 
-Both LLMs are built EXACTLY like production's defaults (same models, same temperatures, same
-structured-output schemas — see ChatGraph.__init__ / ChatAdvisor.__init__) minus the trace
-callbacks, so eval runs don't pollute the production `traces` table. The corpus collection is
-built once per session from the FROZEN post-pipeline corpus (the same one ChatRetrieve
-searches), on a DEDICATED throwaway collection deleted at teardown; the in-memory checkpointer
-replaces the sqlite file so sessions never leak across runs.
+    docker compose exec seller-api python -m pytest tests/eval/ChatConversation -q
+    docker compose exec -e CHAT_ENGINE=piloted seller-api python -m pytest tests/eval/ChatConversation -q
 
-    docker exec seller-api python -m pytest tests/eval/ChatConversation -q
+Both arms' LLMs are built EXACTLY like production's defaults (same models, same temperatures,
+same structured-output schemas) minus the trace callbacks, so eval runs don't pollute the
+production `traces` table. The corpus collection is built once per session from the FROZEN
+post-pipeline corpus, on a DEDICATED throwaway collection deleted at teardown; the in-memory
+checkpointer replaces the sqlite file so sessions never leak across runs.
 """
 
 import json
@@ -27,15 +30,22 @@ from pathlib import Path
 import pytest
 
 from tests.eval.ChatConversation.report import ConversationReport
+from tests.eval.ChatConversation.usage import LLMUsageTracker
 
 FROZEN = Path(__file__).resolve().parents[2] / "fixtures" / "suites" / "core" / "games_enriched.json"
 COLLECTION = "games_eval_chat_conversation"
 
 
+def _engine_name() -> str:
+    from app.config import settings
+    return "piloted" if settings.chat_engine == "piloted" else "pipeline"
+
+
 def pytest_sessionstart(session):
     # One report per suite, suite-namespaced: every eval conftest's hooks fire in a combined
     # `pytest tests/eval` session, so a shared attribute would mix the suites' records.
-    session._chat_conversation_report = ConversationReport(Path(__file__).parent / "runs")
+    session._chat_conversation_report = ConversationReport(Path(__file__).parent / "runs",
+                                                           engine=_engine_name())
 
 
 def pytest_sessionfinish(session, exitstatus):
@@ -48,27 +58,34 @@ def pytest_sessionfinish(session, exitstatus):
 def record_conversation(request):
     """Tests record one entry per conversation:
     {case, n_turns, n_turn_checks, turn_failures, converged, turns_to_converge, by_turn,
-     filters_ok, proposal_ok, fallback_turns, trajectory, final_filters, expected, note}.
+     filters_ok, proposal_ok, fallback_turns, llm_calls, tokens_in, tokens_out, trajectory,
+     final_filters, expected, note}.
     The oracle booleans are None when the case declares no such oracle."""
     return request.session._chat_conversation_report.record
 
 
 @pytest.fixture(scope="session")
-def graph():
-    """The production ChatGraph with every collaborator real (except trace callbacks).
+def llm_usage():
+    """One tracker for the whole session, attached to every real model the engine uses;
+    tests snapshot it around each conversation to get per-conversation deltas."""
+    return LLMUsageTracker()
 
-    Real pieces: analyze LLM (temperature 0.0, TurnAnalysis schema), generate LLM (temperature
-    0.4, ChatReply schema), strong LLM (the model-tiering target — settings.llm_model_strong or
-    the default, a production no-op until a stronger model is configured), GameVectorStore
-    (Ollama embeddings + Qdrant) on the dedicated collection, GameRetriever on top. The only
+
+@pytest.fixture(scope="session")
+def graph(llm_usage):
+    """The production engine of the arm under eval, every collaborator real.
+
+    Real pieces per arm — pipeline: analyze LLM (temperature 0.0, TurnAnalysis schema),
+    generate LLM (temperature 0.4, ChatReply schema), strong LLM (the model-tiering target);
+    piloted: intent LLM (temperature 0.0, SearchIntent schema), retry LLM (temperature 0.0,
+    RetryDecision schema), the same generate LLM. Shared by both: GameVectorStore (Ollama
+    embeddings + Qdrant) on the dedicated collection, GameRetriever on top. The only
     substitution is the in-memory checkpointer instead of the sqlite file.
     """
     memory = pytest.importorskip("langgraph.checkpoint.memory")
     from langchain_ollama import ChatOllama
 
     from app.chat.advisor import ChatAdvisor
-    from app.chat.graph import ChatGraph
-    from app.chat.models.analysis import TurnAnalysis
     from app.chat.models.reply import ChatReply
     from app.config import settings
     from app.core.vector_store import GameVectorStore
@@ -88,25 +105,44 @@ def graph():
     store = GameVectorStore(collection_name=COLLECTION)
     store.index(documents, ids=ids, recreate=True)
 
-    analyze_llm = ChatOllama(
-        model=settings.llm_model, base_url=settings.ollama_url, temperature=0.0,
-    ).with_structured_output(TurnAnalysis)
     pitch_llm = ChatOllama(
         model=settings.llm_model, base_url=settings.ollama_url, temperature=0.4,
+        callbacks=[llm_usage],
     ).with_structured_output(ChatReply)
-    strong_llm = ChatOllama(
-        model=settings.llm_model_strong or settings.llm_model,
-        base_url=settings.ollama_url, temperature=0.4,
-    ).with_structured_output(ChatReply)
-
+    advisor = ChatAdvisor(retriever=GameRetriever(store=store), llm=pitch_llm)
     saver_cls = getattr(memory, "InMemorySaver", None) or memory.MemorySaver
-    graph = ChatGraph(
-        advisor=ChatAdvisor(retriever=GameRetriever(store=store), llm=pitch_llm),
-        analyze_llm=analyze_llm,
-        strong_llm=strong_llm,
-        checkpointer=saver_cls(),
-    )
+
+    if _engine_name() == "piloted":
+        from app.chat.models.intent import SearchIntent
+        from app.chat.models.retry import RetryDecision
+        from app.chat.piloted import PilotedChat
+
+        intent_llm = ChatOllama(
+            model=settings.llm_model, base_url=settings.ollama_url, temperature=0.0,
+            callbacks=[llm_usage],
+        ).with_structured_output(SearchIntent)
+        retry_llm = ChatOllama(
+            model=settings.llm_model, base_url=settings.ollama_url, temperature=0.0,
+            callbacks=[llm_usage],
+        ).with_structured_output(RetryDecision)
+        engine = PilotedChat(advisor=advisor, intent_llm=intent_llm, retry_llm=retry_llm,
+                             checkpointer=saver_cls())
+    else:
+        from app.chat.graph import ChatGraph
+        from app.chat.models.analysis import TurnAnalysis
+
+        analyze_llm = ChatOllama(
+            model=settings.llm_model, base_url=settings.ollama_url, temperature=0.0,
+            callbacks=[llm_usage],
+        ).with_structured_output(TurnAnalysis)
+        strong_llm = ChatOllama(
+            model=settings.llm_model_strong or settings.llm_model,
+            base_url=settings.ollama_url, temperature=0.4,
+            callbacks=[llm_usage],
+        ).with_structured_output(ChatReply)
+        engine = ChatGraph(advisor=advisor, analyze_llm=analyze_llm, strong_llm=strong_llm,
+                           checkpointer=saver_cls())
     try:
-        yield graph
+        yield engine
     finally:
         store.client.delete_collection(COLLECTION)

@@ -31,6 +31,14 @@ else recorded per turn (analysis dimensions, escalation, fallback, games on the 
 trajectory data for the run file, not an oracle. No assert: the first runs establish the
 baseline, rates ARE the deliverable — same stance as the other suites.
 
+ENGINE ARMS (docs/idee.md §Q): the suite is the arbiter between engines — the conftest builds
+the arm `CHAT_ENGINE` selects over the same fixtures. Strategy-shaped oracles (`strategy_in`,
+`proposal_by_turn`) apply only to engines that ROUTE strategies: an arm without the router
+(piloted) leaves `strategy` unset in state, and those checks are out of scope for it, like any
+oracle a case does not declare. Each conversation also records its LLM calls and Ollama token
+counts (the session-wide LLMUsageTracker, snapshotted around the case) so RESULTS compares
+arms as Δquality next to Δcost.
+
 FALLBACK DETECTION
 ------------------
 Same external reconstruction as ChatPitch (see its module docstring): a turn is classified as
@@ -69,9 +77,10 @@ def _is_fallback(response: ChatResponse, hits: list[GameHit]) -> bool:
 
 
 def _turn_checks(expect: dict, strategy: str, response: ChatResponse) -> list[tuple[str, bool]]:
-    """Evaluate the per-turn oracles a case declares; absent keys are out of scope."""
+    """Evaluate the per-turn oracles a case declares; absent keys are out of scope — and so is
+    `strategy_in` when the engine has no strategy router (state leaves `strategy` unset)."""
     checks = []
-    if "strategy_in" in expect:
+    if "strategy_in" in expect and strategy is not None:
         checks.append(("strategy_in", strategy in expect["strategy_in"]))
     if "min_games" in expect:
         checks.append(("min_games", len(response.games) >= expect["min_games"]))
@@ -86,8 +95,9 @@ class TestConversation:
     strategy, filters and analysis into recordable trajectory data."""
 
     @pytest.mark.parametrize("case", CASES, ids=IDS)
-    def test_case(self, graph, case, record_conversation):
+    def test_case(self, graph, case, record_conversation, llm_usage):
         session = f"eval-{case['id']}"
+        usage_before = llm_usage.snapshot()
         trajectory: list[dict] = []
         turn_failures: list[str] = []
         n_turn_checks = 0
@@ -120,6 +130,9 @@ class TestConversation:
                 "expertise": state.get("expertise_level"),
                 "escalate": bool(state.get("escalate")),
                 "fallback": fallback,
+                # piloted arm only: this turn's searches {query, filters, n_hits} — the
+                # intent reformulations and the retry path, readable in the run file.
+                "searches": state.get("turn_searches"),
                 "game_ids": [g.id_product for g in response.games],
                 "games": [g.name for g in response.games],
                 "bot": response.message,
@@ -140,10 +153,11 @@ class TestConversation:
             filters_ok = all(final_filters.get(k) == v for k, v in final["filters"].items())
 
         proposal_ok = None
-        if final.get("proposal_by_turn"):
+        if final.get("proposal_by_turn") and any(s is not None for s in strategies):
             proposal_ok = any(s in _PROPOSAL
                               for s in strategies[:final["proposal_by_turn"]])
 
+        usage = llm_usage.delta_since(usage_before)
         record_conversation({
             "case": case["id"],
             "n_turns": len(case["turns"]),
@@ -155,6 +169,9 @@ class TestConversation:
             "filters_ok": filters_ok,
             "proposal_ok": proposal_ok,
             "fallback_turns": fallback_turns,
+            "llm_calls": usage["llm_calls"],
+            "tokens_in": usage["tokens_in"],
+            "tokens_out": usage["tokens_out"],
             "trajectory": trajectory,
             "final_filters": final_filters,
             "expected": final,

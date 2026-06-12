@@ -1,6 +1,7 @@
 """ConversationReport — scoring of the conversation eval (see eval_report.EvalReport)."""
 
 import re
+from pathlib import Path
 
 from tests.eval.report.eval_report import EvalReport
 
@@ -14,11 +15,22 @@ class ConversationReport(EvalReport):
     declare are out of scope (None) — each rate is averaged only over its own cases, like
     ChatPitch. `fallback_turn_rate` is informational across ALL turns: how often a real
     multi-turn session degrades to the deterministic reply.
+
+    The report is ENGINE-TAGGED (docs/idee.md §Q): the model label carries the arm under eval
+    and the metrics carry the cost block (LLM calls, Ollama tokens) — comparing two consecutive
+    runs (pipeline, then piloted) reads as Δquality next to Δcost, the deciding number.
     """
 
     prefix = "conversation"
     title = "ChatConversation — full multi-turn sessions"
     measure = "whole-conversation pass rates"
+
+    def __init__(self, runs_dir: Path, engine: str = "pipeline"):
+        super().__init__(runs_dir)
+        self.engine = engine
+
+    def model(self) -> str:
+        return f"{super().model()} · engine={self.engine}"
 
     # (metric name, scope shown in the summary)
     rate_specs = (
@@ -36,9 +48,20 @@ class ConversationReport(EvalReport):
         turns_to = [r["turns_to_converge"] for r in converged if r["turns_to_converge"]]
         checks = sum(r["n_turn_checks"] for r in self.records)
         check_failures = sum(len(r["turn_failures"]) for r in self.records)
+        llm_calls = sum(r.get("llm_calls") or 0 for r in self.records)
+        tokens = sum((r.get("tokens_in") or 0) + (r.get("tokens_out") or 0)
+                     for r in self.records)
         return {
             "n_cases": len(self.records),
             "n_turns": n_turns,
+            "cost": {
+                "llm_calls": llm_calls,
+                "llm_calls_per_turn": round(llm_calls / n_turns, 2) if n_turns else 0.0,
+                "tokens_in": sum(r.get("tokens_in") or 0 for r in self.records),
+                "tokens_out": sum(r.get("tokens_out") or 0 for r in self.records),
+                "tokens_per_conversation": (round(tokens / len(self.records))
+                                            if self.records else 0),
+            },
             "case_pass": self._ratio([self._passed(r) for r in self.records]),
             "convergence": self._ratio([r["converged"] for r in converged]),
             "mean_turns_to_converge": (round(sum(turns_to) / len(turns_to), 2)
@@ -66,10 +89,13 @@ class ConversationReport(EvalReport):
 
     def headline(self, metrics: dict) -> str:
         conv = metrics["convergence"]["rate"]
+        cost = metrics["cost"]
         return (f"case pass **{metrics['case_pass']['rate']:.3f}** · "
                 f"{metrics['n_cases']} conversations / {metrics['n_turns']} turns "
                 f"(convergence {'—' if conv is None else f'{conv:.3f}'}, "
-                f"fallback/turn {metrics['fallback_turn_rate']:.3f})")
+                f"fallback/turn {metrics['fallback_turn_rate']:.3f}) · "
+                f"{cost['llm_calls']} LLM calls / "
+                f"{cost['tokens_in'] + cost['tokens_out']} tok")
 
     def sections(self) -> dict:
         """Failures first, each self-contained: which checks failed, the full trajectory as
@@ -82,18 +108,25 @@ class ConversationReport(EvalReport):
                 passes.append({
                     "case": rec["case"],
                     "converged turn": rec["turns_to_converge"],
+                    "cost": self._case_cost(rec),
                     "trajectory": self._compact_trajectory(rec["trajectory"]),
                 })
                 continue
             failures.append({
                 "case": rec["case"],
                 "failed": self._failed_checks(rec),
+                "cost": self._case_cost(rec),
                 "trajectory": self._render_trajectory(rec["trajectory"]),
                 "expected": rec.get("expected"),
                 "final_filters": rec.get("final_filters"),
                 "note": rec.get("note"),
             })
         return {"failures": failures, "passes": passes}
+
+    @staticmethod
+    def _case_cost(rec: dict) -> str:
+        tokens = (rec.get("tokens_in") or 0) + (rec.get("tokens_out") or 0)
+        return f"{rec.get('llm_calls') or 0} LLM calls / {tokens} tok"
 
     def _failed_checks(self, rec: dict) -> list[str]:
         failed = list(rec["turn_failures"])
@@ -111,6 +144,10 @@ class ConversationReport(EvalReport):
             clicks = f" + click {t['choices']}" if t["choices"] else ""
             games = ", ".join(self._short_name(n) for n in t["games"]) or "no games"
             lines.append(f"{t['turn']}. utente: {t['user']}{clicks}")
+            # Piloted arm: the searches the loop actually ran (intent reformulation, retry).
+            for s in t.get("searches") or []:
+                flt = ", ".join(f"{k}={v}" for k, v in sorted(s["filters"].items())) or "none"
+                lines.append(f"   search: «{s['query']}» [filters: {flt}] → {s['n_hits']} hits")
             lines.append(f"   [{t['strategy']}{self._marks(t)}] {games} — bot: {t['bot'][:160]}")
         return lines
 
@@ -127,6 +164,24 @@ class ConversationReport(EvalReport):
         return lines
 
     @staticmethod
+    def _cost_line(cost: dict, prev: dict | None) -> str:
+        """LLM calls and tokens with the raw delta vs the previous run (often the other arm)."""
+
+        def shown(key: str, value) -> str:
+            if not prev or key not in prev:
+                return f"{value}"
+            return f"{value} (Δ {value - prev[key]:+d}, was: {prev[key]})"
+
+        tokens = cost["tokens_in"] + cost["tokens_out"]
+        prev_tokens = ((prev["tokens_in"] + prev["tokens_out"])
+                       if prev and "tokens_in" in prev else None)
+        tok = (f"{tokens}" if prev_tokens is None
+               else f"{tokens} (Δ {tokens - prev_tokens:+d}, was: {prev_tokens})")
+        return (f"  LLM calls: {shown('llm_calls', cost['llm_calls'])}   "
+                f"({cost['llm_calls_per_turn']}/turn)   tokens: {tok}   "
+                f"({cost['tokens_per_conversation']}/conversation)")
+
+    @staticmethod
     def _marks(turn: dict) -> str:
         return ("".join([" ESC" if turn["escalate"] else "",
                          " FALLBACK" if turn["fallback"] else ""]))
@@ -140,6 +195,7 @@ class ConversationReport(EvalReport):
     def summary_lines(self, metrics: dict, prev: dict | None) -> list[str]:
         lines = [f"  Conversations: {metrics['n_cases']}   turns: {metrics['n_turns']}   "
                  f"fallback/turn: {self.delta(metrics['fallback_turn_rate'], (prev or {}).get('fallback_turn_rate'))}",
+                 self._cost_line(metrics["cost"], (prev or {}).get("cost")),
                  ""]
         for name, scope in self.rate_specs:
             m = metrics[name]

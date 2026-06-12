@@ -189,7 +189,8 @@ I filtri scelti con i click dal cliente restano attivi: la nuova query non può 
             "filters_spec": fragment,
             "searches_used": used,
             "turn_searches": [*(state.get("turn_searches") or []),
-                              {"query": query, "filters": effective, "n_hits": len(hits)}],
+                              {"query": query, "filters": effective, "n_hits": len(hits),
+                               "hit_ids": [h.id_product for h in hits]}],
         }
 
     def _retry(self, state: ChatState) -> dict:

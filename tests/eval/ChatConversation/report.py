@@ -147,7 +147,9 @@ class ConversationReport(EvalReport):
             # Piloted arm: the searches the loop actually ran (intent reformulation, retry).
             for s in t.get("searches") or []:
                 flt = ", ".join(f"{k}={v}" for k, v in sorted(s["filters"].items())) or "none"
-                lines.append(f"   search: «{s['query']}» [filters: {flt}] → {s['n_hits']} hits")
+                ids = f" {s['hit_ids']}" if s.get("hit_ids") else ""
+                lines.append(f"   search: «{s['query']}» [filters: {flt}] → "
+                             f"{s['n_hits']} hits{ids}")
             lines.append(f"   [{t['strategy']}{self._marks(t)}] {games} — bot: {t['bot'][:160]}")
         return lines
 

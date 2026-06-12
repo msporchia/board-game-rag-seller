@@ -58,4 +58,5 @@ class ChatState(TypedDict, total=False):
     proposed_spec: dict      # model-proposed constraints (clicks override them per dimension)
     searches_used: int       # searches spent this turn (budget: MAX_SEARCHES_PER_TURN)
     gave_up: bool            # the retry step chose the honest no-match
-    turn_searches: list[dict]  # this turn's searches {query, filters, n_hits} — eval/debugging
+    turn_searches: list[dict]  # this turn's searches {query, filters, n_hits, hit_ids} —
+                               # what reached the table vs what the pitch picked (eval/debug)

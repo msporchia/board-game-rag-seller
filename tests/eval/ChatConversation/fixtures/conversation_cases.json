@@ -1,0 +1,94 @@
+[
+  {
+    "id": "terraforming-convergenza-vaga",
+    "turns": [
+      {"message": "ciao! cerco un gioco nuovo per il mio gruppo, siamo giocatori esperti e ci piacciono i titoli impegnativi", "choices": []},
+      {"message": "il tema che ci attira di più è la fantascienza", "choices": []},
+      {"message": "l'ideale sarebbe qualcosa dove costruisci un motore di carte e risorse per rendere abitabile un pianeta", "choices": []}
+    ],
+    "final": {"accept_ids": [21], "by_turn": 3},
+    "note": "Vague-to-specific convergence: heavy-gamer context (turn 1), sci-fi theme (turn 2), engine-building on a planet (turn 3). Terraforming Mars must surface by turn 3; Progetto Gaia, First Martians and Mercanti di Venere are the in-corpus sci-fi confounders."
+  },
+  {
+    "id": "onitama-trappola-distrattore",
+    "turns": [
+      {"message": "vorrei un gioco astratto da fare in due con mia figlia, partite brevi", "choices": []},
+      {"message": "le piacciono molto le arti marziali: se il tema c'entra qualcosa è perfetto", "choices": []}
+    ],
+    "final": {"accept_ids": [160], "by_turn": 2},
+    "note": "Distractor trap: turn 1 alone matches Tao Long and Spirits of the Forest just as well (2p abstract, short). The martial-arts detail of turn 2 must re-rank toward Onitama — measures that the assembled query carries the NEW detail without losing the old constraints."
+  },
+  {
+    "id": "catan-assente-alternative",
+    "turns": [
+      {"message": "avete Catan? volevo regalarlo a mio cugino", "choices": [], "expect": {"strategy_in": ["QUICK_MATCH"]}},
+      {"message": "non c'è, eh? allora consigliami qualcosa di simile: costruire, commerciare risorse, adatto a tutta la famiglia", "choices": []}
+    ],
+    "final": {"accept_ids": [20, 34, 36, 40], "by_turn": 2},
+    "note": "Out-of-catalog title: Catan is not in the corpus, so the bot can never show it (grounding drops invented ids) and must land on a sensible alternative. Accepted set hand-curated: Stone Age, Carcassonne, Puerto Rico, Ticket to Ride Europa (build/trade/family). Turn-1 strategy oracle: asking availability of a specific title IS decided -> QUICK_MATCH."
+  },
+  {
+    "id": "azul-assente-alternative",
+    "turns": [
+      {"message": "sto cercando Azul, quello con le piastrelle colorate", "choices": []},
+      {"message": "peccato! allora qualcosa di simile: piazzare tessere, rilassante, con regole che si spiegano in cinque minuti", "choices": []}
+    ],
+    "final": {"accept_ids": [34, 49, 55, 56], "by_turn": 2},
+    "note": "Out-of-catalog title, tile-laying family: accepted alternatives are Carcassonne, Orbis, Kanagawa, Fairy Tile (tile placement / relaxed / simple rules)."
+  },
+  {
+    "id": "contrordine-giocatori",
+    "turns": [
+      {"message": "cerco un gioco collaborativo da fare con i miei figli di 8 anni", "choices": ["per 4 giocatori"]},
+      {"message": "anzi, ripensandoci i grandi non giocano quasi mai: meglio qualcosa che funzioni bene in due", "choices": ["per 2 giocatori"], "expect": {"min_games": 1}}
+    ],
+    "final": {"accept_ids": [3, 48], "by_turn": 2, "filters": {"players": {"vals": [2]}}},
+    "note": "Constraint reversal: the turn-2 click must REPLACE the players filter (latest wins), not pile up — final filters_spec must say players=[2]. Family coop for an 8-year-old: both Pandemics (age 8, coop, 2 players ok); the age-14 horror coops are the confounders."
+  },
+  {
+    "id": "carcassonne-cliente-deciso",
+    "turns": [
+      {"message": "avete Carcassonne? vorrei comprarlo, è per stasera", "choices": [], "expect": {"strategy_in": ["QUICK_MATCH"], "min_games": 1}}
+    ],
+    "final": {"accept_ids": [34], "by_turn": 1},
+    "note": "Decided customer at turn 1: a precise title plus purchase intent must route straight to QUICK_MATCH (no useless GUIDED loop) and put Carcassonne on the table immediately. Likely escalate=true too (purchase intent) — recorded in the trajectory."
+  },
+  {
+    "id": "stallo-proposta-forzata",
+    "turns": [
+      {"message": "ciao, dovrei fare un regalo", "choices": []},
+      {"message": "mah, non saprei proprio cosa scegliere", "choices": []},
+      {"message": "boh, non so nemmeno io cosa gli piace", "choices": []},
+      {"message": "fai tu, mi fido", "choices": []}
+    ],
+    "final": {"proposal_by_turn": 4},
+    "note": "Stalling customer: four contentless turns. The product rule (docs/note.md) says max 3 exchanges without a concrete proposal, then QUICK_MATCH is forced — by turn 4 at the latest some turn must be a proposal strategy (QUICK_MATCH/DISCOVERY). No convergence oracle: there is nothing to converge to."
+  },
+  {
+    "id": "infeasibile-recupero",
+    "turns": [
+      {"message": "in pausa pranzo io e un collega abbiamo solo cinque minuti liberi, c'è qualcosa di giocabile?", "choices": ["per 2 giocatori", "max 5 minuti"], "expect": {"no_match": true}},
+      {"message": "ok, in realtà possiamo arrivare a mezz'ora", "choices": ["max 30 minuti"], "expect": {"min_games": 1}}
+    ],
+    "final": {"filters": {"players": {"vals": [2]}, "duration": {"max": 30}}},
+    "note": "Infeasible constraints then recovery: players=2 + duration<=5 excludes all 50 games (shortest is 10 min) -> the honest no-match must fire, with NO invented games. Turn 2 relaxes duration to 30 (latest click wins) and games must reappear. Final filters must keep players=2 AND duration=30."
+  },
+  {
+    "id": "bang-click-testo-misti",
+    "turns": [
+      {"message": "sto organizzando una serata giochi con gli amici, vogliamo soprattutto ridere", "choices": []},
+      {"message": "ci piacciono i giochi dove si bluffa e magari qualcuno ha un ruolo nascosto", "choices": ["per 6 giocatori"]}
+    ],
+    "final": {"accept_ids": [51, 42, 44], "by_turn": 2, "filters": {"players": {"vals": [6]}}},
+    "note": "Clicks and free text mixed: the click becomes the hard players filter while the bluff/hidden-roles request rides the query. Accepted: BANG! Deluxe (the humor+bluff ideal), Citadels, Overseers (bluff games seating 6)."
+  },
+  {
+    "id": "pandemic-famiglia-cooperativo",
+    "turns": [
+      {"message": "vorrei un gioco da fare con tutta la famiglia, i bambini hanno 8 anni", "choices": []},
+      {"message": "mi piacerebbe che si giocasse tutti insieme contro il gioco, senza vincitori e vinti, così non litigano", "choices": []}
+    ],
+    "final": {"accept_ids": [3, 48], "by_turn": 2},
+    "note": "Constraints split across turns, no clicks: family-with-8-year-olds lives only in turn 1, the coop request only in turn 2. The query assembly must combine them to beat the six age-14 horror coops; both Pandemics are accepted."
+  }
+]

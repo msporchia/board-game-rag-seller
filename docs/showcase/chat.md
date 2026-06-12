@@ -36,7 +36,8 @@ strategy, clicks that become filters) — before → after, on the same catalog.
 Each scenario will be shown twice: the **rendered transcript** (what the customer sees) and the
 **trace** (what each graph node did), with the per-step eval rates that back it —
 [TurnAnalyzer](../../tests/eval/TurnAnalyzer), [ChatPitch](../../tests/eval/ChatPitch),
-[ChatRetrieve](../../tests/eval/ChatRetrieve).
+[ChatRetrieve](../../tests/eval/ChatRetrieve),
+[ChatConversation](../../tests/eval/ChatConversation) (whole sessions, end-to-end).
 
 → Design and first findings: [`docs/chat.md`](../chat.md) · back to the
 [other walkthroughs](README.md).

@@ -209,13 +209,15 @@ the 8B, it flies on a stronger model*. Full findings, before → after:
 [`docs/chat.md`](docs/chat.md) · design: [`docs/seller.md`](docs/seller.md).
 
 The chat is measured with the same per-step discipline as the pipeline (real LLM, hand-written
-oracles, no end-to-end blob):
+oracles): one suite per node, plus a whole-conversation suite that replays scripted multi-turn
+sessions through the production graph — still rule-scored, never an unreadable end-to-end blob:
 
 | Suite | What it measures |
 |-------|------------------|
 | [TurnAnalyzer](tests/eval/TurnAnalyzer) | reading the customer: per-dimension accuracy (enthusiasm, decisiveness, expertise, …) vs labeled turns |
 | [ChatPitch](tests/eval/ChatPitch) | the pitch: how often the model delivers a *grounded* recommendation instead of the fallback, per strategy |
 | [ChatRetrieve](tests/eval/ChatRetrieve) | conversational query assembly: recall@k of the games the turn should surface |
+| [ChatConversation](tests/eval/ChatConversation) | full multi-turn sessions on the production graph: convergence to an accepted game, filter integrity across turns, the forced-proposal rule, fallback rate per turn |
 
 **Latest measured results: [`tests/eval/RESULTS.md`](tests/eval/RESULTS.md)** — regenerated at
 the end of every eval run: one headline per suite, and per-case failures with everything needed

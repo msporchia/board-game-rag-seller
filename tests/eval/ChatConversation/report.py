@@ -1,0 +1,137 @@
+"""ConversationReport — scoring of the conversation eval (see eval_report.EvalReport)."""
+
+from tests.eval.report.eval_report import EvalReport
+
+
+class ConversationReport(EvalReport):
+    """Whole-conversation pass rate, plus the per-aspect rates the cases probe.
+
+    A case passes when every check IN SCOPE for it passed: its per-turn oracles
+    (strategy/min_games/no_match), convergence (an accepted game recommended within the case's
+    turn budget), final filters integrity, and the forced-proposal rule. Checks a case does not
+    declare are out of scope (None) — each rate is averaged only over its own cases, like
+    ChatPitch. `fallback_turn_rate` is informational across ALL turns: how often a real
+    multi-turn session degrades to the deterministic reply.
+    """
+
+    prefix = "conversation"
+    title = "ChatConversation — full multi-turn sessions"
+    measure = "whole-conversation pass rates"
+
+    # (metric name, scope shown in the summary)
+    rate_specs = (
+        ("case_pass", "all conversations"),
+        ("convergence", "cases with an accepted-games oracle"),
+        ("turn_oracles", "declared per-turn checks"),
+        ("filters_ok", "cases with a final-filters oracle"),
+        ("proposal_ok", "cases with the forced-proposal oracle"),
+    )
+
+    def aggregate(self) -> dict:
+        n_turns = sum(r["n_turns"] for r in self.records)
+        fallback_turns = sum(r["fallback_turns"] for r in self.records)
+        converged = [r for r in self.records if r["converged"] is not None]
+        turns_to = [r["turns_to_converge"] for r in converged if r["turns_to_converge"]]
+        checks = sum(r["n_turn_checks"] for r in self.records)
+        check_failures = sum(len(r["turn_failures"]) for r in self.records)
+        return {
+            "n_cases": len(self.records),
+            "n_turns": n_turns,
+            "case_pass": self._ratio([self._passed(r) for r in self.records]),
+            "convergence": self._ratio([r["converged"] for r in converged]),
+            "mean_turns_to_converge": (round(sum(turns_to) / len(turns_to), 2)
+                                       if turns_to else None),
+            "turn_oracles": {"n": checks, "ok": checks - check_failures,
+                             "rate": (round((checks - check_failures) / checks, 4)
+                                      if checks else None)},
+            "filters_ok": self._ratio([r["filters_ok"] for r in self.records
+                                       if r["filters_ok"] is not None]),
+            "proposal_ok": self._ratio([r["proposal_ok"] for r in self.records
+                                        if r["proposal_ok"] is not None]),
+            "fallback_turn_rate": round(fallback_turns / n_turns, 4) if n_turns else 0.0,
+            "failed_cases": [r["case"] for r in self.records if not self._passed(r)],
+        }
+
+    @staticmethod
+    def _ratio(vals: list) -> dict:
+        ok = sum(1 for v in vals if v)
+        return {"n": len(vals), "ok": ok, "rate": round(ok / len(vals), 4) if vals else None}
+
+    @staticmethod
+    def _passed(rec: dict) -> bool:
+        return (not rec["turn_failures"] and rec["converged"] is not False
+                and rec["filters_ok"] is not False and rec["proposal_ok"] is not False)
+
+    def headline(self, metrics: dict) -> str:
+        conv = metrics["convergence"]["rate"]
+        return (f"case pass **{metrics['case_pass']['rate']:.3f}** · "
+                f"{metrics['n_cases']} conversations / {metrics['n_turns']} turns "
+                f"(convergence {'—' if conv is None else f'{conv:.3f}'}, "
+                f"fallback/turn {metrics['fallback_turn_rate']:.3f})")
+
+    def sections(self) -> dict:
+        """Failures first, each self-contained: which checks failed, the full trajectory as
+        readable turn lines (strategy, escalation, fallback, games on the table, bot reply),
+        and the oracle — enough to judge the conversation without rerunning."""
+        failures = []
+        passes = []
+        for rec in self.records:
+            if self._passed(rec):
+                passes.append({"case": rec["case"],
+                               "turns_to_converge": rec["turns_to_converge"]})
+                continue
+            failures.append({
+                "case": rec["case"],
+                "failed": self._failed_checks(rec),
+                "trajectory": self._render_trajectory(rec["trajectory"]),
+                "expected": rec.get("expected"),
+                "final_filters": rec.get("final_filters"),
+                "note": rec.get("note"),
+            })
+        return {"failures": failures, "passes": passes}
+
+    def _failed_checks(self, rec: dict) -> list[str]:
+        failed = list(rec["turn_failures"])
+        if rec["converged"] is False:
+            failed.append(f"convergence (by turn {rec['by_turn']})")
+        if rec["filters_ok"] is False:
+            failed.append("final filters")
+        if rec["proposal_ok"] is False:
+            failed.append("forced proposal")
+        return failed
+
+    @staticmethod
+    def _render_trajectory(trajectory: list[dict]) -> list[str]:
+        lines = []
+        for t in trajectory:
+            clicks = f" + click {t['choices']}" if t["choices"] else ""
+            marks = "".join([" ESC" if t["escalate"] else "",
+                             " FALLBACK" if t["fallback"] else ""])
+            games = ", ".join(t["games"]) if t["games"] else "no games"
+            lines.append(f"{t['turn']}. utente: {t['user']}{clicks}")
+            lines.append(f"   [{t['strategy']}{marks}] {games} — bot: {t['bot'][:160]}")
+        return lines
+
+    def summary_lines(self, metrics: dict, prev: dict | None) -> list[str]:
+        lines = [f"  Conversations: {metrics['n_cases']}   turns: {metrics['n_turns']}   "
+                 f"fallback/turn: {self.delta(metrics['fallback_turn_rate'], (prev or {}).get('fallback_turn_rate'))}",
+                 ""]
+        for name, scope in self.rate_specs:
+            m = metrics[name]
+            prev_rate = (prev or {}).get(name, {}).get("rate")
+            if m["rate"] is None:
+                lines.append(f"  {name:18s}    —     (no cases in scope: {scope})")
+                continue
+            lines.append(f"  {name:18s} {m['ok']:>2d}/{m['n']:<2d} "
+                         f"{self.delta(m['rate'], prev_rate)}   [{scope}]")
+        if metrics["mean_turns_to_converge"] is not None:
+            lines.append(f"  mean turns to converge: {metrics['mean_turns_to_converge']}")
+        lines.append("")
+        for rec in self.records:
+            failed = self._failed_checks(rec)
+            mark = "✓" if not failed else "✗"
+            tail = f": {', '.join(failed)}" if failed else (
+                f" (converged turn {rec['turns_to_converge']})"
+                if rec["turns_to_converge"] else "")
+            lines.append(f"  {mark} {rec['case']}{tail}")
+        return lines

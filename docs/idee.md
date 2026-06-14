@@ -328,7 +328,17 @@ context requires it; **LOW** = nice-to-have / when scaling.
   selector — `CHAT_ENGINE=pipeline|piloted|agent` env default + an optional per-request
   `engine` override on ChatRequest (what makes shadow runs and tests possible without env
   churn) — BUILT for pipeline|piloted (app/api/chat.py: one TieredChat per arm, the selected
-  engine primary over the pipeline fallback, ONE shared checkpointer). A pivot is a config flip plus a later dedicated removal commit, never a git revert.
+  engine primary over the pipeline fallback, ONE shared checkpointer).
+  **Known limitation, not yet fixed (documented on purpose)**: degradation is NOT transactional.
+  LangGraph persists per super-step, so a primary that raises *after* a partial write (e.g.
+  piloted's `_intent` already appended `"utente: …"` to `history`) leaves a dirty checkpoint the
+  fallback then resumes on the same `thread_id` — duplicating the history line and leaving stale
+  scratch channels (the latter reset by the next turn's `_intent` anyway). Today the two piloted
+  LLM steps are internally try/except'd, so the uncaught window is narrow (Qdrant down in
+  `_search`, `pitch` internals) and the impact is cosmetic; no test covers it yet. The fix when
+  it matters: TieredChat snapshots the thread's checkpoint before the primary and restores it on
+  exception before the fallback (all-or-nothing per turn), paired with logging the degradation
+  cause (`exc_info`, today a bare `log.warning`). A pivot is a config flip plus a later dedicated removal commit, never a git revert.
   Measurement grammar: one goal metric (convergence/case-pass) + guardrail metrics that must
   not regress (tokens/conversation, LLM calls/turn, latency, fallback rate) — the deciding
   number is Δquality/Δcost, never Δquality alone. Instrumentation: `traces` gains an engine

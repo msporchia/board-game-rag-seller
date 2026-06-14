@@ -7,52 +7,28 @@
 > production-shaped RAG (LangChain · Qdrant · FastAPI · Ollama). Local-first, offline-runnable,
 > provider-swappable. Not a product; a place to do the engineering well.
 
-A conversational "salesperson" for a board-game shop: instead of a keyword search, it
-**understands vague requests** (*"something cooperative and medieval for two"*), filters on
-concrete criteria (players, duration, complexity), and recommends **only real, in-stock games**
-— never a hallucinated title.
+## The problem this answers
+
+A board-game shop has a wall of boxes to sell, and selling them is genuinely hard. Board games
+are a *you-either-know-them-or-you-don't* category: most customers know **Monopoly and Risiko**
+and quietly assume that's roughly what's inside every box. That there are **cooperative** games,
+titles built on completely different mechanics, games for two, games that finish in fifteen
+minutes — that whole space is invisible to them.
+
+A guide that explains *"what board games are"* or *"which genres exist"* doesn't move anyone:
+nobody buys a category. What sells is a **salesperson** — one who asks the **right few questions**,
+opens up possibilities the customer didn't know to ask for, and lands on a **specific box on the
+shelf they can buy today**. Not education — a guided path from a vague wish to one real game.
+
+That conversation is what this project automates: it **understands vague requests**
+(*"something cooperative and medieval for two"*), narrows down on concrete criteria (players,
+duration, complexity), and only ever recommends **real, in-stock games** — never a
+plausible-sounding title that isn't on the shelf.
 
 The repo is two stories. **Part 1 — the retrieval engine**: done, measured, and the heart of
 the project. **Part 2 — the conversational seller** on top of it: working end-to-end, being
-finalized, measured the same way. Results first; how we got there comes after.
-
----
-
-## The results, on real games 🔍
-
-Three real catalog games, carried end-to-end through the enrichment pipeline and ranked by the
-**real retriever** on a frozen 50-game corpus. Same embedding model, same queries — only the
-embedded text changes:
-
-| | Game | Before | After |
-|---|------|--------|-------|
-| 🚀 | [**Terraforming Mars**](docs/showcase/terraforming-mars.md) — thin entry, no description | rank **#45 / #47 / #47** of 50 | rank **#1 / #26 / #1** |
-| 🔬 | [**Onitama**](docs/showcase/onitama.md) — rich prose, all atmosphere | genre invisible to search | genre recovered — **every fact carries a verbatim citation** |
-| ⚖️ | [**Viticulture**](docs/showcase/viticulture.md) — already well-described | rank **#4** | rank **#23** — *worse*: an honest regression, kept visible |
-
-What happens to each game, in plain words (every step linked if you want the mechanics):
-
-- **Terraforming Mars** arrives with *no description* — to the embedder it's a spec sheet, and
-  the query *"gioco di fantascienza per terraformare marte"* ranks it **#45**. The
-  [Curator](docs/enrichment/01-curator.md) flags what's missing; the
-  [Web step](docs/enrichment/02-web.md) recovers the missing facts from trusted reviews
-  (*marte, ossigeno, oceani* — each backed by a quoted source); the
-  [Synth step](docs/enrichment/03-synth.md) weaves them into clean prose. Same game, same
-  embedder, same query: **#1**.
-- **Onitama** has plenty of prose, but it's marketing (*"la magia… un viaggio nel cuore delle
-  arti marziali"*) and never says *what kind of game it is*. The Web step fills exactly that
-  gap — and keeps **only facts whose quote is literally present in the source page**; a model
-  guess with no quote is thrown away, not embedded. The embedded text finally says it plainly:
-  an abstract duel for two, decided by cards that pass to your opponent.
-- **Viticulture** was already rich — and the pipeline made it **worse**. Synth compressed
-  ~2300 chars to ~1200 and dropped *vino / toscana* signal, so a common query slipped off the
-  first screen (#4 → #23). We kept the failure: it's written down in
-  [`e2e-findings.md`](docs/enrichment/e2e-findings.md) and pinned by an `xfail` test that turns
-  green only when it's fixed. A showcase that only shows wins is a sales brochure.
-
-Each walkthrough shows the exact DTO in, the real computed baseline `embed_text`, the
-verbatim-cited facts the pipeline adds, and the measured rank delta.
-→ [Start here](docs/showcase/README.md).
+finalized, measured the same way. Each part builds to its payoff: the mechanism first, then
+what it does on real games.
 
 ---
 
@@ -184,33 +160,127 @@ green only when it's fixed. The honest failures are part of the showcase on purp
 
 ---
 
+## The results, on real games 🔍
+
+Everything above, now measured. Three real catalog games, carried end-to-end through the
+enrichment pipeline and ranked by the **real retriever** on a frozen 50-game corpus. Same
+embedding model, same queries — only the embedded text changes:
+
+| | Game | Before | After |
+|---|------|--------|-------|
+| 🚀 | [**Terraforming Mars**](docs/showcase/terraforming-mars.md) — thin entry, no description | rank **#45 / #47 / #47** of 50 | rank **#1 / #26 / #1** |
+| 🔬 | [**Onitama**](docs/showcase/onitama.md) — rich prose, all atmosphere | genre invisible to search | genre recovered — **every fact carries a verbatim citation** |
+| ⚖️ | [**Viticulture**](docs/showcase/viticulture.md) — already well-described | rank **#4** | rank **#23** — *worse*: an honest regression, kept visible |
+
+What happens to each game, in plain words (every step linked if you want the mechanics):
+
+- **Terraforming Mars** arrives with *no description* — to the embedder it's a spec sheet, and
+  the query *"gioco di fantascienza per terraformare marte"* ranks it **#45**. The
+  [Curator](docs/enrichment/01-curator.md) flags what's missing; the
+  [Web step](docs/enrichment/02-web.md) recovers the missing facts from trusted reviews
+  (*marte, ossigeno, oceani* — each backed by a quoted source); the
+  [Synth step](docs/enrichment/03-synth.md) weaves them into clean prose. Same game, same
+  embedder, same query: **#1**.
+- **Onitama** has plenty of prose, but it's marketing (*"la magia… un viaggio nel cuore delle
+  arti marziali"*) and never says *what kind of game it is*. The Web step fills exactly that
+  gap — and keeps **only facts whose quote is literally present in the source page**; a model
+  guess with no quote is thrown away, not embedded. The embedded text finally says it plainly:
+  an abstract duel for two, decided by cards that pass to your opponent.
+- **Viticulture** was already rich — and the pipeline made it **worse**. Synth compressed
+  ~2300 chars to ~1200 and dropped *vino / toscana* signal, so a common query slipped off the
+  first screen (#4 → #23). We kept the failure: it's written down in
+  [`e2e-findings.md`](docs/enrichment/e2e-findings.md) and pinned by an `xfail` test that turns
+  green only when it's fixed. A showcase that only shows wins is a sales brochure.
+
+Each walkthrough shows the exact DTO in, the real computed baseline `embed_text`, the
+verbatim-cited facts the pipeline adds, and the measured rank delta.
+→ [Start here](docs/showcase/README.md).
+
+---
+
 # Part 2 — the conversational seller 💬 — 🚧 being finalized
 
-The retrieval engine is the foundation; the "salesperson" on top reuses it, turn by turn.
-Built in two phases, **both implemented**:
+This is the salesperson the problem at the top asked for. A customer who only knows *Monopoly*
+won't browse a genre tree — so the seller doesn't show one. Each turn it **reads the message**,
+decides **how to answer** (ask one clarifying question, explain a mechanic, or just propose), and
+always lands on **real boxes on the shelf** — never an invented title. It's the Part 1 retrieval
+engine, wrapped in a conversation that does the asking.
 
-- **✅ Phase 4 — grounded pitch (stateless).** `POST /chat`: one turn → hybrid retrieval → a
-  short Italian sales pitch over the retrieved games + quick-reply buttons, in a structured
-  `{message, games, quick_replies}` contract. Two invariants are enforced in code, never
-  trusted to the model: **anti-hallucination** (a pitched game must be in the retrieved set —
-  invented ids are dropped) and a **deterministic fallback** when structured output fails.
-- **✅ Phase 5 — conversation (stateful).** Send a `session_id` and the same core runs inside a
-  small LangGraph: session memory (SQLite checkpointer), a per-turn read of the customer
-  (enthusiasm, decisiveness, expertise), deterministic strategy routing
-  (GUIDED / EXPLANATORY / DISCOVERY / QUICK MATCH), and quick-reply clicks parsed into real
-  search filters. Without a `session_id`, the request takes the Phase 4 path unchanged.
+## A turn, end to end
 
-Status: the *mechanics* hold end-to-end (grounding, memory, fallback, traces — no 500s).
-The first measured failure — prose and cards describing different games — is now
-**structurally impossible**: each pitch is bound to its game id and the customer message is
-assembled in code, so the text can only describe games that are in the cards. The open
-bottleneck is pitch *quality* on the local 8B — exactly the project's stance: *if it works on
-the 8B, it flies on a stronger model*. Full findings, before → after:
-[`docs/chat.md`](docs/chat.md) · design: [`docs/seller.md`](docs/seller.md).
+```mermaid
+flowchart LR
+    MSG(["Customer message<br/>+ quick-reply clicks"]) --> AN["Analyze<br/><i>read the customer:<br/>enthusiasm · decisiveness · expertise</i>"]
+    AN --> RT["Route<br/><i>pick this turn's strategy</i>"]
+    RT --> RET["Retrieve<br/><i>hybrid search +<br/>clicks as hard filters</i>"]
+    RET --> PIT["Pitch<br/><i>grounded Italian<br/>sales reply</i>"]
+    PIT --> OUT(["{message, games,<br/>quick_replies}"])
+    MEM[("Session memory<br/>SQLite checkpointer")] -. "history · filters" .-> AN
+    PIT -. "writes back" .-> MEM
+    style PIT fill:#2b4c7e,color:#fff
+    style MEM fill:#5a2b7e,color:#fff
+```
 
-The chat is measured with the same per-step discipline as the pipeline (real LLM, hand-written
-oracles): one suite per node, plus a whole-conversation suite that replays scripted multi-turn
-sessions through the production graph — still rule-scored, never an unreadable end-to-end blob:
+Send a `session_id` and the turn carries memory across the conversation; omit it and the same
+core runs as a single stateless pitch (`POST /chat` → retrieval → grounded reply). The contract
+is the same either way: `{message, games, quick_replies}`.
+
+## Why you can trust what it says
+
+Two invariants are enforced **in code, never trusted to the model**:
+
+- **Anti-hallucination grounding** — a pitched game must be in the retrieved set; an invented id
+  is dropped *and its sales pitch goes with it*. The customer message is **assembled in code**
+  from the surviving recommendations, so the prose can only ever describe games that are on the
+  cards. The first measured failure — text and cards naming different games — is now
+  **structurally impossible**, not patched after the fact.
+- **Deterministic fallback** — if structured output fails, the turn degrades to an honest
+  scripted reply over the retrieved games. No 500, no invented recommendation.
+
+## Asking the right questions
+
+The "right few questions" from the problem statement are a **strategy chosen per turn** from how
+the customer reads — so a hesitant beginner and a decided enthusiast get different conversations:
+
+| Strategy | When | What the turn does |
+|----------|------|--------------------|
+| **GUIDED** | undecided / beginner | 1–2 clear options **+ one simple question** to narrow down |
+| **EXPLANATORY** | curious beginner | explain the mechanics in plain words and analogies |
+| **DISCOVERY** | enthusiast | free-form, propose creatively across the catalog |
+| **QUICK_MATCH** | decided — or the chat is stalling | 3–4 concrete games, **now** |
+
+Routing is deterministic — decided in code, not asked of a prompt: a curious beginner gets
+EXPLANATORY, a clearly-decided customer gets QUICK_MATCH, and **after 3 turns with no concrete
+proposal the seller forces a QUICK_MATCH** so a conversation never loops forever without a
+buyable answer. With every answer the seller also offers **tappable quick-reply buttons** (the `quick_replies`
+in the contract) — suggested refinements about the *game*, like *"plays in under 30 minutes"* or
+*"for two players"*. Tapping one isn't small talk: it becomes a **real search filter** on the
+game's own attributes (its playtime, its player count), so every tap genuinely narrows the
+catalog instead of being a decorative chip.
+
+## Pushing it further — two engines, one contract
+
+Behind that same `reply(...)` contract sit two interchangeable engines, switched by `CHAT_ENGINE`
+(and per-request, for shadow runs):
+
+- **pipeline** — the decomposed graph above: every decision (route, filters, k) made in code, the
+  weak 8B does only the pitch.
+- **piloted (arm B)** — a code-piloted agent loop: the model reformulates the search query into
+  *catalog language* (it turns *"we all play together against the game"* into *"cooperative,
+  win or lose as a team"* — the lexical gap the embedder can't bridge on its own), the code
+  fetches, and a zero-result turn triggers one **informed** retry or an honest no-match.
+
+Measured head to head on the same fixtures, arm B lifted **case pass 0.700 → 0.800 at −18%
+tokens** — more quality *and* cheaper. A future stronger-model agent (arm A) plugs into the same
+slot, and `TieredChat` already degrades a failed primary turn to the pipeline so the customer
+always gets an answer. Full design + the per-failure breakdown (what recovered, what merely
+*moved*, the one predicted regression): [`docs/idee.md` §Q](docs/idee.md).
+
+## Measured the same way as the pipeline
+
+Real LLM, hand-written oracles, one suite per node, plus a whole-conversation suite that replays
+scripted multi-turn sessions through the production engine — still rule-scored, never an
+unreadable end-to-end blob:
 
 | Suite | What it measures |
 |-------|------------------|
@@ -223,7 +293,7 @@ sessions through the production graph — still rule-scored, never an unreadable
 the end of every eval run: one headline per suite, and per-case failures with everything needed
 to judge them (the conversation, expected vs got, the oracle note, the model's full reading).
 
-### What a session looks like
+## What a session looks like
 
 *Simulated transcript — it shows the target shape and will be replaced by a real recorded
 session once the layer is finalized; the before → after walkthrough is staged in
@@ -242,6 +312,19 @@ session once the layer is finalized; the before → after walkthrough is staged 
 > voglia di rivincita.»* — il click è diventato un filtro `duration ≤ 30` sulla ricerca reale.
 
 *A demo GIF of a real session will land here.*
+
+## Still being finalized 🚧
+
+Honest status — this layer is still a work in progress; these pieces just aren't done yet:
+
+- **Pitch quality on the local 8B is the open bottleneck.** The *mechanics* hold end-to-end
+  (grounding, memory, fallback, traces — no 500s), but the 8B's sales copy is thin. The stance:
+  *if it works on the 8B, it flies on a stronger model* — design notes in
+  [`docs/chat.md`](docs/chat.md) · [`docs/seller.md`](docs/seller.md).
+- **The transcript above is simulated.** A real recorded session + demo GIF land here once the
+  layer is signed off.
+- **The autonomous agent (arm A) and the tier circuit breaker are designed, not built** — see
+  [`docs/idee.md` §Q](docs/idee.md).
 
 ---
 

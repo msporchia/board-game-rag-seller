@@ -29,7 +29,7 @@ measure), `note.md` (ideas), `seller.md` (overview).
     (`GameVectorStore`), `ingestion/ingester.py`, `rag/retriever.py`, `api/` (`/health`, `/search`).
 - **Tests** (pytest, one folder per unit `tests/<unit>/<ClassName>/`, **one class per file**
   with an opening docstring of purpose/what-it-tests/how):
-  - `tests/unit/` (**115 pass**, DETERMINISTIC, no Ollama/Qdrant): contract/invariants of each
+  - `tests/unit/` (**235 pass**, DETERMINISTIC, no Ollama/Qdrant): contract/invariants of each
     step. LOCAL fixtures in each unit's `conftest.py` (`make_curator`, `store`, `make_web`);
     cross-unit helpers (`make_game`, `FakeLLM`) in `tests/factories/` (one per module). For the LLM steps the
     model is faked: `CuratorEnricher/` (test_enrich = hard-truth intact, certain data wins;
@@ -171,10 +171,10 @@ iterate on the prompt in 10s instead of 3min. Used to evolve v1→v4.
   (anti-hallucination, same pattern as Web). Chunking at `max_per_call=4` for "no-BGG" cases
   (eval). The eval measures the delta of each change with a persistent report.
 - **Synthesis moved out of the Curator**: the job-A (description rewriting) now lives in
-  `SynthEnricher` (TODO) → it receives `certain_data + curator_extracted + web_facts +
-  multi-source source_descriptions` and produces ONE unified synthesis over rich material.
-  Advantage: the 8B handles separate tasks better + the synthesis sees EVERYTHING (not just the
-  main description).
+  `SynthEnricher` → it receives `certain_data + curator_extracted + web_facts` and produces ONE
+  unified synthesis over rich material. First version is implemented and wired; the known open
+  issue is that it can over-compress already-rich DTOs (Viticulture regression), so the current
+  stance is "good enough for the loop, documented debt for refinement".
 - Tests: relevance via **tags (qrels)**, verdict on the **rank** not the absolute score;
   **frozen corpus per suite**; test oracle separate from the system.
 - **Per-step validation**: each step has its own GOAL, measured separately (end-to-end averages
@@ -198,6 +198,20 @@ iterate on the prompt in 10s instead of 3min. Used to evolve v1→v4.
 
 ## Where to restart
 
+- **Current priority — close the demonstrable chat loop**: the next consumer is not an internal
+  script but the sibling projects `seller-web` and `seller-shop`. The goal is therefore a complete
+  user-visible path: storefront sends `POST /chat`, stateful `session_id` turns carry memory,
+  quick-reply clicks become filters, the bot returns grounded cards, and the response shape is
+  documented well enough for the frontends to render it. `custom_policy` is the controlled
+  commercial steering seam: the caller activates named policies (e.g. `christmas_sale`,
+  `promote_cooperative`, `force_quick_match`) resolved by `PolicySet` into middleware around the
+  turn's stages (`app/chat/policies/`, §O implemented). It does **not** need to be perfect; open
+  retrieval/pitch/model issues stay in `idee.md` and eval reports.
+- **Tool-calling groundwork (§Q) — BUILT (stub)**: `search_catalog` (`app/chat/tools/`) exposes
+  the catalog as an LLM tool, and `AgenticChat` (`app/chat/agentic.py`) drives it behind
+  `engine=agent`, filling TieredChat's primary slot. Experimental: per-turn, no session history
+  yet, no circuit breaker — the local 8B can't drive tools reliably, so it degrades to the
+  pipeline fallback. Point `llm_model_strong` at an agentic-native model to exercise it for real.
 - **SynthEnricher — DONE (first version)**: implemented (`app/ingestion/enricher/synth.py`),
   wired into `build_pipeline()`, 6 unit tests, and it **beats the baseline** on the `core` suite
   (see Measured results). Left to do: (a) **fidelity eval** in isolation (coverage + no-invention)
@@ -221,7 +235,7 @@ iterate on the prompt in 10s instead of 3min. Used to evolve v1→v4.
 ## Useful commands
 
 ```
-docker exec seller-api python -m pytest tests/unit -q                       # deterministic unit (offline, 115 pass)
+docker exec seller-api python -m pytest tests/unit -q                       # deterministic unit (offline, 235 pass)
 docker exec seller-api python -m pytest tests/eval/CuratorEnricher -q        # classification+extraction eval (LLM, ~3-5 min)
                                                                               # → persistent report in tests/eval/CuratorEnricher/runs/
 docker exec seller-api python -m pytest tests/eval/WebEnricher/test_ranking.py -q       # ranking phase (no LLM)

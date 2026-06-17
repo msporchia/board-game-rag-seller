@@ -58,3 +58,19 @@ class TestIntentQuery:
 
         assert retriever.calls == [("un gestionale pesante", 5, None)]
         assert response.games  # the turn still produced a grounded reply
+
+    def test_custom_policy_shapes_generation_not_the_intent_step(self, make_piloted):
+        engine, _, intent, _, pitch = make_piloted(
+            intents=[SearchIntent(query="gioco regalo per Natale")])
+
+        engine.reply(
+            "un regalo",
+            session_id="s1",
+            custom_policy=["christmas_sale", "assume_advanced"],
+        )
+
+        # Policies wrap retrieve/generate, not the intent step: the intent prompt stays clean.
+        assert "saldi di Natale" not in intent.calls[0]
+        # christmas_sale (around_generate) and assume_advanced (force_expertise) reach the pitch.
+        assert "saldi di Natale" in pitch.calls[0]
+        assert "livello di esperienza: advanced" in pitch.calls[0]

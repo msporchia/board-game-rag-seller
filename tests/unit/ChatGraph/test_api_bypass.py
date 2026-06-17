@@ -19,8 +19,8 @@ class TestSessionRouting:
         calls = []
 
         class FakeAdvisor:
-            def reply(self, message, choices=None, k=5):
-                calls.append((message, choices, k))
+            def reply(self, message, choices=None, k=5, custom_policy=None):
+                calls.append((message, choices, k, custom_policy))
                 return ChatResponse(message="stateless")
 
         monkeypatch.setattr(chat_api, "_advisor", FakeAdvisor())
@@ -30,7 +30,7 @@ class TestSessionRouting:
         res = chat_api.chat(ChatRequest(message="ciao"))
 
         assert res.message == "stateless"
-        assert calls == [("ciao", [], 5)]
+        assert calls == [("ciao", [], 5, [])]
 
     def test_session_id_routes_to_the_engine(self, monkeypatch):
         import app.api.chat as chat_api
@@ -39,8 +39,8 @@ class TestSessionRouting:
             def __init__(self):
                 self.calls = []
 
-            def reply(self, message, choices=None, k=5, session_id=None):
-                self.calls.append((message, session_id))
+            def reply(self, message, choices=None, k=5, session_id=None, custom_policy=None):
+                self.calls.append((message, session_id, custom_policy))
                 return ChatResponse(message="stateful")
 
         fake = FakeEngine()
@@ -52,4 +52,4 @@ class TestSessionRouting:
         res = chat_api.chat(ChatRequest(message="ciao", session_id="s1"))
 
         assert res.message == "stateful"
-        assert fake.calls == [("ciao", "s1")]
+        assert fake.calls == [("ciao", "s1", [])]

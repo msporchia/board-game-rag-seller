@@ -52,3 +52,22 @@ class TestTransitionRules:
         # The forced rule wins over everything — even a high-enthusiasm DISCOVERY candidate.
         a = analysis(enthusiasm="high", expertise_level="advanced")
         assert pick_strategy(a, FORCE_QUICK_MATCH_AFTER) is Strategy.QUICK_MATCH
+
+
+class TestCustomPolicyRouting:
+    def test_policies_force_strategy_and_assumed_expertise(self, make_graph):
+        graph, retriever, gen, _ = make_graph(
+            analyses=[analysis(enthusiasm="low", expertise_level="beginner")],
+        )
+
+        graph.reply(
+            "mi serve un regalo",
+            session_id="sales",
+            custom_policy=["christmas_sale", "assume_advanced", "force_quick_match"],
+        )
+
+        assert retriever.calls[0][1] == 4  # QUICK_MATCH k, even though analysis would be GUIDED
+        prompt = gen.calls[0]
+        assert "livello di esperienza: advanced" in prompt
+        assert "saldi di Natale" in prompt
+        assert "Strategia per questo turno — QUICK MATCH" in prompt

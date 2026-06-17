@@ -40,11 +40,13 @@ from app.chat.choices import parse_choices
 from app.chat.models.intent import SearchIntent
 from app.chat.models.response import ChatResponse
 from app.chat.models.retry import RetryDecision
+from app.chat.policies.generation_context import GenerationContext
+from app.chat.policies.policy_set import PolicySet
+from app.chat.policies.retrieval_context import RetrievalContext
 from app.chat.state import ChatState, merge_filters
 from app.config import settings
 from app.core.logging import get_logger
 from app.core.tracing.callbacks import get_trace_callbacks
-from app.rag.filters.search_filters import SearchFilters
 
 log = get_logger(__name__)
 
@@ -172,24 +174,27 @@ I filtri scelti con i click dal cliente restano attivi: la nuova query non può 
 
     def _search(self, state: ChatState) -> dict:
         """CODE fetches with the model's query: clicks are hard filters exactly as in the
-        pipeline; model-proposed constraints fill only the dimensions no click covers."""
+        pipeline; model-proposed constraints fill only the dimensions no click covers. The fetch
+        runs through the policy chain (RetrievalContext), same as the pipeline's retrieve node."""
         fragment, leftovers = parse_choices(state.get("choices"))
         effective = self._effective_spec(state)
-        filters = SearchFilters.from_dict(effective) if effective else None
 
         # Free-form clicks ("Sorprendimi") ride the query, same degradation as the pipeline.
         query = "\n".join([state["intent_query"], *leftovers])
         k = state.get("k") or 5
-        hits = self.advisor.retriever.search(query, k=k, filters=filters)
+        policies = PolicySet.from_names(state.get("custom_policy"))
+        rctx = RetrievalContext(query=query, k=k, retriever=self.advisor.retriever,
+                                filters_spec=effective)
+        hits = policies.run_retrieve(rctx, lambda c: c.execute())
         used = (state.get("searches_used") or 0) + 1
         log.info("piloted_search_done", search=used, k=k,
-                 filters=sorted(effective) or None, hits=len(hits))
+                 filters=sorted(effective) or None, hits=len(hits), policies=policies.names)
         return {
             "hits": hits,
             "filters_spec": fragment,
             "searches_used": used,
             "turn_searches": [*(state.get("turn_searches") or []),
-                              {"query": query, "filters": effective, "n_hits": len(hits),
+                              {"query": rctx.query, "filters": effective, "n_hits": len(hits),
                                "hit_ids": [h.id_product for h in hits]}],
         }
 
@@ -215,10 +220,13 @@ I filtri scelti con i click dal cliente restano attivi: la nuova query non può 
         """ChatAdvisor.pitch over THIS turn's hits — the same grounded path as the pipeline:
         valid ids are only what this turn's searches returned; empty hits → honest no-match."""
         history = state.get("history") or []
-        response = self.advisor.pitch(
-            state["message"], state.get("hits") or [],
+        policies = PolicySet.from_names(state.get("custom_policy"))
+        gctx = GenerationContext(
+            advisor=self.advisor, message=state["message"], hits=state.get("hits") or [],
             history="\n".join(history[:-1]) or None,  # [:-1] = exchanges before this turn
+            expertise=policies.force_expertise(None),
         )
+        response = policies.run_generate(gctx, lambda c: c.execute())
         return {
             "response": response,
             "last_recommended_ids": [g.id_product for g in response.games],
@@ -248,10 +256,12 @@ I filtri scelti con i click dal cliente restano attivi: la nuova query non può 
     # ---- API ---------------------------------------------------------------------
 
     def reply(self, message: str, choices: list[str] | None = None, k: int = 5,
-              session_id: str = "default") -> ChatResponse:
+              session_id: str = "default",
+              custom_policy: list[str] | None = None) -> ChatResponse:
         """One stateful turn. Same contract as ChatGraph.reply."""
         out = self._graph.invoke(
-            {"message": message, "choices": choices or [], "k": k},
+            {"message": message, "choices": choices or [], "k": k,
+             "custom_policy": custom_policy or []},
             config={"configurable": {"thread_id": session_id}},
         )
         return out["response"]

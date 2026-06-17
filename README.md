@@ -258,9 +258,28 @@ in the contract) — suggested refinements about the *game*, like *"plays in und
 game's own attributes (its playtime, its player count), so every tap genuinely narrows the
 catalog instead of being a decorative chip.
 
-## Pushing it further — two engines, one contract
+## Steering the seller — policies switched on by name
 
-Behind that same `reply(...)` contract sit two interchangeable engines, switched by `CHAT_ENGINE`
+A storefront often needs to *bias* the seller — run a Christmas campaign, push a category, treat
+this customer as an expert — without handing the client a free prompt field to inject into. So
+the bias is a **list of named policies** on the request (`custom_policy: ["christmas_sale",
+"promote_cooperative"]`); each name resolves to a small class in a registry, and an unknown name
+is ignored, never an error.
+
+A policy isn't a fixed setting — it's **middleware wrapped around the turn's stages**, so it does
+exactly as much as it needs: `promote_cooperative` puts itself *in the middle of the fetch*
+(biases the query, pulls cooperative games to the front), `christmas_sale` reshapes the *pitch*
+(gift framing, no invented prices), `force_quick_match` overrides the routing. Adding a behavior
+is **one file and one registry line** — the rest of the code doesn't move.
+
+The boundary that keeps it safe: a policy changes **behavior, not truth**. `promote_cooperative`
+can only reorder games that were actually retrieved; no policy can override the grounding rule. And
+because each policy is one isolated class, its effect is **unit-tested on its own** — it keeps
+doing its job even as the rest of the prompt changes around it. Design: [`docs/idee.md` §O](docs/idee.md).
+
+## Pushing it further — three engines, one contract
+
+Behind that same `reply(...)` contract sit interchangeable engines, switched by `CHAT_ENGINE`
 (and per-request, for shadow runs):
 
 - **pipeline** — the decomposed graph above: every decision (route, filters, k) made in code, the
@@ -269,12 +288,18 @@ Behind that same `reply(...)` contract sit two interchangeable engines, switched
   *catalog language* (it turns *"we all play together against the game"* into *"cooperative,
   win or lose as a team"* — the lexical gap the embedder can't bridge on its own), the code
   fetches, and a zero-result turn triggers one **informed** retry or an honest no-match.
+- **agent** — *groundwork, experimental*: the strong model drives a `search_catalog` tool itself,
+  deciding when and with what words to search; the answer is still assembled in code over the
+  union of what the tool returned (same grounding). The local 8B can't drive tools reliably, so it
+  sits behind the same fallback and degrades to the pipeline — the seam and tool are built and
+  unit-tested, an agentic-native model is the swap-in.
 
 Measured head to head on the same fixtures, arm B lifted **case pass 0.700 → 0.800 at −18%
-tokens** — more quality *and* cheaper. A future stronger-model agent (arm A) plugs into the same
-slot, and `TieredChat` already degrades a failed primary turn to the pipeline so the customer
-always gets an answer. Full design + the per-failure breakdown (what recovered, what merely
-*moved*, the one predicted regression): [`docs/idee.md` §Q](docs/idee.md).
+tokens** — more quality *and* cheaper (the **agent** has no quality numbers yet — its machinery is
+unit-tested, but no real model has been run through it). `TieredChat` degrades a failed primary
+turn to the pipeline so the customer always gets an answer. Full design + the per-failure
+breakdown (what recovered, what merely *moved*, the one predicted regression):
+[`docs/idee.md` §Q](docs/idee.md).
 
 ## Measured the same way as the pipeline
 

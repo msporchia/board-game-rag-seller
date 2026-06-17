@@ -196,6 +196,40 @@ both ends. A parsed click becomes a `SearchFilters` fragment merged into the ses
 "per 4 giocatori" later *replaces* "per 2 giocatori"); anything unparsed (e.g. "Sorprendimi")
 falls back into the query string, Phase 4 style — degraded, never dropped.
 
+### Custom policies — controlled commercial steering
+
+`POST /chat` accepts an optional `custom_policy` list: the storefront/backoffice activates
+behaviors **by name**, not by injecting prompt text. Each name maps to a hardcoded policy class
+(`app/chat/policies/library/`, one per file, resolved by `PolicySet`); unknown names are ignored
+(logged), so a caller typo degrades, never 500s. The wiring (base class, resolver, stage
+contexts) lives in `app/chat/policies/`; the actual policies live in `library/` beside it.
+
+```json
+{
+  "session_id": "demo-1",
+  "message": "cerco un regalo per Natale",
+  "custom_policy": ["christmas_sale", "promote_cooperative", "assume_advanced"]
+}
+```
+
+A policy is OPEN code composed as **middleware** around the turn's stages — it can run before/after
+a stage, reshape its result, or replace it. Each ships its concrete behavior in its own file, so
+its effect is unit-tested in isolation and stays stable when the rest of the prompt/pipeline
+changes (the point of the design). The starter set, one per seam:
+
+| Policy | Seam | Effect |
+|---|---|---|
+| `christmas_sale` | `around_generate` | injects a gift-framing instruction block; may not invent prices/discounts/stock |
+| `promote_cooperative` | `around_retrieve` | biases the query toward cooperative games and brings the co-op hits to the front |
+| `assume_advanced` | `force_expertise` | overrides the analyzer's communication level for this turn |
+| `force_quick_match` | `force_strategy` | bypasses routing for this turn (propose concrete games now) |
+
+The important boundary: a policy changes **behavior**, not truth. `promote_cooperative` reorders
+only games that were actually retrieved; a generation block cannot override the grounding rule
+below. This gives a commercial operator a fast, extensible lever (add a file, register a name)
+while catalog safety stays in the same code path. The same `custom_policy` list also steers the
+stateless Phase 4 path and the agentic engine — the policy seam is shared by every engine.
+
 ### Model tiering — the escalation contract only
 
 `TurnAnalysis` carries `escalate` / `escalation_reason` / `confidence` (the confidence-based
@@ -212,9 +246,12 @@ demonstrate is the *contract*, measured by tests — not a paid API integration.
 - **Long-term user profiles.** The cross-session user-profile JSON in `docs/note.md`
   (loves/hates, past games, skill memory) is future work — memory today lives and dies with the
   `session_id`.
-- **Conversation quality measurements.** The graph's *mechanics* are unit-tested; how well the
-  8B actually reads enthusiasm or holds a strategy is a measured property of the real model, to
-  be tracked here once there are real multi-turn runs (same discipline as the Phase 4 findings).
+- **Client-facing recorded session.** The offline suites now measure the graph and whole
+  conversations, but the showcase still needs one real API/UI transcript for the sibling
+  frontends: request, response cards, quick-reply click, stateful follow-up, and trace.
+- **Online conversion loop.** The response can be rendered today, but card-click/add-to-cart/
+  purchase events are not yet joined back to `session_id` or engine arm. That belongs to the
+  `seller-web` / `seller-shop` integration pass, not to the core chat mechanics.
 
 ## Tests
 

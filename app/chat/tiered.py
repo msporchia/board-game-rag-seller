@@ -27,13 +27,16 @@ class TieredChat:
         self._primary = primary
 
     def reply(self, message: str, choices: list[str] | None = None, k: int = 5,
-              session_id: str = "default") -> ChatResponse:
+              session_id: str = "default",
+              custom_policy: list[str] | None = None) -> ChatResponse:
         """One turn on the primary engine when present, degrading to the fallback on ANY
         primary failure — the customer always gets a reply from somewhere down the ladder."""
         if self._primary is not None:
             try:
                 return self._primary.reply(message, choices=choices, k=k,
-                                           session_id=session_id)
+                                           session_id=session_id,
+                                           custom_policy=custom_policy)
             except Exception:  # noqa: BLE001 — a primary failure must never kill the turn
                 log.warning("primary_engine_degraded", session_id=session_id)
-        return self._fallback.reply(message, choices=choices, k=k, session_id=session_id)
+        return self._fallback.reply(message, choices=choices, k=k, session_id=session_id,
+                                    custom_policy=custom_policy)

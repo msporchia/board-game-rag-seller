@@ -12,4 +12,7 @@
 - `analysis.TurnAnalysis` / `strategy.Strategy`: Phase 5 — the analyze node's structured
   output (the user-analysis dimensions + the escalation contract from docs/note.md) and the
   four selling strategies the deterministic router picks from.
+
+Per-turn commercial steering is NOT a model here: `ChatRequest.custom_policy` is a list of
+policy NAMES resolved into middleware by `app.chat.policies` (docs/idee.md §O).
 """

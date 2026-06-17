@@ -210,8 +210,21 @@ context requires it; **LOW** = nice-to-have / when scaling.
   the floor, poor sheets reach the ceiling); LLM calls saved on the full catalog vs the fixed
   cap; `n_extractions`/recall on the poor-sheet games must not get worse.
 
-## O. Strategy routing as configurable policy (A/B tests, user groups) — MEDIUM (future)
+## O. Strategy routing as configurable policy (A/B tests, user groups) — IMPLEMENTED (generalized to a policy middleware seam)
 
+- **BUILT (2026-06-17)**: shipped broader than this section asked. Instead of only making the
+  route node's `pick_strategy` swappable, the turn now carries a `custom_policy: [name, ...]`
+  list (API → `ChatState`); `PolicySet` resolves each name to a `Policy` class (the wiring lives
+  in `app/chat/policies/`, the concrete policies one-per-file in `app/chat/policies/library/`,
+  hardcoded `REGISTRY`, unknown names logged-and-skipped) and composes them
+  as **middleware** around the `retrieve` and `generate` stages (`around_retrieve`/
+  `around_generate` + the `force_expertise`/`force_strategy` shortcuts). A policy is open code: it
+  can reshape the query/filters/hits, inject prompt blocks, swap the retriever, or replace a stage
+  — not a closed knob set. Starter policies: `christmas_sale`, `promote_cooperative`,
+  `assume_advanced`, `force_quick_match`. The active names are logged per node (measurability),
+  and each policy's effect is unit-tested in isolation so it stays stable across prompt changes.
+  Still future (the original §O scope): variants keyed by experiment arm + user group loaded from
+  config/store, sticky-per-session arm assignment, arm recorded in `traces`, and an outcome metric.
 - **What**: today `pick_strategy` is fixed first-match-wins rules in code. The expectation is
   that this logic grows and churns: marketing will change the selling rules often, and we'll
   want **A/B experiments** and **per-user-group variants** (different personas/strategies per
@@ -241,7 +254,16 @@ context requires it; **LOW** = nice-to-have / when scaling.
   distributed locking until there are multiple API replicas.
 - **Measure**: none — robustness. A unit test with two interleaved turns documents the limit.
 
-## Q. Tiered chat engine: agentic retrieval behind the pipeline — MEDIUM (seam built, agent later)
+## Q. Tiered chat engine: agentic retrieval behind the pipeline — MEDIUM (seam + tool + agent STUB built)
+
+- **BUILT (2026-06-17, groundwork)**: the `search_catalog` tool (`app/chat/tools/`, wraps
+  GameRetriever+SearchFilters, reuses `SearchIntent` as the arg schema) and `AgenticChat`
+  (`app/chat/agentic.py`) now exist: the strong model `bind_tools`-drives the search in a bounded
+  loop, and the grounded answer is still `ChatAdvisor.pitch` over the UNION of the tool's hits —
+  the three invariants stay in code at the boundary as below. Wired behind `engine=agent` into
+  TieredChat's primary slot (the empty slot this section described). STUB: per-turn/stateless (no
+  history yet), no click→filter merge, no circuit breaker — exercised offline with a fake
+  tool-calling LLM; the local 8B can't drive tools, so it degrades to the pipeline fallback.
 
 - **What**: two chat engines behind one stable contract (`reply(message, choices, k,
   session_id) → ChatResponse`): today's decomposed pipeline (weak local model, every decision

@@ -40,12 +40,14 @@ from app.chat.models.analysis import TurnAnalysis
 from app.chat.models.reply import ChatReply
 from app.chat.models.response import ChatResponse
 from app.chat.models.strategy import Strategy
+from app.chat.policies.generation_context import GenerationContext
+from app.chat.policies.policy_set import PolicySet
+from app.chat.policies.retrieval_context import RetrievalContext
 from app.chat.routing import STRATEGY_K, pick_strategy
 from app.chat.state import ChatState, merge_filters
 from app.config import settings
 from app.core.logging import get_logger
 from app.core.tracing.callbacks import get_trace_callbacks
-from app.rag.filters.search_filters import SearchFilters
 
 log = get_logger(__name__)
 
@@ -138,6 +140,7 @@ Valuta SOLO dal testo del cliente:
     def _analyze(self, state: ChatState) -> dict:
         """One structured LLM call reading the user; on failure keep the previous analysis."""
         message = state["message"]
+        policies = PolicySet.from_names(state.get("custom_policy"))
         try:
             analysis: TurnAnalysis = self._analyze_llm.invoke(
                 self._analysis_prompt(state.get("history") or [], message))
@@ -149,13 +152,15 @@ Valuta SOLO dal testo del cliente:
                 expertise_level=state.get("expertise_level", "beginner"),
                 reply_style=state.get("reply_style", "short"),
             )
+        expertise = policies.force_expertise(analysis.expertise_level)
         log.info("analyze_done", enthusiasm=analysis.enthusiasm,
-                 decisiveness=analysis.decisiveness, expertise=analysis.expertise_level,
-                 style=analysis.reply_style, escalate=analysis.escalate)
+                 decisiveness=analysis.decisiveness, expertise=expertise,
+                 style=analysis.reply_style, escalate=analysis.escalate,
+                 policies=policies.names)
         return {
             "enthusiasm": analysis.enthusiasm,
             "decisiveness": analysis.decisiveness,
-            "expertise_level": analysis.expertise_level,
+            "expertise_level": expertise,
             "reply_style": analysis.reply_style,
             "escalate": analysis.escalate,
             "escalation_reason": analysis.escalation_reason,
@@ -177,9 +182,11 @@ Valuta SOLO dal testo del cliente:
             reply_style=state.get("reply_style", "short"),
         )
         stalled = state.get("turns_without_proposal", 0)
-        strategy = pick_strategy(analysis, stalled)
+        policies = PolicySet.from_names(state.get("custom_policy"))
+        strategy = policies.force_strategy(pick_strategy(analysis, stalled))
         proposal = strategy in (Strategy.QUICK_MATCH, Strategy.DISCOVERY)
-        log.info("route_done", strategy=strategy.value, turns_without_proposal=stalled)
+        log.info("route_done", strategy=strategy.value, turns_without_proposal=stalled,
+                 policies=policies.names)
         return {
             "strategy": strategy.value,
             "turns_without_proposal": 0 if proposal else stalled + 1,
@@ -196,10 +203,13 @@ Valuta SOLO dal testo del cliente:
         return "generate"      # keep guiding/explaining over the games already shown
 
     def _retrieve(self, state: ChatState) -> dict:
-        """Clicks → SearchFilters fragments (merged into the session), then hybrid search."""
+        """Clicks → SearchFilters fragments (merged into the session), then hybrid search.
+
+        The fetch runs through the policy chain (RetrievalContext): a policy may reshape the
+        query/filters or reorder the hits before they reach the table.
+        """
         fragment, leftovers = parse_choices(state.get("choices"))
         spec = merge_filters(state.get("filters_spec"), fragment)
-        filters = SearchFilters.from_dict(spec) if spec else None
 
         # Query: previous user turns give context the current message may lack (e.g. the forced
         # QUICK_MATCH after a guided exchange must search with everything collected so far).
@@ -212,8 +222,12 @@ Valuta SOLO dal testo del cliente:
         # 3-4); only free-form DISCOVERY honors the request's k.
         strategy = Strategy(state["strategy"])
         k = (state.get("k") or 5) if strategy is Strategy.DISCOVERY else STRATEGY_K[strategy]
-        hits = self.advisor.retriever.search(query, k=k, filters=filters)
-        log.info("retrieve_done", k=k, filters=sorted(spec) or None, hits=len(hits))
+        policies = PolicySet.from_names(state.get("custom_policy"))
+        rctx = RetrievalContext(query=query, k=k, retriever=self.advisor.retriever,
+                                filters_spec=spec)
+        hits = policies.run_retrieve(rctx, lambda c: c.execute())
+        log.info("retrieve_done", k=k, filters=sorted(spec) or None, hits=len(hits),
+                 policies=policies.names)
         return {"hits": hits, "filters_spec": fragment}
 
     def _generate(self, state: ChatState) -> dict:
@@ -226,13 +240,14 @@ Valuta SOLO dal testo del cliente:
             llm = self._strong_llm
 
         history = state.get("history") or []
-        response = self.advisor.pitch(
-            state["message"], state.get("hits") or [],
-            strategy=state.get("strategy"),
-            expertise_level=state.get("expertise_level"),
+        policies = PolicySet.from_names(state.get("custom_policy"))
+        gctx = GenerationContext(
+            advisor=self.advisor, message=state["message"], hits=state.get("hits") or [],
+            strategy=state.get("strategy"), expertise=state.get("expertise_level"),
             history="\n".join(history[:-1]) or None,  # [:-1] = exchanges before this turn
             llm=llm,
         )
+        response = policies.run_generate(gctx, lambda c: c.execute())
         return {
             "response": response,
             "last_recommended_ids": [g.id_product for g in response.games],
@@ -242,10 +257,12 @@ Valuta SOLO dal testo del cliente:
     # ---- API ---------------------------------------------------------------------
 
     def reply(self, message: str, choices: list[str] | None = None, k: int = 5,
-              session_id: str = "default") -> ChatResponse:
+              session_id: str = "default",
+              custom_policy: list[str] | None = None) -> ChatResponse:
         """One stateful turn. Same return contract as ChatAdvisor.reply (Phase 4)."""
         out = self._graph.invoke(
-            {"message": message, "choices": choices or [], "k": k},
+            {"message": message, "choices": choices or [], "k": k,
+             "custom_policy": custom_policy or []},
             config={"configurable": {"thread_id": session_id}},
         )
         return out["response"]

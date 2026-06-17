@@ -29,6 +29,7 @@ class ChatState(TypedDict, total=False):
     message: str
     choices: list[str]
     k: int
+    custom_policy: list[str]  # names of the active policies this turn (PolicySet, docs/idee.md §O)
 
     # rolling conversation memory
     history: Annotated[list[str], add_history]      # "utente: ..." / "bot: ..." lines

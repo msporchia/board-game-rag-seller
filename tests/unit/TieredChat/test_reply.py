@@ -25,7 +25,8 @@ class TestReply:
         assert res is fallback.response
         # The contract travels intact down the ladder.
         assert fallback.calls == [{"message": "ciao", "choices": ["per 2 giocatori"],
-                                   "k": 3, "session_id": "s1"}]
+                                   "k": 3, "session_id": "s1",
+                                   "custom_policy": None}]
 
     def test_healthy_primary_answers_and_fallback_is_untouched(self):
         primary = FakeEngine(response=ChatResponse(message="dal primario", games=[],
@@ -43,10 +44,12 @@ class TestReply:
         fallback = FakeEngine()
         engine = TieredChat(fallback=fallback, primary=primary)
 
-        res = engine.reply("ciao", choices=["max 30 minuti"], k=4, session_id="s2")
+        res = engine.reply("ciao", choices=["max 30 minuti"], k=4, session_id="s2",
+                           custom_policy=["christmas_sale"])
 
         # The primary was tried, the failure never surfaced, the fallback got the SAME turn.
         assert res is fallback.response
         assert primary.calls == fallback.calls == [{"message": "ciao",
                                                     "choices": ["max 30 minuti"],
-                                                    "k": 4, "session_id": "s2"}]
+                                                    "k": 4, "session_id": "s2",
+                                                    "custom_policy": ["christmas_sale"]}]

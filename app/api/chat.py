@@ -35,7 +35,7 @@ def _get_engine(name: str) -> TieredChat:
     Unknown names fall back to the pipeline — a config typo must degrade, never 500.
     """
     global _graph, _checkpointer
-    name = name if name in ("pipeline", "piloted") else "pipeline"
+    name = name if name in ("pipeline", "piloted", "agent") else "pipeline"
     if name not in _engines:
         if _graph is None:
             from app.chat.checkpointer import sqlite_checkpointer  # lazy: stateful traffic only
@@ -49,6 +49,11 @@ def _get_engine(name: str) -> TieredChat:
             _engines["piloted"] = TieredChat(
                 primary=PilotedChat(advisor=_advisor, checkpointer=_checkpointer),
                 fallback=_graph)
+        elif name == "agent":
+            from app.chat.agentic import AgenticChat  # experimental tool-calling tier (§Q)
+
+            _engines["agent"] = TieredChat(primary=AgenticChat(advisor=_advisor),
+                                           fallback=_graph)
         else:
             _engines["pipeline"] = TieredChat(fallback=_graph)
     return _engines[name]
@@ -59,5 +64,7 @@ def chat(req: ChatRequest) -> ChatResponse:
     if req.session_id:
         engine = _get_engine(req.engine or settings.chat_engine)
         return engine.reply(req.message, choices=req.choices, k=req.k,
-                            session_id=req.session_id)
-    return _advisor.reply(req.message, choices=req.choices, k=req.k)
+                            session_id=req.session_id,
+                            custom_policy=req.custom_policy)
+    return _advisor.reply(req.message, choices=req.choices, k=req.k,
+                          custom_policy=req.custom_policy)

@@ -10,15 +10,20 @@ caught, not just tooling for its own sake.
 |---|---|---|
 | Retrieval scorecard | `tests/eval.py`, [`valutazione.md`](valutazione.md) | recall@K and ranks on frozen queries — rank-based, because cosine scores are uncalibrated |
 | Regression gate | `tests/e2e/enrichment/` + versioned `baseline.json` | no metric may regress beyond tolerance vs the committed baseline |
-| Per-step LLM evals | `tests/eval.py --pipeline …` | each enrichment step measured against hand-written oracles |
+| Per-step LLM evals | `tests/eval/<Unit>/` + `tests/eval.py --pipeline …` | each enrichment/chat step measured against hand-written oracles |
+| Chat eval suites | `tests/eval/TurnAnalyzer`, `ChatRetrieve`, `ChatPitch`, `ChatConversation` | turn reading, retrieval, grounded pitch, and whole-session convergence measured on scripted cases |
 | Invariants in code | `WebEnricher` (quote verification), `ChatAdvisor` (id grounding) | anti-hallucination enforced at runtime, not just tested |
 | Structured logging | `app/core/logging.py` (structlog) + per-module loggers | every log is an EVENT with FIELDS (`enrich_step`, `game=2845`, `duration_ms=140`): step, game id, duration, outcome for every pipeline step; query/k/filters/hits/latency for every search; failed LLM/web calls log a warning instead of vanishing. `LOG_FORMAT=json` makes the same events machine-shippable |
 | LLM call tracing | `app/core/tracing/` (`traces` table in `data/seller.db`) | every Curator/Web/Synth call recorded: component, model, prompt size+preview, response size, latency, token counts |
 
 ## What we are blind to
 
-- **No chat-level eval.** The prose↔cards coherence issue ([`chat.md`](chat.md)) was found by
-  reading transcripts by hand; nothing measures it automatically.
+- **No client-closed loop yet.** Chat quality is now measured offline, but the storefront loop is
+  not closed: no real `seller-web`/`seller-shop` transcript, no card-click/add-to-cart/purchase
+  event joined back to `session_id`, and no recorded showcase trace for the UI path.
+- **No LLM-judge layer for chat prose yet.** The current suites use rule scoring and scripted
+  oracles; they catch convergence, filters, fallback and grounding shape, but not nuanced sales
+  copy quality.
 - **No runtime metrics.** Per-turn latency is known anecdotally (~50–130 s on CPU), with no
   retrieval-vs-generation breakdown. (The `traces` table now gives the generation half per
   call; the per-turn split is still unmeasured.)
@@ -83,13 +88,18 @@ FROM traces GROUP BY component ORDER BY avg_ms DESC;
       onto the OpenTelemetry GenAI semantic conventions (`gen_ai.request.model`,
       `gen_ai.usage.input_tokens`/`output_tokens`), so any OTel-native backend can consume
       the same data.
-- [ ] **Chat-level eval**: groundedness and prose↔cards coherence scored automatically
+- [x] **Chat-level eval baseline**: TurnAnalyzer, ChatRetrieve, ChatPitch and ChatConversation
+      produce persisted reports with per-case failures and cost/usage where relevant.
+- [ ] **Chat showcase / client loop**: record one real session through the API and frontends,
+      including rendered cards, quick-reply clicks, trace, and the response contract used by
+      `seller-web` / `seller-shop`.
+- [ ] **Chat LLM-judge layer**: sales-copy quality and subtle groundedness scored automatically
       (LLM-as-judge, with the same record/replay discipline as the web rails).
 - [ ] **Latency budget**: measure the retrieval vs generation split per `/chat` turn; document
       CPU vs GPU numbers.
 - [ ] **RAGAS** (or similar) alongside the in-house scorecard — to compare methodologies; the
       scorecard remains the gate.
-- [ ] **CI split**: the unit suite (160 tests, offline, ~1.5 s) runs on GitHub Actions; evals
+- [x] **CI split**: the unit suite (235 tests, offline, ~2-3 s locally) runs on GitHub Actions; evals
       and e2e stay local by design — they need a running Ollama and ~5 GB of models, which is
       neither free nor fast on hosted runners. The split is deliberate and documented, not a
       hidden limitation.

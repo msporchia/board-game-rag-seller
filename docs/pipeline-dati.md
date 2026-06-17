@@ -119,10 +119,11 @@ Source → EnrichmentPipeline → Composer → serializer → VectorStore
      deduced mechanics (if empty).
    - `WebEnricher` (online FALLBACK, runs ONLY if gaps remain in `missing_info`): mini-RAG
      with citation-based verification (same pattern as the Curator, applied to real pages).
-   - `SynthEnricher` (TODO): produces the unified SYNTHESIS over rich material
-     (`certain_data + game.extracted + web facts + multi-source source_descriptions`) and
-     writes it into `enriched.description`. Moved out of the Curator after measuring that
-     compressing in there lost recall (v1 0.23 < 0.26 baseline).
+   - `SynthEnricher` (implemented, first version): produces the unified SYNTHESIS over rich
+     material (`certain_data + game.extracted + web facts`) and writes it into
+     `enriched.description`. Moved out of the Curator after measuring that compressing there
+     lost recall (v1 0.23 < 0.26 baseline). Known debt: the first version can over-compress
+     already-rich DTOs, tracked by the e2e Viticulture regression.
    - Stubs: `extract`/`augment`/`gapfill`.
 3. **Composer** (`RuleComposeEnricher`): a SINGLE step that composes the **text** to embed —
    word order/coherence matters. Deterministic baseline (the synthesis is written upstream by

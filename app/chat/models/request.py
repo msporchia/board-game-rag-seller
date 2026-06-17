@@ -14,5 +14,9 @@ class ChatRequest(BaseModel):
     session_id: str | None = None
     # Per-request engine override (docs/idee.md §Q): None → the CHAT_ENGINE env default.
     # Only meaningful on the stateful path; what makes shadow runs and A/B tests possible
-    # without env churn.
-    engine: Literal["pipeline", "piloted"] | None = None
+    # without env churn. "agent" = the experimental tool-calling engine (Phase 6).
+    engine: Literal["pipeline", "piloted", "agent"] | None = None
+    # Optional per-turn policies, activated BY NAME (docs/idee.md §O): the caller sends e.g.
+    # ["christmas_sale", "promote_cooperative"] and the PolicySet resolves them to middleware
+    # that wraps the turn's stages. Unknown names are ignored (logged), never an error.
+    custom_policy: list[str] = []

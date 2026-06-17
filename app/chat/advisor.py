@@ -31,6 +31,9 @@ from langchain_ollama import ChatOllama
 
 from app.chat.models.reply import ChatReply
 from app.chat.models.response import ChatResponse
+from app.chat.policies.generation_context import GenerationContext
+from app.chat.policies.policy_set import PolicySet
+from app.chat.policies.retrieval_context import RetrievalContext
 from app.config import settings
 from app.core.logging import get_logger
 from app.core.tracing.callbacks import get_trace_callbacks
@@ -124,19 +127,25 @@ class ChatAdvisor:
         return " | ".join(parts)
 
     def _prompt(self, message: str, hits: list[GameHit], *, strategy: str | None = None,
-                expertise_level: str | None = None, history: str | None = None) -> str:
+                expertise_level: str | None = None, history: str | None = None,
+                extra_blocks: list[str] | None = None) -> str:
         """Fixed + dynamic prompt structure (docs/note.md).
 
         Without the Phase 5 keywords this is exactly the Phase 4 prompt. With them, the persona
         block carries the expertise communication rules, the strategy block carries the selling
         strategy of this turn, and the conversation so far gives the model context — the rigid
         anti-hallucination rules at the bottom are IDENTICAL on both paths.
+
+        `extra_blocks` are instruction blocks contributed by the active policies (PolicySet,
+        docs/idee.md §O): they reshape the prose, never the grounding rules below.
         """
         catalog = "\n".join(self._game_line(i, h) for i, h in enumerate(hits))
         persona = (_EXPERTISE_RULES.format(expertise_level=expertise_level)
                    if expertise_level else _DEFAULT_PERSONA)
         conversation = f"\nCONVERSAZIONE FINORA:\n{history}\n" if history else ""
         strategy_block = f"\n{_STRATEGY_RULES[strategy]}\n" if strategy else ""
+        policy_text = "\n".join(b for b in (extra_blocks or []) if b)
+        sales_block = f"\nPOLICY ATTIVE:\n{policy_text}\n" if policy_text else ""
         return f"""{persona}
 {conversation}
 RICHIESTA DEL CLIENTE:
@@ -144,6 +153,7 @@ RICHIESTA DEL CLIENTE:
 
 GIOCHI DISPONIBILI (gli UNICI che puoi proporre):
 {catalog}
+{sales_block}
 
 Regole rigide:
 - Proponi SOLO giochi presenti nella lista qui sopra. NON inventare titoli e non usare la tua
@@ -175,28 +185,43 @@ FORMATO DELLA RISPOSTA (JSON, TUTTI i campi obbligatori):
     # ---- API ------------------------------------------------------------------
 
     def reply(self, message: str, choices: list[str] | None = None,
-              filters: SearchFilters | None = None, k: int = 5) -> ChatResponse:
+              filters: SearchFilters | None = None, k: int = 5,
+              custom_policy: list[str] | None = None) -> ChatResponse:
         """Phase 4, stateless: quick-reply clicks are folded into the retrieval query.
 
         (The Phase 5 graph parses them into SearchFilters instead and calls `pitch` directly.)
+
+        Active policies (docs/idee.md §O) wrap BOTH stages here too: retrieval through the
+        policy chain (a policy may reshape the query/filters/hits) and generation through it
+        (prompt blocks, llm), plus the expertise/strategy shortcuts.
         """
+        policies = PolicySet.from_names(custom_policy)
         query = f"{message}\n{' '.join(choices)}" if choices else message
-        hits = self.retriever.search(query, k=k, filters=filters)
-        return self.pitch(message, hits)
+        rctx = RetrievalContext(query=query, k=k, retriever=self.retriever, filters=filters)
+        hits = policies.run_retrieve(rctx, lambda c: c.execute())
+        strategy = policies.force_strategy(None)
+        gctx = GenerationContext(
+            advisor=self, message=message, hits=hits,
+            strategy=strategy.value if strategy else None,
+            expertise=policies.force_expertise(None),
+        )
+        return policies.run_generate(gctx, lambda c: c.execute())
 
     def pitch(self, message: str, hits: list[GameHit], *, strategy: str | None = None,
               expertise_level: str | None = None, history: str | None = None,
-              llm=None) -> ChatResponse:
+              llm=None, extra_blocks: list[str] | None = None) -> ChatResponse:
         """Generate the grounded pitch over `hits` (the generation step alone).
 
         `llm` overrides the default model for this call — the model-tiering hook: the graph's
         generate node passes the strong model here when the analyze step escalated.
+        `extra_blocks` are policy-contributed instruction blocks (PolicySet, docs/idee.md §O).
         """
         if not hits:
             return ChatResponse(message=_NO_MATCH, games=[], quick_replies=[])
 
         prompt = self._prompt(message, hits, strategy=strategy,
-                              expertise_level=expertise_level, history=history)
+                              expertise_level=expertise_level, history=history,
+                              extra_blocks=extra_blocks)
         try:
             reply: ChatReply = (llm or self._llm).invoke(prompt)
         except Exception:  # noqa: BLE001  LLM/transport failure → deterministic fallback, never 500

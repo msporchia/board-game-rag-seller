@@ -146,3 +146,20 @@ class TestChatAdvisor:
 
         query = retriever.calls[0][0]
         assert "cooperativo" in query and "Max 1 ora" in query
+
+    def test_custom_policy_shapes_the_prompt_without_bypassing_grounding(self, make_advisor):
+        hits = [make_hit(4, "Pandemic"), make_hit(7, "Splendor")]
+        reply = ChatReply(intro="ok", recommendations=[rec(4, "Pandemic è perfetto.")])
+        advisor, _, llm = make_advisor(hits=hits, reply=reply)
+
+        res = advisor.reply(
+            "un regalo per Natale",
+            custom_policy=["christmas_sale", "assume_advanced", "force_quick_match"],
+        )
+
+        prompt = llm.calls[0]
+        assert "saldi di Natale" in prompt           # christmas_sale (around_generate block)
+        assert "livello di esperienza: advanced" in prompt  # assume_advanced (force_expertise)
+        assert "Strategia per questo turno — QUICK MATCH" in prompt  # force_quick_match
+        # Grounding still holds: the model cited only id 4, so only 4 reaches the cards.
+        assert [g.id_product for g in res.games] == [4]

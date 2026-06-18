@@ -90,5 +90,50 @@
     ],
     "final": {"accept_ids": [3, 48], "by_turn": 2},
     "note": "Constraints split across turns, no clicks: family-with-8-year-olds lives only in turn 1, the coop request only in turn 2. The query assembly must combine them to beat the six age-14 horror coops; both Pandemics are accepted."
+  },
+  {
+    "id": "deckbuilding-meccanica",
+    "turns": [
+      {"message": "cerco un gioco per il mio gruppo, siamo in tre o quattro e ci piace la strategia", "choices": []},
+      {"message": "in particolare adoriamo i giochi dove costruisci e potenzi il tuo mazzo di carte durante la partita", "choices": []}
+    ],
+    "final": {"accept_ids": [27, 33], "by_turn": 2},
+    "note": "Mechanic-specific convergence: turn 1 is a generic strategy-for-3-4 ask, turn 2 names the deck-building mechanic. Clank! (deck-building adventure) and Newton (deckbuilding euro) are the in-corpus deck-builders; Altiplano (bag-building) is the near-miss confounder."
+  },
+  {
+    "id": "gestionale-worker-placement",
+    "turns": [
+      {"message": "siamo giocatori esperti e vogliamo un gestionale impegnativo, anche lungo", "choices": []},
+      {"message": "ci piace soprattutto piazzare i lavoratori per raccogliere risorse e gestire una fattoria o un'economia", "choices": []}
+    ],
+    "final": {"accept_ids": [29, 22, 20], "by_turn": 2},
+    "note": "Heavy worker-placement euro: turn 2 pins the mechanic. Agricola (farm + worker placement), Viticulture (vineyard + worker placement) and Stone Age (worker placement) are accepted; the many other euros (Terra Mystica, Puerto Rico, Through the Ages) are reasonable but not worker-placement-first."
+  },
+  {
+    "id": "regalo-bambino-8anni",
+    "turns": [
+      {"message": "devo fare un regalo a un bambino di 8 anni, non gioca ancora a niente di complicato", "choices": []},
+      {"message": "qualcosa di semplice e colorato, con regole che si spiegano in pochi minuti", "choices": [], "expect": {"min_games": 1}}
+    ],
+    "final": {"accept_ids": [56, 43, 37], "by_turn": 2},
+    "note": "Age-appropriate gift: an 8-year-old + simple/quick rules. Fairy Tile (age 8, kids, tile-laying), Spirits of the Forest (family, 20 min, simple) and Fantascatti (kids dexterity, 20 min) are accepted; the heavy euros and the age-14 titles are the trap."
+  },
+  {
+    "id": "horror-cooperativo",
+    "turns": [
+      {"message": "vorremmo un gioco cooperativo per una serata a tema horror, da brivido", "choices": []},
+      {"message": "ci piace esplorare posti inquietanti e affrontare l'orrore insieme, anche partite lunghe vanno benissimo", "choices": []}
+    ],
+    "final": {"accept_ids": [4, 11], "by_turn": 2},
+    "note": "Theme + mechanic convergence: horror AND cooperative. Le Case della Follia (horror coop, exploration) and Fireteam Zero (horror coop dungeon crawler) are the only horror coops in the corpus; the family coops (the two Pandemics) are the confounders the horror detail must out-rank."
+  },
+  {
+    "id": "trattative-diplomazia",
+    "turns": [
+      {"message": "cerchiamo un gioco dove si stringono alleanze e si tratta tra giocatori, siamo in cinque", "choices": []},
+      {"message": "ci piace la politica, l'inganno e il tradimento al tavolo", "choices": []}
+    ],
+    "final": {"accept_ids": [31, 38], "by_turn": 2},
+    "note": "Negotiation / politics dimension (not covered elsewhere): alliances + bargaining + betrayal, 5 players. Il Trono di Spade (politics, negotiation, alliances, bluff; 3-6) and Schönbrunn (diplomatic bargaining; 3-6) are accepted; auction euros like Amun-Re are the near-miss."
   }
 ]

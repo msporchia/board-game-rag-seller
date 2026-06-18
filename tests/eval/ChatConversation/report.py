@@ -30,7 +30,12 @@ class ConversationReport(EvalReport):
         self.engine = engine
 
     def model(self) -> str:
-        return f"{super().model()} · engine={self.engine}"
+        from app.config import settings
+        # The agent arm runs on the strong / tool-capable model (LLM_MODEL_STRONG); pipeline and
+        # piloted run on llm_model. Label the numbers with the model that actually produced them.
+        base = ((settings.llm_model_strong or settings.llm_model)
+                if self.engine == "agent" else settings.llm_model)
+        return f"{base} · engine={self.engine}"
 
     # (metric name, scope shown in the summary)
     rate_specs = (

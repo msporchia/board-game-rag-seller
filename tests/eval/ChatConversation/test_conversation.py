@@ -147,9 +147,14 @@ class TestConversation:
                              if accepted & set(ids)), None)
             converged = turns_to is not None
 
-        final_filters = graph.state(session).get("filters_spec") or {}
+        # The final-filters oracle needs an engine that accumulates a session filter spec; a
+        # black-box agent reports filters_spec=None (it re-derives constraints per turn via the
+        # tool, carrying no cross-turn spec), so the oracle is out of scope for it — like
+        # strategy_in for an engine with no router.
+        state_filters = graph.state(session).get("filters_spec")
+        final_filters = state_filters or {}
         filters_ok = None
-        if final.get("filters"):
+        if final.get("filters") and state_filters is not None:
             filters_ok = all(final_filters.get(k) == v for k, v in final["filters"].items())
 
         proposal_ok = None

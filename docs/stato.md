@@ -207,6 +207,19 @@ iterate on the prompt in 10s instead of 3min. Used to evolve v1→v4.
   `promote_cooperative`, `force_quick_match`) resolved by `PolicySet` into middleware around the
   turn's stages (`app/chat/policies/`, §O implemented). It does **not** need to be perfect; open
   retrieval/pitch/model issues stay in `idee.md` and eval reports.
+- **Commerce context / Phase 6 (`customer_context`) — DONE (seller side)**: `POST /chat` now
+  accepts an optional `customer_context` (`{received_products, sent_products, cart_products}`, all
+  `id_product` ints) and applies the **enforced-vs-generated split** in `ChatAdvisor.pitch` — the
+  one place every engine funnels through. `received` games are dropped deterministically (code,
+  before LLM and fallback — an owned game can't be re-pitched); `cart`/`sent` stay and are framed
+  in the prompt under `CONTESTO CLIENTE` as already-chosen / on-the-way. The seller never learns
+  the customer's identity, only id sets. Model: `app/chat/models/customer_context.py`; rides
+  through `GenerationContext` (so it covers Phase 4, pipeline, piloted, agent + survives a degraded
+  turn). Tests: `tests/unit/CustomerContext/`, `ChatAdvisor/test_customer_context.py`,
+  `ChatGraph/test_customer_context.py`. The BFF (`seller-shop`) already builds and sends this
+  payload, so the contract is aligned. Spec + table: `docs/chat.md` §"Commerce context (Phase 6)".
+  Still open (showcase, not mechanics): a real-stack run proving a purchase/cart change visibly
+  changes the next turn, and a seller-side grounding eval over a stronger model.
 - **Tool-calling agent (§Q) — RUNS end-to-end, experimental**: `search_catalog` (`app/chat/tools/`)
   exposes the catalog as an LLM tool, and `AgenticChat` (`app/chat/agentic.py`) drives it behind
   `engine=agent`, filling TieredChat's primary slot. Confirmed on a real model (2026-06-18):

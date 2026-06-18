@@ -9,6 +9,9 @@ measure one step in isolation; this one measures whether the conversation HOLDS 
 THE ARM IS SWITCHED BY ENV, same knob as production (`CHAT_ENGINE`, read through settings):
 - pipeline (default): the decomposed graph — analyze → route → retrieve → generate.
 - piloted: arm B — intent → search → explicit zero-result retry → generate.
+- agent: the tool-calling engine — the model drives `search_catalog` itself, in-process session
+  memory; black-box, so it is measured end-to-end (no per-turn state spying). Point it at a
+  tool-capable model via `LLM_MODEL_STRONG` (e.g. qwen2.5:7b — fits the 8GB-VRAM dev box).
 Same fixtures, same corpus, same oracles: the RESULTS delta between two consecutive runs IS
 the arm comparison. Every real model carries the LLMUsageTracker callback, so each
 conversation records its LLM calls and Ollama token counts — the cost denominator next to the
@@ -16,6 +19,7 @@ quality numbers.
 
     docker compose exec seller-api python -m pytest tests/eval/ChatConversation -q
     docker compose exec -e CHAT_ENGINE=piloted seller-api python -m pytest tests/eval/ChatConversation -q
+    docker compose exec -e CHAT_ENGINE=agent -e LLM_MODEL_STRONG=qwen2.5:7b seller-api python -m pytest tests/eval/ChatConversation -q
 
 Both arms' LLMs are built EXACTLY like production's defaults (same models, same temperatures,
 same structured-output schemas) minus the trace callbacks, so eval runs don't pollute the
@@ -38,7 +42,7 @@ COLLECTION = "games_eval_chat_conversation"
 
 def _engine_name() -> str:
     from app.config import settings
-    return "piloted" if settings.chat_engine == "piloted" else "pipeline"
+    return settings.chat_engine if settings.chat_engine in ("piloted", "agent") else "pipeline"
 
 
 def pytest_sessionstart(session):
@@ -127,6 +131,24 @@ def graph(llm_usage):
         ).with_structured_output(RetryDecision)
         engine = PilotedChat(advisor=advisor, intent_llm=intent_llm, retry_llm=retry_llm,
                              checkpointer=saver_cls())
+    elif _engine_name() == "agent":
+        from app.chat.agentic import AgenticChat
+
+        # The agent uses ONE model for the tool loop AND the pitch (set it via LLM_MODEL_STRONG):
+        # on the 8GB-VRAM dev box a single resident model + the tiny embedder avoids the model-swap
+        # thrashing a 14B+separate-pitch turn hit (the 2026-06-18 finding). qwen2.5:7b is
+        # non-reasoning, so the structured-output pitch is fine without a /no_think dance.
+        agent_model = settings.llm_model_strong or settings.llm_model
+        agent_pitch = ChatOllama(
+            model=agent_model, base_url=settings.ollama_url, temperature=0.4,
+            callbacks=[llm_usage],
+        ).with_structured_output(ChatReply)
+        agent_advisor = ChatAdvisor(retriever=GameRetriever(store=store), llm=agent_pitch)
+        agent_llm = ChatOllama(
+            model=agent_model, base_url=settings.ollama_url, temperature=0.2,
+            callbacks=[llm_usage],
+        )
+        engine = AgenticChat(advisor=agent_advisor, llm=agent_llm)
     else:
         from app.chat.graph import ChatGraph
         from app.chat.models.analysis import TurnAnalysis

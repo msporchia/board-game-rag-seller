@@ -106,6 +106,10 @@ class EvalReport:
             "model": self.model(),
             "exit_status": int(exitstatus),
             "metrics": metrics,
+            # The full raw per-case records (trajectory dicts incl. every bot reply) — the
+            # rendered failures/passes below compact them, but a review export (e.g. the
+            # ChatConversation review bundle) needs the complete data, so persist it here.
+            "records": self.records,
             **self.sections(),
         }
         text = json.dumps(payload, ensure_ascii=False, indent=2)

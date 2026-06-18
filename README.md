@@ -314,11 +314,19 @@ unreadable end-to-end blob:
 | [TurnAnalyzer](tests/eval/TurnAnalyzer) | reading the customer: per-dimension accuracy (enthusiasm, decisiveness, expertise, …) vs labeled turns |
 | [ChatPitch](tests/eval/ChatPitch) | the pitch: how often the model delivers a *grounded* recommendation instead of the fallback, per strategy |
 | [ChatRetrieve](tests/eval/ChatRetrieve) | conversational query assembly: recall@k of the games the turn should surface |
-| [ChatConversation](tests/eval/ChatConversation) | full multi-turn sessions on the production engine — `CHAT_ENGINE` picks the arm under eval (pipeline graph vs piloted agent loop): convergence to an accepted game, filter integrity across turns, the forced-proposal rule, fallback rate per turn, plus LLM calls/tokens per conversation so arms compare as Δquality next to Δcost |
+| [ChatConversation](tests/eval/ChatConversation) | full multi-turn sessions on the production engine — `CHAT_ENGINE` picks the arm under eval (pipeline graph · piloted loop · the **agent** tool-loop on qwen2.5:7b): convergence to an accepted game, filter integrity across turns, the forced-proposal rule, fallback rate per turn, plus LLM calls/tokens per conversation so arms compare as Δquality next to Δcost |
 
 **Latest measured results: [`tests/eval/RESULTS.md`](tests/eval/RESULTS.md)** — regenerated at
 the end of every eval run: one headline per suite, and per-case failures with everything needed
 to judge them (the conversation, expected vs got, the oracle note, the model's full reading).
+
+**"Ok, but what did it actually produce?"** The agent run is exported as a human-readable
+[review bundle](tests/eval/ChatConversation/REVIEW.md) — every search the model ran, every reply it
+wrote, and the games that were available, laid next to the goal and a rubric for the things a pass
+rate can't score (aptness, invented constraints, tone, giving up too early). Nothing is hidden
+behind the number: it's meant to be read by a human or handed to a stronger model for review
+(`python -m tests.eval.ChatConversation.export_review`). The numbers are also honestly noisy — the
+agent is stochastic, so the same 15 cases scored 0.60 / 0.80 / 0.87 across three runs.
 
 ## What a session looks like
 

@@ -27,6 +27,7 @@ converge? did it use the structured filters? at what cost?), never by spying on 
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
 from langchain_ollama import ChatOllama
 
+from app.chat import prompts
 from app.chat.advisor import ChatAdvisor
 from app.chat.models.customer_context import CustomerContext
 from app.chat.models.response import ChatResponse
@@ -45,13 +46,6 @@ MAX_ROUNDS = 3
 
 # Rolling window of conversation entries kept per session (≈ 6 exchanges), like ChatState.
 HISTORY_MAX = 12
-
-_SYSTEM = (
-    "Sei il commesso di un negozio di giochi da tavolo. Per consigliare devi prima cercare a "
-    "catalogo con lo strumento search_catalog: puoi proporre solo giochi che lo strumento "
-    "restituisce. Cerca con parole del catalogo (tema, meccaniche, esperienza). Quando hai "
-    "abbastanza giochi adatti, smetti di cercare."
-)
 
 
 class AgenticChat:
@@ -86,12 +80,14 @@ class AgenticChat:
         policies = PolicySet.from_names(custom_policy)
         session = self._sessions.setdefault(session_id,
                                             {"history": [], "hits": [], "searches": []})
-        tool = SearchCatalogTool(retriever=self.advisor.retriever, k=k)
+        tool = SearchCatalogTool(retriever=self.advisor.retriever, k=k,
+                                 exclude_ids=customer_context.received_products
+                                 if customer_context else None)
         llm = self._llm.bind_tools([tool.as_tool()])
 
         # The conversation so far feeds the model's context (the agent is not piloted: it reads
         # the whole exchange and decides its own queries — a follow-up turn knows the prior ones).
-        messages = [SystemMessage(content=_SYSTEM)]
+        messages = [SystemMessage(content=prompts.AGENT_SYSTEM)]
         for role, text in session["history"]:
             messages.append(HumanMessage(content=text) if role == "user"
                             else AIMessage(content=text))
@@ -138,7 +134,7 @@ class AgenticChat:
         gctx = GenerationContext(advisor=self.advisor, message=message, hits=hits,
                                  expertise=policies.force_expertise(None),
                                  history=history_text, customer_context=customer_context)
-        response = policies.run_generate(gctx, lambda c: c.execute())
+        response = policies.run_generate(gctx)
 
         session["history"] = (session["history"]
                               + [("user", message), ("bot", response.message)])[-HISTORY_MAX:]

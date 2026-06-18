@@ -29,6 +29,7 @@ behavior), like the enrichment prompts.
 
 from langchain_ollama import ChatOllama
 
+from app.chat import prompts
 from app.chat.models.customer_context import CustomerContext
 from app.chat.models.reply import ChatReply
 from app.chat.models.response import ChatResponse
@@ -44,55 +45,9 @@ from app.rag.retriever import GameRetriever
 
 log = get_logger(__name__)
 
-# Honest fallback when nothing matches — the absolute rule says to say so, not to invent.
-_NO_MATCH = (
-    "Al momento non ho in catalogo un gioco che corrisponde bene a quello che cerchi. "
-    "Prova a dirmi qualcosa in più: quante persone giocano, quanto tempo avete, o un gioco che "
-    "ti è piaciuto."
-)
-
-# Default persona (Phase 4, no per-user analysis available).
-_DEFAULT_PERSONA = (
-    "Sei un commesso esperto e appassionato di giochi da tavolo. Aiuti il cliente a\n"
-    "scegliere il gioco giusto in modo caldo, semplice e convincente — non sei un motore di ricerca."
-)
-
-# Fixed part of the Phase 5 prompt (docs/note.md): how to talk at each expertise level.
-_EXPERTISE_RULES = """Sei un commesso esperto di giochi da tavolo, molto empatico. Aiuti il cliente a scegliere il
-gioco giusto in modo caldo, semplice e convincente — non sei un motore di ricerca.
-L'utente ha livello di esperienza: {expertise_level}.
-Regole di comunicazione:
-- Se beginner: usa linguaggio semplice, evita termini tecnici. Spiega sempre cosa significa una
-  meccanica con un esempio ("cooperativo significa che tutti giocano contro il gioco, non tra di voi").
-- Se intermediate: puoi usare qualche termine ma spiegalo la prima volta.
-- Se advanced: usa terminologia precisa (worker placement, engine building, area control, ecc.).
-Non dare per scontato che conosca le cose. Obiettivo: educare divertendo, mai far sentire stupido."""
-
-# Dynamic part (docs/note.md): the behavior of the strategy the router picked for this turn.
-_STRATEGY_RULES = {
-    "GUIDED": (
-        "Strategia per questo turno — GUIDED: il cliente è indeciso. Proponi al MASSIMO 2 "
-        "giochi (mai più di 2 recommendations), con esempi concreti. OBBLIGATORIO: il `pitch` "
-        "dell'ultimo gioco deve TERMINARE con una domanda semplice rivolta al cliente per "
-        "capire meglio cosa cerca — l'ultima frase di quel `pitch` finisce con \"?\" "
-        "(es. \"Preferite più una sfida a due o un gioco di squadra?\"). Le "
-        "`quick_replies` NON sostituiscono questa domanda: va scritta dentro il `pitch`."
-    ),
-    "EXPLANATORY": (
-        "Strategia per questo turno — EXPLANATORY: il cliente è curioso. Scegli i 2-3 giochi "
-        "più adatti (NON tutta la lista) e spiega le loro meccaniche con linguaggio semplice "
-        "e analogie (\"è come...\"), approfondendo dove mostra interesse."
-    ),
-    "DISCOVERY": (
-        "Strategia per questo turno — DISCOVERY: stile libero e conversazionale. Parti da quello "
-        "che il cliente racconta e proponi in modo creativo i giochi più affini."
-    ),
-    "QUICK_MATCH": (
-        "Strategia per questo turno — QUICK MATCH: il cliente è pronto (o la conversazione va "
-        "chiusa). Proponi SUBITO 3-4 giochi concreti dalla lista (ALMENO 3 recommendations), "
-        "ognuno con una frase di vendita incisiva."
-    ),
-}
+# Prompt text lives in app/chat/prompts.py (one findable place). `_NO_MATCH` stays re-exported
+# here because it's the advisor's honest empty-reply, asserted by tests.
+_NO_MATCH = prompts.NO_MATCH
 
 
 class ChatAdvisor:
@@ -141,10 +96,10 @@ class ChatAdvisor:
         docs/idee.md §O): they reshape the prose, never the grounding rules below.
         """
         catalog = "\n".join(self._game_line(i, h) for i, h in enumerate(hits))
-        persona = (_EXPERTISE_RULES.format(expertise_level=expertise_level)
-                   if expertise_level else _DEFAULT_PERSONA)
+        persona = (prompts.EXPERTISE_RULES.format(expertise_level=expertise_level)
+                   if expertise_level else prompts.DEFAULT_PERSONA)
         conversation = f"\nCONVERSAZIONE FINORA:\n{history}\n" if history else ""
-        strategy_block = f"\n{_STRATEGY_RULES[strategy]}\n" if strategy else ""
+        strategy_block = f"\n{prompts.STRATEGY_RULES[strategy]}\n" if strategy else ""
         policy_text = "\n".join(b for b in (extra_blocks or []) if b)
         sales_block = f"\nPOLICY ATTIVE:\n{policy_text}\n" if policy_text else ""
         client_block = f"\nCONTESTO CLIENTE:\n{customer_block}\n" if customer_block else ""
@@ -157,31 +112,9 @@ GIOCHI DISPONIBILI (gli UNICI che puoi proporre):
 {catalog}
 {client_block}{sales_block}
 
-Regole rigide:
-- Proponi SOLO giochi presenti nella lista qui sopra. NON inventare titoli e non usare la tua
-  conoscenza di altri giochi: esistono solo quelli in lista.
-- I consigli vivono SOLO in `recommendations`: un oggetto per OGNI gioco che proponi, con
-  l'`id` ESATTO copiato dalla lista (il numero dopo "id=") e un `pitch` di 1-2 frasi che spiega
-  PERCHÉ piacerà (tema, esperienza di gioco). Vendi l'esperienza, non elencare dati. Nel `pitch`
-  nomina il gioco per NOME — mai l'`id`: è un codice interno, il cliente non deve vederlo.
-- `intro`: UNA breve frase di apertura amichevole, senza nomi di giochi e senza `id`. L'intro da
-  sola NON è una risposta: i giochi che prometti devono stare in `recommendations`.
-- Quanti giochi proporre: segui la strategia di questo turno se indica un numero; altrimenti
-  scegli i 2-3 più adatti alla richiesta.
-- Se nessun gioco è davvero adatto, dillo onestamente nell'`intro` e proponi l'alternativa più
-  vicina come unica recommendation.
-- Scrivi in italiano, tono amichevole, breve.
-- Compila SEMPRE 2-3 `quick_replies`: brevi affinamenti per il passo successivo. Quando il
-  filtro è numerico usa ESATTAMENTE questi formati: "per N giocatori", "max N minuti",
-  "dai N anni", "senza espansioni" (es. "per 2 giocatori", "max 60 minuti"); altrimenti testo
-  libero breve (es. "Sorprendimi").
+{prompts.GROUNDING_RULES}
 
-FORMATO DELLA RISPOSTA (JSON, TUTTI i campi obbligatori):
-{{"intro": "<una frase di apertura>",
- "recommendations": [{{"id": <numero preso dalla lista>, "pitch": "<perché questo gioco piacerà>"}}, ...],
- "quick_replies": ["<affinamento breve>", ...]}}
-`recommendations` NON può MAI essere vuota: ogni gioco che consigli deve comparirci con il suo
-`id` e il suo `pitch`. Una risposta senza `recommendations` è una risposta sbagliata.
+{prompts.RESPONSE_FORMAT}
 {strategy_block}"""
 
     # ---- API ------------------------------------------------------------------
@@ -201,8 +134,10 @@ FORMATO DELLA RISPOSTA (JSON, TUTTI i campi obbligatori):
         """
         policies = PolicySet.from_names(custom_policy)
         query = f"{message}\n{' '.join(choices)}" if choices else message
-        rctx = RetrievalContext(query=query, k=k, retriever=self.retriever, filters=filters)
-        hits = policies.run_retrieve(rctx, lambda c: c.execute())
+        rctx = RetrievalContext(query=query, k=k, retriever=self.retriever, filters=filters,
+                                exclude_ids=customer_context.received_products
+                                if customer_context else None)
+        hits = policies.run_retrieve(rctx)
         strategy = policies.force_strategy(None)
         gctx = GenerationContext(
             advisor=self, message=message, hits=hits,
@@ -210,7 +145,7 @@ FORMATO DELLA RISPOSTA (JSON, TUTTI i campi obbligatori):
             expertise=policies.force_expertise(None),
             customer_context=customer_context,
         )
-        return policies.run_generate(gctx, lambda c: c.execute())
+        return policies.run_generate(gctx)
 
     def pitch(self, message: str, hits: list[GameHit], *, strategy: str | None = None,
               expertise_level: str | None = None, history: str | None = None,
@@ -221,14 +156,12 @@ FORMATO DELLA RISPOSTA (JSON, TUTTI i campi obbligatori):
         `llm` overrides the default model for this call — the model-tiering hook: the graph's
         generate node passes the strong model here when the analyze step escalated.
         `extra_blocks` are policy-contributed instruction blocks (PolicySet, docs/idee.md §O).
-        `customer_context` (Phase 6) drives the enforced-vs-generated split: received games are
-        dropped from `hits` here — deterministically, before both the LLM and the fallback, so an
-        owned game can never be re-pitched — while cart/sent games stay but are framed in the
-        prompt as already-chosen/on-the-way rather than fresh ideas.
+        `customer_context` (Phase 6) is the GENERATED half of the split: cart/sent games are framed
+        in the prompt as already-chosen/on-the-way. The ENFORCED half (dropping owned games) now
+        happens earlier, at retrieval (`exclude_ids` → Qdrant `must_not`), so by here the hits are
+        already owned-free and an owned game simply isn't in the retrieved set to ground against.
         """
-        if customer_context:
-            hits = customer_context.exclude_owned(hits)
-        if not hits:  # nothing left to pitch (empty retrieval, or all hits already owned)
+        if not hits:  # nothing left to pitch (empty retrieval, or all candidates already owned)
             return ChatResponse(message=_NO_MATCH, games=[], quick_replies=[])
 
         customer_block = customer_context.framing_block(hits) if customer_context else None

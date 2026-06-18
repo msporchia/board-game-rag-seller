@@ -34,8 +34,9 @@ from langchain_ollama import ChatOllama
 from langgraph.graph import END, START, StateGraph
 
 from app.chat.advisor import ChatAdvisor
+from app.chat.analyzer import TurnAnalyzer
 from app.chat.checkpointer import sqlite_checkpointer
-from app.chat.choices import parse_choices
+from app.chat.choices.parser import ClickParser
 from app.chat.models.analysis import TurnAnalysis
 from app.chat.models.customer_context import CustomerContext
 from app.chat.models.reply import ChatReply
@@ -59,11 +60,8 @@ class ChatGraph:
     def __init__(self, advisor: ChatAdvisor | None = None, analyze_llm=None, strong_llm=None,
                  checkpointer=None):
         self.advisor = advisor or ChatAdvisor()
-        # Analyzer: cheap, temperature 0 — classification, not prose. Tests inject a fake.
-        self._analyze_llm = analyze_llm or ChatOllama(
-            model=settings.llm_model, base_url=settings.ollama_url, temperature=0.0,
-            callbacks=get_trace_callbacks("chat.analyze"),
-        ).with_structured_output(TurnAnalysis)
+        # Reads the customer (the analyze step) — its own component. Tests inject a fake llm.
+        self.analyzer = TurnAnalyzer(llm=analyze_llm)
         # Escalation target (model tiering, docs/note.md). Defaults to the same local model, so
         # the CONTRACT is exercised end-to-end as a no-op until a stronger model is configured.
         self._strong_model = settings.llm_model_strong or settings.llm_model
@@ -93,66 +91,17 @@ class ChatGraph:
 
     # ---- nodes -------------------------------------------------------------------
 
-    @staticmethod
-    def _analysis_prompt(history: list[str], message: str) -> str:
-        """Italian like the other prompts; the output is constrained to TurnAnalysis."""
-        conversation = "\n".join(history) if history else "(inizio conversazione)"
-        return f"""Analizza il cliente di un negozio di giochi da tavolo a partire dalla conversazione.
-
-CONVERSAZIONE FINORA:
-{conversation}
-
-ULTIMO MESSAGGIO DEL CLIENTE:
-{message}
-
-Hai DUE compiti, entrambi obbligatori: (1) profilare il cliente su quattro dimensioni;
-(2) decidere se questo turno va escalato al modello più capace. Compila TUTTI i campi.
-
-Valuta SOLO dal testo del cliente:
-- enthusiasm: low/medium/high — quanto è coinvolto.
-- decisiveness: undecided/moderate/decided — quanto ha le idee chiare su COSA comprare:
-  - decided: ha scelto un titolo preciso e agisce: chiede se c'è, lo compra, lo prenota.
-    Chiedere disponibilità o prezzo di un titolo specifico È decided, non un dubbio.
-  - moderate: sa in parte cosa vuole. Due forme tipiche: vincoli concreti (giocatori, budget,
-    durata) ma nessun titolo; oppure un titolo o un'opzione preferita ma con un dubbio residuo
-    (andrà bene per noi? quale edizione? prima voglio saperne di più).
-  - undecided: nessun criterio concreto: vago, si affida del tutto al negozio, non sa da dove
-    partire.
-  Attenzione a non sottostimare: chi esprime una preferenza o vincoli concreti NON è undecided;
-  chi ha già scelto il titolo NON è moderate solo perché fa una domanda.
-- expertise_level: beginner/intermediate/advanced — dal vocabolario: beginner = registro
-  quotidiano, nessun termine tecnico (citare un titolo famoso senza capirlo non alza il
-  livello); intermediate = conosce i classici introduttivi, termini di categoria usati in modo
-  generico, meccaniche descritte a parole sue; advanced = gergo da hobbista preciso (nomi di
-  meccaniche come "worker placement", giudizi di peso/complessità, la propria collezione).
-- reply_style: short/long — lunghezza e ricchezza delle sue risposte.
-- escalate: true/false — serve il modello più capace per rispondere a QUESTO turno?
-  Metti true se l'ultimo messaggio contiene ALMENO UNO di questi segnali:
-  - vincoli d'acquisto concreti dichiarati (budget in euro, numero di giocatori, una
-    scadenza o urgenza);
-  - intenzione esplicita di comprare ora, prenotare, o scegliere quale comprare tra le
-    opzioni proposte;
-  - un confronto tra più titoli con più vincoli incrociati (giocatori, durata, prezzo).
-  Questi segnali valgono anche se compaiono già nel primissimo messaggio.
-  Metti false per curiosità generica, chiacchiere, navigazione senza impegno, o cifre citate
-  solo come ipotesi futura senza intenzione di comprare.
-  Compila SEMPRE escalation_reason (una frase) e confidence (0-1), anche con escalate=false."""
-
     def _analyze(self, state: ChatState) -> dict:
-        """One structured LLM call reading the user; on failure keep the previous analysis."""
+        """Delegate to TurnAnalyzer; on its failure keep the previous analysis (the fallback)."""
         message = state["message"]
         policies = PolicySet.from_names(state.get("custom_policy"))
-        try:
-            analysis: TurnAnalysis = self._analyze_llm.invoke(
-                self._analysis_prompt(state.get("history") or [], message))
-        except Exception:  # noqa: BLE001 — the analysis failing must never kill the turn
-            log.warning("analyze_llm_failed", fallback="previous_or_default_analysis")
-            analysis = TurnAnalysis(
-                enthusiasm=state.get("enthusiasm", "medium"),
-                decisiveness=state.get("decisiveness", "undecided"),
-                expertise_level=state.get("expertise_level", "beginner"),
-                reply_style=state.get("reply_style", "short"),
-            )
+        fallback = TurnAnalysis(
+            enthusiasm=state.get("enthusiasm", "medium"),
+            decisiveness=state.get("decisiveness", "undecided"),
+            expertise_level=state.get("expertise_level", "beginner"),
+            reply_style=state.get("reply_style", "short"),
+        )
+        analysis = self.analyzer.analyze(state.get("history"), message, fallback)
         expertise = policies.force_expertise(analysis.expertise_level)
         log.info("analyze_done", enthusiasm=analysis.enthusiasm,
                  decisiveness=analysis.decisiveness, expertise=expertise,
@@ -209,7 +158,7 @@ Valuta SOLO dal testo del cliente:
         The fetch runs through the policy chain (RetrievalContext): a policy may reshape the
         query/filters or reorder the hits before they reach the table.
         """
-        fragment, leftovers = parse_choices(state.get("choices"))
+        fragment, leftovers = ClickParser().parse(state.get("choices"))
         spec = merge_filters(state.get("filters_spec"), fragment)
 
         # Query: previous user turns give context the current message may lack (e.g. the forced
@@ -224,9 +173,11 @@ Valuta SOLO dal testo del cliente:
         strategy = Strategy(state["strategy"])
         k = (state.get("k") or 5) if strategy is Strategy.DISCOVERY else STRATEGY_K[strategy]
         policies = PolicySet.from_names(state.get("custom_policy"))
+        cc = state.get("customer_context")
         rctx = RetrievalContext(query=query, k=k, retriever=self.advisor.retriever,
-                                filters_spec=spec)
-        hits = policies.run_retrieve(rctx, lambda c: c.execute())
+                                filters_spec=spec,
+                                exclude_ids=cc.received_products if cc else None)
+        hits = policies.run_retrieve(rctx)
         log.info("retrieve_done", k=k, filters=sorted(spec) or None, hits=len(hits),
                  policies=policies.names)
         return {"hits": hits, "filters_spec": fragment}
@@ -248,7 +199,7 @@ Valuta SOLO dal testo del cliente:
             history="\n".join(history[:-1]) or None,  # [:-1] = exchanges before this turn
             llm=llm, customer_context=state.get("customer_context"),
         )
-        response = policies.run_generate(gctx, lambda c: c.execute())
+        response = policies.run_generate(gctx)
         return {
             "response": response,
             "last_recommended_ids": [g.id_product for g in response.games],

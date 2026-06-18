@@ -15,8 +15,20 @@ Two convenience shortcuts — `force_expertise` / `force_strategy` — for the f
 cases (persona level, selling strategy) that the pipeline graph applies in its analyze/route
 nodes, where there is no stage to wrap. They return None to mean "leave the current value".
 
-Each policy hardcodes ONE concrete behavior, so its effect can be unit-tested in isolation and
-stays stable even when other parts of the prompt/pipeline change (the point of the design).
+WHY THIS SHAPE — testability + security (the canonical rationale; facets also in policy_set.py,
+docs/chat.md, README, idee.md §O):
+
+  1. SECURITY — no prompt injection. A policy is activated BY NAME from a hardcoded REGISTRY
+     (PolicySet), never by the caller injecting prompt text. The wire (a frontend/BFF) picks from
+     a closed menu; it cannot smuggle instructions into the model. An unknown name is logged and
+     skipped, never an error — a customer turn must not 500 on a typo.
+  2. SECURITY — can't break invariants. A policy steers BEHAVIOR; the grounding invariant
+     (anti-hallucination) lives in CODE (ChatAdvisor.pitch), not in a policy, so no policy can make
+     the bot recommend a game that wasn't retrieved. "Extensible" stays "safe": a policy reorders
+     hits or reshapes the prompt, it never disables a guarantee.
+  3. TESTABILITY / measurability. One class = one concrete behavior → unit-testable in isolation,
+     and its effect stays STABLE when the rest of the prompt/pipeline changes (the stability
+     tests). The active policy names are logged per node, so each turn is measurable / A/B-able.
 """
 
 from abc import ABC

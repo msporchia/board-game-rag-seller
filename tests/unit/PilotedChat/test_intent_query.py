@@ -6,7 +6,7 @@ What it tests:
   - Model-declared constraints become real filters on the search (the structured side-channel
     that keeps the reformulation from losing the user's requirements).
   - Click-derived filters override the model's proposal on the same dimension and stay in the
-    session spec, exactly like the pipeline (parse_choices + latest-wins, unchanged).
+    session spec, exactly like the pipeline (ClickParser + latest-wins, unchanged).
   - An intent failure degrades to the verbatim message (no constraints), never a 500.
 How: scripted SearchIntent queue + a retriever that records every (query, k, filters) call.
 """

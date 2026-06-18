@@ -50,7 +50,40 @@ class SynthEnricher(Enricher):
             callbacks=get_trace_callbacks("synth"), tags=["synth"],
         )
 
+    def enrich(self, game: GameDoc) -> GameDoc:
+        material = self._material(game)
+        if not material.strip():
+            return game  # nothing to synthesize from
+        try:
+            text = (self._llm.invoke(self._prompt(game.original.name, material)).content or "").strip()
+        except Exception:  # noqa: BLE001  LLM/network failure → keep the existing description
+            logger.warning("synth_llm_failed", game=game.id_product,
+                           fallback="keep_existing_description", exc_info=True)
+            return game
+        if not text:
+            return game
+        if len(text) > self.max_chars:  # safety cap (the prompt asks for short, this enforces it)
+            text = text[: self.max_chars].rsplit(" ", 1)[0].strip()
+        logger.info("synth_description_rewritten", game=game.id_product,
+                    chars_before=len(game.enriched.description or ""), chars_after=len(text))
+        return game.with_enriched(description=text)
+
     # ---- material assembly ----------------------------------------------------
+
+    def _material(self, game: GameDoc) -> str:
+        """All the material Synth is allowed to draw from, labeled by kind."""
+        e = game.enriched
+        blocks = []
+        certain = self._certain_facts(e)
+        if certain:
+            blocks.append("[DATI CERTI]\n" + certain)
+        extracted = self._extracted_facts(game.extracted)
+        if extracted:
+            blocks.append("[INFO ESTRATTE]\n" + extracted)
+        desc = (e.description or "").strip()
+        if desc:
+            blocks.append("[DESCRIZIONE]\n" + desc)
+        return "\n\n".join(blocks)
 
     def _certain_facts(self, e: GameData) -> str:
         """The structured certain data, as labeled lines. These always win."""
@@ -80,21 +113,6 @@ class SynthEnricher(Enricher):
                 lines.append(f"{label}: {val}")
         return "\n".join(lines)
 
-    def _material(self, game: GameDoc) -> str:
-        """All the material Synth is allowed to draw from, labeled by kind."""
-        e = game.enriched
-        blocks = []
-        certain = self._certain_facts(e)
-        if certain:
-            blocks.append("[DATI CERTI]\n" + certain)
-        extracted = self._extracted_facts(game.extracted)
-        if extracted:
-            blocks.append("[INFO ESTRATTE]\n" + extracted)
-        desc = (e.description or "").strip()
-        if desc:
-            blocks.append("[DESCRIZIONE]\n" + desc)
-        return "\n\n".join(blocks)
-
     # ---- prompt ---------------------------------------------------------------
 
     def _prompt(self, name: str, material: str) -> str:
@@ -117,23 +135,3 @@ MATERIALE:
 {material}
 
 Rispondi SOLO con la sintesi, senza preamboli."""
-
-    # ---- API ------------------------------------------------------------------
-
-    def enrich(self, game: GameDoc) -> GameDoc:
-        material = self._material(game)
-        if not material.strip():
-            return game  # nothing to synthesize from
-        try:
-            text = (self._llm.invoke(self._prompt(game.original.name, material)).content or "").strip()
-        except Exception:  # noqa: BLE001  LLM/network failure → keep the existing description
-            logger.warning("synth_llm_failed", game=game.id_product,
-                           fallback="keep_existing_description", exc_info=True)
-            return game
-        if not text:
-            return game
-        if len(text) > self.max_chars:  # safety cap (the prompt asks for short, this enforces it)
-            text = text[: self.max_chars].rsplit(" ", 1)[0].strip()
-        logger.info("synth_description_rewritten", game=game.id_product,
-                    chars_before=len(game.enriched.description or ""), chars_after=len(text))
-        return game.with_enriched(description=text)

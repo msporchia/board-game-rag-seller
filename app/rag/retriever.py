@@ -9,11 +9,17 @@ Phase 2 was purely semantic. Phase 3 adds structured constraints (`SearchFilters
 
 import time
 
+from qdrant_client import models as qm
+
 from app.core.logging import get_logger
 from app.core.vector_store import GameVectorStore
 from app.models.game_hit import GameHit
 from app.rag.filters.rerank import rerank_soft
 from app.rag.filters.search_filters import SearchFilters
+
+# langchain_qdrant nests the document metadata under a "metadata" payload key (same prefix the
+# filters use), so a constraint on the game's id addresses "metadata.id_product".
+_ID_KEY = "metadata.id_product"
 
 # When soft constraints are present we fetch more candidates than k, so the boost can reorder a
 # wider pool before we cut to k.
@@ -26,10 +32,18 @@ class GameRetriever:
     def __init__(self, store: GameVectorStore | None = None):
         self.store = store or GameVectorStore()
 
-    def search(self, query: str, k: int = 5, filters: SearchFilters | None = None) -> list[GameHit]:
+    def search(self, query: str, k: int = 5, filters: SearchFilters | None = None,
+               exclude_ids: list[int] | None = None) -> list[GameHit]:
         t0 = time.perf_counter()
         query_filter = filters.hard_filter() if filters else None
         soft = filters.soft_predicates() if filters else []
+
+        # Hard-exclude specific games (Phase 6: games the customer already owns) — a Qdrant
+        # `must_not`, so they never enter the result set, rather than being filtered out after.
+        if exclude_ids:
+            not_owned = qm.FieldCondition(key=_ID_KEY, match=qm.MatchAny(any=list(exclude_ids)))
+            query_filter = qm.Filter(must=query_filter.must if query_filter else None,
+                                     must_not=[not_owned])
 
         fetch_k = k * SOFT_OVERSAMPLE if soft else k
         results = self.store.search(query, k=fetch_k, query_filter=query_filter)

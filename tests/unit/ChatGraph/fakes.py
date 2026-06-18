@@ -26,9 +26,10 @@ class FakeRetriever:
         self.hits = hits
         self.calls: list[tuple] = []
 
-    def search(self, query: str, k: int = 5, filters=None) -> list[GameHit]:
+    def search(self, query: str, k: int = 5, filters=None, exclude_ids=None) -> list[GameHit]:
         self.calls.append((query, k, filters))
-        return self.hits[:k]
+        hits = [h for h in self.hits if not exclude_ids or h.id_product not in exclude_ids]
+        return hits[:k]
 
 
 class FakeAnalyzeLLM:

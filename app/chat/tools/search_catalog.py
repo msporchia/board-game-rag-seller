@@ -13,25 +13,19 @@ code chooses how many rows return.
 
 from langchain_core.tools import StructuredTool
 
+from app.chat import prompts
 from app.chat.models.intent import SearchIntent
 from app.models.game_hit import GameHit
 from app.rag.filters.search_filters import SearchFilters
 from app.rag.retriever import GameRetriever
 
-_DESCRIPTION = (
-    "Cerca giochi da tavolo nel catalogo del negozio. La `query` descrive il gioco SOLO per "
-    "tema, meccaniche, tipo di esperienza, per chi è (linguaggio del catalogo). I vincoli "
-    "numerici (players / max_minutes / youngest_player_age) vanno negli appositi campi interi, "
-    "NON nella query: la ricerca semantica non li recepisce, li applica un filtro esatto. "
-    "Restituisce i giochi più affini. Chiama questo strumento prima di rispondere: puoi "
-    "proporre solo giochi che esso restituisce."
-)
-
 
 class SearchCatalogTool:
-    def __init__(self, retriever: GameRetriever | None = None, k: int = 5):
+    def __init__(self, retriever: GameRetriever | None = None, k: int = 5,
+                 exclude_ids: list[int] | None = None):
         self.retriever = retriever or GameRetriever()
         self.k = k
+        self.exclude_ids = exclude_ids  # owned games to hard-exclude (Phase 6), every search
         self.calls: list[SearchIntent] = []
 
     def run(self, query: str = "", players=None, max_minutes=None,
@@ -49,7 +43,8 @@ class SearchCatalogTool:
         self.calls.append(intent)
         spec = intent.to_filters_spec()
         filters = SearchFilters.from_dict(spec) if spec else None
-        return self.retriever.search(intent.query, k=self.k, filters=filters)
+        return self.retriever.search(intent.query, k=self.k, filters=filters,
+                                     exclude_ids=self.exclude_ids)
 
     @staticmethod
     def _as_int(value) -> int | None:
@@ -65,6 +60,6 @@ class SearchCatalogTool:
     def as_tool(self) -> StructuredTool:
         """The bindable LangChain tool (`llm.bind_tools([tool.as_tool()])`)."""
         return StructuredTool.from_function(
-            func=self.run, name="search_catalog", description=_DESCRIPTION,
+            func=self.run, name="search_catalog", description=prompts.SEARCH_CATALOG,
             args_schema=SearchIntent,
         )

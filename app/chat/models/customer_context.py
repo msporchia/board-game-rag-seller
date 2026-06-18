@@ -7,9 +7,10 @@ same ints `GameHit.id_product` carries, so they line up with retrieved hits with
 The point of the feature is the *enforced-vs-generated split* — the same "the model proposes, the
 code disposes" discipline the rest of the chat already runs on (docs/chat.md):
 
-- **received** — games the customer already owns/bought. Excluded **deterministically**: dropped
-  from the hits before generation *and* before the fallback, so the model never gets the chance
-  to re-pitch a game the customer already has. This is the *enforced* half — code, not a prompt.
+- **received** — games the customer already owns/bought. Excluded **deterministically at
+  RETRIEVAL** (`received_products` → `RetrievalContext.exclude_ids` → Qdrant `must_not`), so an
+  owned game never even enters the candidate set the model sees. This is the *enforced* half —
+  code, not a prompt; the model never gets the chance to re-pitch a game the customer already has.
 - **cart** — games already in the cart. NOT excluded: framed in the prompt as "already chosen",
   so the model treats them as in-progress instead of pitching them as a fresh idea.
 - **sent** — games on the way (e.g. a gift already shipped). Framed like the cart: "on the way",
@@ -31,16 +32,6 @@ class CustomerContext(BaseModel):
 
     def is_empty(self) -> bool:
         return not (self.received_products or self.sent_products or self.cart_products)
-
-    def exclude_owned(self, hits: list[GameHit]) -> list[GameHit]:
-        """Deterministic enforcement: drop games the customer already received/owns.
-
-        Same discipline as the anti-hallucination grounding in `ChatAdvisor.pitch` — the model
-        is never even shown the chance to re-pitch an owned game, because it is removed from the
-        hits before both the LLM call and the deterministic fallback.
-        """
-        owned = set(self.received_products)
-        return [h for h in hits if h.id_product not in owned] if owned else hits
 
     def framing_block(self, hits: list[GameHit]) -> str | None:
         """Generated-side framing for cart/sent games that are on the table this turn.

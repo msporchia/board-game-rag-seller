@@ -20,3 +20,6 @@ mock/catalog.json
 
 # Local-only compose override (machine-specific, e.g. reusing existing volumes)
 docker-compose.override.yml
+
+# Local-only 500-game test slice (real source data; never commit)
+mock/catalog-500.json

@@ -115,6 +115,30 @@ X€, long session); complex interactions or when Haiku has low confidence.
 
 Use structured output to improve the result.
 
+### Known weakness — honest "we don't have it" is NOT working yet (seen 2026-06-18)
+
+Observed in chat: a request for a *cooperative* game ("piace il cooperativo tipo Cronache di
+Avel") gets pitched competitive titles (Wingspan/Catan/Carcassonne) **as if they matched** — the
+honest-fallback rule above is simply not honored by the local 7-8B. To address. Skeleton stage,
+much still to do on models/prompts/data.
+
+Crucially, it is **not only a prompt problem** — the root cause is upstream, in retrieval:
+- `nomic-embed-text` returns a flat similarity band (~0.65–0.69 across all 10 games) that does
+  **not discriminate** the "cooperative" axis. A mismatched game (Wingspan, 0.708) can outscore
+  the best hit of a genuinely cooperative query (Dixit, 0.685).
+- The one truly cooperative game — Pandemic, **correctly tagged `Cooperativo`** (the tag does
+  reach the LLM card) — ranked **#8/10** for a cooperative query, i.e. **outside k=5**, so the
+  model never even sees it.
+- Therefore a prompt-only "be honest, we don't have it" rule would **misfire**: it would deny a
+  game we actually have, just un-retrieved. The honest framing can only be trusted once retrieval
+  surfaces the right candidate.
+
+Measured on a 10-game snapshot taken mid data-load; absolute ranks will shift as the catalog
+grows, but the structural risk (embedder blind to the mechanic axis + hard `k` cutoff) persists.
+Levers to revisit later: representation engineering / better embedder (see `valutazione.md` §2),
+raise/tune `k`, a mechanic-aware filter or boost when the customer declares a mechanic, then layer
+a code-enforced honest framing on top (don't trust the model's tone). Cross-ref `idee.md`.
+
 ## Model evaluations
 
 Best local model to approximate Haiku (notes): a strong 7-9B instruct model in Q4_K_M / Q5_K_M

@@ -48,7 +48,7 @@ def analyzer():
     """The production-shaped analyze call: (history, message) -> TurnAnalysis."""
     from langchain_ollama import ChatOllama
 
-    from app.chat.graph import ChatGraph
+    from app.chat.analyzer import TurnAnalyzer
     from app.chat.models.analysis import TurnAnalysis
     from app.config import settings
 
@@ -57,6 +57,6 @@ def analyzer():
     ).with_structured_output(TurnAnalysis)
 
     def _analyze(history: list[str], message: str) -> "TurnAnalysis":
-        return llm.invoke(ChatGraph._analysis_prompt(history, message))
+        return llm.invoke(TurnAnalyzer.prompt(history, message))
 
     return _analyze

@@ -13,7 +13,7 @@ constrained job per step:
             the MODEL's reformulation, never the user's verbatim text (generate-then-retrieve:
             it translates customer paraphrase into the catalog language the embedder can match).
 - search    CODE does the fetch: quick-reply clicks stay hard filters exactly as in the
-            pipeline (parse_choices + latest-wins merge, unchanged); the model's proposed
+            pipeline (ClickParser + latest-wins merge, unchanged); the model's proposed
             constraints apply only where no click covers the dimension — the model proposes,
             the code disposes. Searching EVERY turn on fresh intent subsumes the pipeline's
             re-retrieval skip-condition (the GUIDED staleness failure class).
@@ -34,9 +34,10 @@ honors the request's k.
 from langchain_ollama import ChatOllama
 from langgraph.graph import END, START, StateGraph
 
+from app.chat import prompts
 from app.chat.advisor import ChatAdvisor
 from app.chat.checkpointer import sqlite_checkpointer
-from app.chat.choices import parse_choices
+from app.chat.choices.parser import ClickParser
 from app.chat.models.customer_context import CustomerContext
 from app.chat.models.intent import SearchIntent
 from app.chat.models.response import ChatResponse
@@ -98,49 +99,13 @@ class PilotedChat:
         conversation = "\n".join(history) if history else "(inizio conversazione)"
         active = (", ".join(f"{name}={params}" for name, params in sorted(session_spec.items()))
                   or "(nessuno)")
-        return f"""Lavori nel retrobottega di un negozio di giochi da tavolo: leggi la conversazione e
-prepari la RICERCA A CATALOGO per il commesso. Non parli con il cliente.
-
-CONVERSAZIONE FINORA:
-{conversation}
-
-ULTIMO MESSAGGIO DEL CLIENTE:
-{message}
-
-FILTRI GIÀ ATTIVI (scelti dal cliente con i click, li applica già il sistema):
-{active}
-
-Pensa a quale gioco consiglieresti e descrivi QUEL gioco. Compila:
-- query: la descrizione del gioco ideale nel linguaggio delle schede di catalogo (tema,
-  meccaniche, tipo di esperienza, per chi è). NON copiare le parole del cliente: traducile
-  nel gergo del catalogo. Esempio: il cliente dice "vorrei che si giocasse tutti insieme
-  contro il gioco" → query "gioco cooperativo per famiglie, si vince e si perde insieme".
-  Tieni nella query anche i bisogni emersi nei turni precedenti che restano validi.
-- players / max_minutes / youngest_player_age: SOLO i vincoli che il cliente ha dichiarato
-  (numero di giocatori, durata massima in minuti, età del giocatore più giovane). Lascia
-  vuoto ciò che non ha detto: un vincolo inventato esclude giochi validi."""
+        return prompts.INTENT.format(conversation=conversation, message=message, active=active)
 
     @staticmethod
     def _retry_prompt(message: str, query: str, effective_spec: dict) -> str:
         active = (", ".join(f"{name}={params}" for name, params in sorted(effective_spec.items()))
                   or "(nessuno)")
-        return f"""La ricerca a catalogo NON ha prodotto NESSUN risultato.
-
-RICHIESTA DEL CLIENTE:
-{message}
-
-QUERY PROVATA:
-{query}
-
-FILTRI APPLICATI:
-{active}
-
-Decidi onestamente:
-- se la query può essere riformulata meglio (termini diversi, più generale), compila `query`
-  con la nuova formulazione e metti no_match=false;
-- se i vincoli del cliente rendono la richiesta impossibile da soddisfare, metti no_match=true:
-  il commesso dirà onestamente che non abbiamo un gioco adatto.
-I filtri scelti con i click dal cliente restano attivi: la nuova query non può aggirarli."""
+        return prompts.RETRY.format(message=message, query=query, active=active)
 
     # ---- nodes -------------------------------------------------------------------
 
@@ -154,7 +119,7 @@ I filtri scelti con i click dal cliente restano attivi: la nuova query non può 
         """
         message = state["message"]
         session_spec = merge_filters(state.get("filters_spec"),
-                                     parse_choices(state.get("choices"))[0])
+                                     ClickParser().parse(state.get("choices"))[0])
         try:
             intent: SearchIntent = self._intent_llm.invoke(
                 self._intent_prompt(state.get("history") or [], message, session_spec))
@@ -177,16 +142,18 @@ I filtri scelti con i click dal cliente restano attivi: la nuova query non può 
         """CODE fetches with the model's query: clicks are hard filters exactly as in the
         pipeline; model-proposed constraints fill only the dimensions no click covers. The fetch
         runs through the policy chain (RetrievalContext), same as the pipeline's retrieve node."""
-        fragment, leftovers = parse_choices(state.get("choices"))
+        fragment, leftovers = ClickParser().parse(state.get("choices"))
         effective = self._effective_spec(state)
 
         # Free-form clicks ("Sorprendimi") ride the query, same degradation as the pipeline.
         query = "\n".join([state["intent_query"], *leftovers])
         k = state.get("k") or 5
         policies = PolicySet.from_names(state.get("custom_policy"))
+        cc = state.get("customer_context")
         rctx = RetrievalContext(query=query, k=k, retriever=self.advisor.retriever,
-                                filters_spec=effective)
-        hits = policies.run_retrieve(rctx, lambda c: c.execute())
+                                filters_spec=effective,
+                                exclude_ids=cc.received_products if cc else None)
+        hits = policies.run_retrieve(rctx)
         used = (state.get("searches_used") or 0) + 1
         log.info("piloted_search_done", search=used, k=k,
                  filters=sorted(effective) or None, hits=len(hits), policies=policies.names)
@@ -228,7 +195,7 @@ I filtri scelti con i click dal cliente restano attivi: la nuova query non può 
             expertise=policies.force_expertise(None),
             customer_context=state.get("customer_context"),
         )
-        response = policies.run_generate(gctx, lambda c: c.execute())
+        response = policies.run_generate(gctx)
         return {
             "response": response,
             "last_recommended_ids": [g.id_product for g in response.games],
@@ -251,7 +218,7 @@ I filtri scelti con i click dal cliente restano attivi: la nuova query non può 
     @staticmethod
     def _effective_spec(state: ChatState) -> dict:
         """Model-proposed constraints under the session's click filters (clicks win)."""
-        fragment, _ = parse_choices(state.get("choices"))
+        fragment, _ = ClickParser().parse(state.get("choices"))
         session = merge_filters(state.get("filters_spec"), fragment)
         return merge_filters(state.get("proposed_spec"), session)
 

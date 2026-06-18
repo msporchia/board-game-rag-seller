@@ -28,9 +28,10 @@ class FakeSearchRetriever:
         self.results = list(results)
         self.calls: list[tuple] = []
 
-    def search(self, query: str, k: int = 5, filters=None) -> list[GameHit]:
+    def search(self, query: str, k: int = 5, filters=None, exclude_ids=None) -> list[GameHit]:
         self.calls.append((query, k, filters))
         batch = self.results.pop(0) if len(self.results) > 1 else self.results[0]
+        batch = [h for h in batch if not exclude_ids or h.id_product not in exclude_ids]
         return batch[:k]
 
 

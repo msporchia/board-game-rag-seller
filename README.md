@@ -215,7 +215,7 @@ flowchart LR
     RT --> RET["Retrieve<br/><i>hybrid search +<br/>clicks as hard filters</i>"]
     RET --> PIT["Pitch<br/><i>grounded Italian<br/>sales reply</i>"]
     PIT --> OUT(["{message, games,<br/>quick_replies}"])
-    MEM[("Session memory<br/>SQLite checkpointer")] -. "history · filters" .-> AN
+    MEM[("Conversation state<br/>SQLite checkpointer")] -. "history · filters" .-> AN
     PIT -. "writes back" .-> MEM
     style PIT fill:#2b4c7e,color:#fff
     style MEM fill:#5a2b7e,color:#fff

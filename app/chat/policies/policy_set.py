@@ -63,15 +63,19 @@ class PolicySet:
     # ---- middleware composition ---------------------------------------------------
 
     def run_retrieve(self, ctx: RetrievalContext,
-                     base: Callable[[RetrievalContext], list[GameHit]]) -> list[GameHit]:
-        chain = base
+                     base: Callable[[RetrievalContext], list[GameHit]] | None = None
+                     ) -> list[GameHit]:
+        # The stage's real work is always "execute the context"; callers can override `base` only
+        # for the rare case (e.g. a synthetic stage in a test). Default keeps call sites clean.
+        chain = base or (lambda c: c.execute())
         for policy in reversed(self.policies):
             chain = self._wrap(policy.around_retrieve, chain)
         return chain(ctx)
 
     def run_generate(self, ctx: GenerationContext,
-                     base: Callable[[GenerationContext], ChatResponse]) -> ChatResponse:
-        chain = base
+                     base: Callable[[GenerationContext], ChatResponse] | None = None
+                     ) -> ChatResponse:
+        chain = base or (lambda c: c.execute())
         for policy in reversed(self.policies):
             chain = self._wrap(policy.around_generate, chain)
         return chain(ctx)

@@ -65,6 +65,57 @@ class CuratorEnricher(Enricher):
             callbacks=get_trace_callbacks("curator"), tags=["curator"],
         )
 
+    def enrich(self, game: GameDoc) -> GameDoc:
+        a = self.assess(game)
+        logger.info("curator_done", game=game.id_product,
+                    extracted=len(a.get("estratti", {})),
+                    missing=len(a.get("mancanti", [])), missing_labels=a.get("mancanti", []))
+        e = game.enriched
+        # mechanics extracted from the text → tags (only if empty; certain data ALWAYS wins)
+        deduced_mec = a.get("estratti", {}).get("meccaniche principali")
+        new_enriched = (e.model_copy(update={"tags": deduced_mec})
+                        if (not e.tags and isinstance(deduced_mec, list) and deduced_mec) else e)
+        return game.model_copy(update={
+            "enriched": new_enriched,
+            "missing_info": a.get("mancanti", []),
+            "extracted": {**game.extracted, **a.get("estratti", {})},  # progressive merge
+        })
+
+    def assess(self, game: GameDoc) -> dict:
+        """Raw LLM assessment. Canonical output (stable API): `estratti`, `presenti`,
+        `mancanti`. Returns `{}` if NO label is needed from the LLM (impossible case, since the
+        3 DESCRIPTIVE_INFO are never in the DTO) or if the call pipeline fails systematically.
+
+        Strategy:
+          1) Structured ones ALREADY in the DTO → straight to `presenti`, no LLM.
+          2) Dynamic list of `needed_labels` (descriptive + missing structured).
+          3) Chunking: if `len(needed) > max_per_call`, batches of `max_per_call`.
+          4) Per batch: LLM call only over the DESCRIPTION; verbatim validation of the
+             extracted values; a label is "present" IF the extraction is validated, otherwise
+             it ends up in "mancanti".
+          5) Merge of the batch outputs.
+        """
+        e = game.enriched
+        desc = (game.original.description or e.description or "").strip()
+        desc_n = self._norm(desc)
+
+        needed = self._needed_labels(e)
+        presenti = list(self._structurally_present(e))   # those in the certain data: zero LLM
+        if not needed:
+            return {"estratti": {}, "presenti": presenti, "mancanti": []}
+
+        estratti: dict = {}
+        for i in range(0, len(needed), self.max_per_call):
+            batch = needed[i:i + self.max_per_call]
+            per_label = self._ask_llm(batch, desc)
+            estratti.update(self._validate_extraction(per_label, batch, desc_n))
+
+        presenti += [l for l in needed if l in estratti]
+        mancanti = [l for l in needed if l not in estratti]
+        return {"estratti": estratti, "presenti": presenti, "mancanti": mancanti}
+
+    # ---- assess internals (in call order) ----
+
     def _needed_labels(self, e: GameData) -> list[str]:
         """Labels to ask the LLM: descriptive (always) + structured ones missing in the DTO."""
         return list(self.DESCRIPTIVE_INFO) + [
@@ -76,43 +127,15 @@ class CuratorEnricher(Enricher):
         """Structured labels ALREADY in the certain data → go straight to `presenti`, no LLM."""
         return [label for label, has in cls.STRUCTURED_INFO.items() if has(e)]
 
-    def _certain_facts(self, e: GameData) -> str:
-        f = []
-        if e.players:
-            f.append(f"Giocatori: {e.players_display or e.players}")
-        if e.duration_min:
-            f.append(f"Durata: {e.duration_min} minuti")
-        if e.complexity:
-            f.append(f"Complessità: {e.complexity}")
-        if e.tags:
-            f.append(f"Meccaniche/temi: {', '.join(e.tags)}")
-        if e.categoria:
-            f.append(f"Categoria: {e.categoria}")
-        if e.year:
-            f.append(f"Anno: {e.year}")
-        return "\n".join(f) or "(nessuno)"
-
-    def _collect_descriptions(self, game: GameDoc) -> str:
-        """Gathers ALL available descriptive material, labeled by source: the main description
-        PLUS all per-source `source_descriptions`. More material → the LLM fills the gaps by
-        drawing on different sources. Dedupes identical texts and keeps the order (main first,
-        then per source)."""
-        blocks = []
-        seen = set()
-        main = (game.original.description or game.enriched.description or "").strip()
-        if main:
-            blocks.append(f"[Descrizione principale]\n{main}")
-            seen.add(main)
-        for entry in game.original.source_descriptions or []:
-            if not isinstance(entry, dict):
-                continue
-            text = (entry.get("description") or "").strip()
-            if not text or text in seen:
-                continue
-            seen.add(text)
-            source = (entry.get("source") or "fonte").strip() or "fonte"
-            blocks.append(f"[Fonte: {source}]\n{text}")
-        return "\n\n".join(blocks)
+    def _ask_llm(self, labels: list[str], desc: str) -> dict:
+        """A single LLM call over a BATCH of labels. {} on failure."""
+        try:
+            raw = self._llm.invoke(self._prompt(labels, desc)).content
+            data = json.loads(raw)
+        except Exception:  # noqa: BLE001  intentional: LLM/parse/network → batch ignored
+            logger.warning("curator_llm_batch_failed", labels=labels, exc_info=True)
+            return {}
+        return data if isinstance(data, dict) else {}
 
     @staticmethod
     def _prompt(labels: list[str], description: str) -> str:
@@ -151,15 +174,6 @@ Rispondi SOLO con JSON, una chiave per ogni etichetta della LISTA:
 {{"<etichetta1>": {{"citazione":"...","valore_normalizzato":"..."}},
   "<etichetta2>": {{...}}, ...}}"""
 
-    @staticmethod
-    def _str_list(value) -> list[str]:
-        return [x for x in (value or []) if isinstance(x, str)]
-
-    @staticmethod
-    def _norm(s: str) -> str:
-        """Normalize for verbatim quote matching (case + whitespace)."""
-        return " ".join((s or "").lower().split())
-
     @classmethod
     def _validate_extraction(cls, per_label: dict, labels: list[str], desc_n: str) -> dict:
         """From `{label: {citazione, valore_normalizzato}}` returns the VALIDATED extractions.
@@ -191,61 +205,7 @@ Rispondi SOLO con JSON, una chiave per ogni etichetta della LISTA:
                 out[label] = extracted
         return out
 
-    def _ask_llm(self, labels: list[str], desc: str) -> dict:
-        """A single LLM call over a BATCH of labels. {} on failure."""
-        try:
-            raw = self._llm.invoke(self._prompt(labels, desc)).content
-            data = json.loads(raw)
-        except Exception:  # noqa: BLE001  intentional: LLM/parse/network → batch ignored
-            logger.warning("curator_llm_batch_failed", labels=labels, exc_info=True)
-            return {}
-        return data if isinstance(data, dict) else {}
-
-    def assess(self, game: GameDoc) -> dict:
-        """Raw LLM assessment. Canonical output (stable API): `estratti`, `presenti`,
-        `mancanti`. Returns `{}` if NO label is needed from the LLM (impossible case, since the
-        3 DESCRIPTIVE_INFO are never in the DTO) or if the call pipeline fails systematically.
-
-        Strategy:
-          1) Structured ones ALREADY in the DTO → straight to `presenti`, no LLM.
-          2) Dynamic list of `needed_labels` (descriptive + missing structured).
-          3) Chunking: if `len(needed) > max_per_call`, batches of `max_per_call`.
-          4) Per batch: LLM call only over the DESCRIPTION; verbatim validation of the
-             extracted values; a label is "present" IF the extraction is validated, otherwise
-             it ends up in "mancanti".
-          5) Merge of the batch outputs.
-        """
-        e = game.enriched
-        desc = (game.original.description or e.description or "").strip()
-        desc_n = self._norm(desc)
-
-        needed = self._needed_labels(e)
-        presenti = list(self._structurally_present(e))   # those in the certain data: zero LLM
-        if not needed:
-            return {"estratti": {}, "presenti": presenti, "mancanti": []}
-
-        estratti: dict = {}
-        for i in range(0, len(needed), self.max_per_call):
-            batch = needed[i:i + self.max_per_call]
-            per_label = self._ask_llm(batch, desc)
-            estratti.update(self._validate_extraction(per_label, batch, desc_n))
-
-        presenti += [l for l in needed if l in estratti]
-        mancanti = [l for l in needed if l not in estratti]
-        return {"estratti": estratti, "presenti": presenti, "mancanti": mancanti}
-
-    def enrich(self, game: GameDoc) -> GameDoc:
-        a = self.assess(game)
-        logger.info("curator_done", game=game.id_product,
-                    extracted=len(a.get("estratti", {})),
-                    missing=len(a.get("mancanti", [])), missing_labels=a.get("mancanti", []))
-        e = game.enriched
-        # mechanics extracted from the text → tags (only if empty; certain data ALWAYS wins)
-        deduced_mec = a.get("estratti", {}).get("meccaniche principali")
-        new_enriched = (e.model_copy(update={"tags": deduced_mec})
-                        if (not e.tags and isinstance(deduced_mec, list) and deduced_mec) else e)
-        return game.model_copy(update={
-            "enriched": new_enriched,
-            "missing_info": a.get("mancanti", []),
-            "extracted": {**game.extracted, **a.get("estratti", {})},  # progressive merge
-        })
+    @staticmethod
+    def _norm(s: str) -> str:
+        """Normalize for verbatim quote matching (case + whitespace)."""
+        return " ".join((s or "").lower().split())

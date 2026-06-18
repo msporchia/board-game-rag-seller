@@ -1,5 +1,6 @@
 from typing import Annotated, TypedDict
 
+from app.chat.models.customer_context import CustomerContext
 from app.chat.models.response import ChatResponse
 from app.models.game_hit import GameHit
 
@@ -30,6 +31,7 @@ class ChatState(TypedDict, total=False):
     choices: list[str]
     k: int
     custom_policy: list[str]  # names of the active policies this turn (PolicySet, docs/idee.md §O)
+    customer_context: CustomerContext  # commerce state this turn (Phase 6): enforced-vs-generated split
 
     # rolling conversation memory
     history: Annotated[list[str], add_history]      # "utente: ..." / "bot: ..." lines

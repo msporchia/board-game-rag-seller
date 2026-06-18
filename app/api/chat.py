@@ -65,6 +65,8 @@ def chat(req: ChatRequest) -> ChatResponse:
         engine = _get_engine(req.engine or settings.chat_engine)
         return engine.reply(req.message, choices=req.choices, k=req.k,
                             session_id=req.session_id,
-                            custom_policy=req.custom_policy)
+                            custom_policy=req.custom_policy,
+                            customer_context=req.customer_context)
     return _advisor.reply(req.message, choices=req.choices, k=req.k,
-                          custom_policy=req.custom_policy)
+                          custom_policy=req.custom_policy,
+                          customer_context=req.customer_context)

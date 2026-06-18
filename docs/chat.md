@@ -253,6 +253,48 @@ demonstrate is the *contract*, measured by tests — not a paid API integration.
   purchase events are not yet joined back to `session_id` or engine arm. That belongs to the
   `seller-web` / `seller-shop` integration pass, not to the core chat mechanics.
 
+## Commerce context (Phase 6) — the enforced-vs-generated split
+
+The chat is one slice of a three-repo storefront (the Node BFF `seller-shop`, the React
+`seller-web`). The browser talks only to the BFF; the BFF forwards the turn to this service and,
+crucially, injects the customer's **commerce state** — without ever telling the seller *who* the
+customer is. That state arrives as an optional `customer_context` on `POST /chat`:
+
+```json
+{"session_id": "demo-1", "message": "cerco un cooperativo",
+ "customer_context": {"received_products": [12], "cart_products": [7], "sent_products": []}}
+```
+
+The ids are `id_product` (the same int `GameHit.id_product` carries), so they line up with
+retrieved hits with no mapping. The seller never receives a customer id — domain separation
+demonstrated on the most interesting use case: personalization with zero identity leakage.
+
+What the seller does with it is the project's usual discipline — *the model proposes, the code
+disposes* — split in two:
+
+| Field | Half | Treatment |
+|---|---|---|
+| `received_products` | **enforced** (code) | dropped from the hits in `ChatAdvisor.pitch` before BOTH the LLM call and the deterministic fallback — an owned game can never be re-pitched, the same way an un-retrieved id can never reach the cards |
+| `cart_products` | **generated** (prompt) | kept on the table, framed under `CONTESTO CLIENTE` as "already in the cart — don't re-pitch as a new idea" |
+| `sent_products` | **generated** (prompt) | kept, framed as "on the way (gift shipped)" |
+
+Why the asymmetry: owning a game is a *fact* (re-pitching it is just wrong, so code enforces it);
+"it's in your cart" is conversational *nuance* the model is free to weave in. Modelled in
+`app/chat/models/customer_context.py` (`exclude_owned` + `framing_block`, both pure methods on
+the data). It rides through `GenerationContext`, so it applies on EVERY engine (Phase 4 stateless,
+pipeline graph, piloted, agent) from one place — `ChatAdvisor.pitch` — and a degraded turn keeps
+it (TieredChat forwards it to the fallback). Edge case handled: if every retrieved game is owned,
+the turn degrades to the honest no-match rather than inventing an alternative.
+
+Tests: `tests/unit/CustomerContext/` (pure model — exclusion is deterministic, framing names only
+games on the table) and `tests/unit/ChatAdvisor/test_customer_context.py` +
+`tests/unit/ChatGraph/test_customer_context.py` (the split through the stateless and stateful
+paths — an owned game the LLM recommends is dropped from cards *and* message).
+
+Still open (the showcase loop, not the mechanics): a real-stack run with `seller-shop` +
+`seller-web` up confirming a purchase/cart change visibly changes the next conversation, and a
+seller-side grounding eval over a stronger model.
+
 ## Tests
 
 `tests/unit/ChatAdvisor/` — offline, deterministic (fake retriever + fake structured LLM):

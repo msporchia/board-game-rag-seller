@@ -29,6 +29,7 @@ behavior), like the enrichment prompts.
 
 from langchain_ollama import ChatOllama
 
+from app.chat.models.customer_context import CustomerContext
 from app.chat.models.reply import ChatReply
 from app.chat.models.response import ChatResponse
 from app.chat.policies.generation_context import GenerationContext
@@ -128,7 +129,7 @@ class ChatAdvisor:
 
     def _prompt(self, message: str, hits: list[GameHit], *, strategy: str | None = None,
                 expertise_level: str | None = None, history: str | None = None,
-                extra_blocks: list[str] | None = None) -> str:
+                extra_blocks: list[str] | None = None, customer_block: str | None = None) -> str:
         """Fixed + dynamic prompt structure (docs/note.md).
 
         Without the Phase 5 keywords this is exactly the Phase 4 prompt. With them, the persona
@@ -146,6 +147,7 @@ class ChatAdvisor:
         strategy_block = f"\n{_STRATEGY_RULES[strategy]}\n" if strategy else ""
         policy_text = "\n".join(b for b in (extra_blocks or []) if b)
         sales_block = f"\nPOLICY ATTIVE:\n{policy_text}\n" if policy_text else ""
+        client_block = f"\nCONTESTO CLIENTE:\n{customer_block}\n" if customer_block else ""
         return f"""{persona}
 {conversation}
 RICHIESTA DEL CLIENTE:
@@ -153,7 +155,7 @@ RICHIESTA DEL CLIENTE:
 
 GIOCHI DISPONIBILI (gli UNICI che puoi proporre):
 {catalog}
-{sales_block}
+{client_block}{sales_block}
 
 Regole rigide:
 - Proponi SOLO giochi presenti nella lista qui sopra. NON inventare titoli e non usare la tua
@@ -186,14 +188,16 @@ FORMATO DELLA RISPOSTA (JSON, TUTTI i campi obbligatori):
 
     def reply(self, message: str, choices: list[str] | None = None,
               filters: SearchFilters | None = None, k: int = 5,
-              custom_policy: list[str] | None = None) -> ChatResponse:
+              custom_policy: list[str] | None = None,
+              customer_context: CustomerContext | None = None) -> ChatResponse:
         """Phase 4, stateless: quick-reply clicks are folded into the retrieval query.
 
         (The Phase 5 graph parses them into SearchFilters instead and calls `pitch` directly.)
 
         Active policies (docs/idee.md §O) wrap BOTH stages here too: retrieval through the
         policy chain (a policy may reshape the query/filters/hits) and generation through it
-        (prompt blocks, llm), plus the expertise/strategy shortcuts.
+        (prompt blocks, llm), plus the expertise/strategy shortcuts. `customer_context` (Phase 6)
+        rides through generation, where the enforced-vs-generated split is applied.
         """
         policies = PolicySet.from_names(custom_policy)
         query = f"{message}\n{' '.join(choices)}" if choices else message
@@ -204,24 +208,33 @@ FORMATO DELLA RISPOSTA (JSON, TUTTI i campi obbligatori):
             advisor=self, message=message, hits=hits,
             strategy=strategy.value if strategy else None,
             expertise=policies.force_expertise(None),
+            customer_context=customer_context,
         )
         return policies.run_generate(gctx, lambda c: c.execute())
 
     def pitch(self, message: str, hits: list[GameHit], *, strategy: str | None = None,
               expertise_level: str | None = None, history: str | None = None,
-              llm=None, extra_blocks: list[str] | None = None) -> ChatResponse:
+              llm=None, extra_blocks: list[str] | None = None,
+              customer_context: CustomerContext | None = None) -> ChatResponse:
         """Generate the grounded pitch over `hits` (the generation step alone).
 
         `llm` overrides the default model for this call — the model-tiering hook: the graph's
         generate node passes the strong model here when the analyze step escalated.
         `extra_blocks` are policy-contributed instruction blocks (PolicySet, docs/idee.md §O).
+        `customer_context` (Phase 6) drives the enforced-vs-generated split: received games are
+        dropped from `hits` here — deterministically, before both the LLM and the fallback, so an
+        owned game can never be re-pitched — while cart/sent games stay but are framed in the
+        prompt as already-chosen/on-the-way rather than fresh ideas.
         """
-        if not hits:
+        if customer_context:
+            hits = customer_context.exclude_owned(hits)
+        if not hits:  # nothing left to pitch (empty retrieval, or all hits already owned)
             return ChatResponse(message=_NO_MATCH, games=[], quick_replies=[])
 
+        customer_block = customer_context.framing_block(hits) if customer_context else None
         prompt = self._prompt(message, hits, strategy=strategy,
                               expertise_level=expertise_level, history=history,
-                              extra_blocks=extra_blocks)
+                              extra_blocks=extra_blocks, customer_block=customer_block)
         try:
             reply: ChatReply = (llm or self._llm).invoke(prompt)
         except Exception:  # noqa: BLE001  LLM/transport failure → deterministic fallback, never 500

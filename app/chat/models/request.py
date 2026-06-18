@@ -2,6 +2,8 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
+from app.chat.models.customer_context import CustomerContext
+
 
 class ChatRequest(BaseModel):
     message: str = Field(..., description="the user's free-text turn")
@@ -20,3 +22,7 @@ class ChatRequest(BaseModel):
     # ["christmas_sale", "promote_cooperative"] and the PolicySet resolves them to middleware
     # that wraps the turn's stages. Unknown names are ignored (logged), never an error.
     custom_policy: list[str] = []
+    # The customer's commerce state, injected per-turn by the shop BFF (Phase 6, docs/chat.md):
+    # received/cart/sent product-id sets the seller uses for the enforced-vs-generated split. The
+    # seller never learns the customer's identity — only these id_product sets. Absent → no split.
+    customer_context: CustomerContext | None = None

@@ -37,6 +37,7 @@ from langgraph.graph import END, START, StateGraph
 from app.chat.advisor import ChatAdvisor
 from app.chat.checkpointer import sqlite_checkpointer
 from app.chat.choices import parse_choices
+from app.chat.models.customer_context import CustomerContext
 from app.chat.models.intent import SearchIntent
 from app.chat.models.response import ChatResponse
 from app.chat.models.retry import RetryDecision
@@ -225,6 +226,7 @@ I filtri scelti con i click dal cliente restano attivi: la nuova query non può 
             advisor=self.advisor, message=state["message"], hits=state.get("hits") or [],
             history="\n".join(history[:-1]) or None,  # [:-1] = exchanges before this turn
             expertise=policies.force_expertise(None),
+            customer_context=state.get("customer_context"),
         )
         response = policies.run_generate(gctx, lambda c: c.execute())
         return {
@@ -257,11 +259,12 @@ I filtri scelti con i click dal cliente restano attivi: la nuova query non può 
 
     def reply(self, message: str, choices: list[str] | None = None, k: int = 5,
               session_id: str = "default",
-              custom_policy: list[str] | None = None) -> ChatResponse:
+              custom_policy: list[str] | None = None,
+              customer_context: CustomerContext | None = None) -> ChatResponse:
         """One stateful turn. Same contract as ChatGraph.reply."""
         out = self._graph.invoke(
             {"message": message, "choices": choices or [], "k": k,
-             "custom_policy": custom_policy or []},
+             "custom_policy": custom_policy or [], "customer_context": customer_context},
             config={"configurable": {"thread_id": session_id}},
         )
         return out["response"]

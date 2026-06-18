@@ -37,6 +37,7 @@ from app.chat.advisor import ChatAdvisor
 from app.chat.checkpointer import sqlite_checkpointer
 from app.chat.choices import parse_choices
 from app.chat.models.analysis import TurnAnalysis
+from app.chat.models.customer_context import CustomerContext
 from app.chat.models.reply import ChatReply
 from app.chat.models.response import ChatResponse
 from app.chat.models.strategy import Strategy
@@ -245,7 +246,7 @@ Valuta SOLO dal testo del cliente:
             advisor=self.advisor, message=state["message"], hits=state.get("hits") or [],
             strategy=state.get("strategy"), expertise=state.get("expertise_level"),
             history="\n".join(history[:-1]) or None,  # [:-1] = exchanges before this turn
-            llm=llm,
+            llm=llm, customer_context=state.get("customer_context"),
         )
         response = policies.run_generate(gctx, lambda c: c.execute())
         return {
@@ -258,11 +259,12 @@ Valuta SOLO dal testo del cliente:
 
     def reply(self, message: str, choices: list[str] | None = None, k: int = 5,
               session_id: str = "default",
-              custom_policy: list[str] | None = None) -> ChatResponse:
+              custom_policy: list[str] | None = None,
+              customer_context: CustomerContext | None = None) -> ChatResponse:
         """One stateful turn. Same return contract as ChatAdvisor.reply (Phase 4)."""
         out = self._graph.invoke(
             {"message": message, "choices": choices or [], "k": k,
-             "custom_policy": custom_policy or []},
+             "custom_policy": custom_policy or [], "customer_context": customer_context},
             config={"configurable": {"thread_id": session_id}},
         )
         return out["response"]

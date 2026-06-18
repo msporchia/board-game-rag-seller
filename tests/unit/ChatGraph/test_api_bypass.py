@@ -19,7 +19,7 @@ class TestSessionRouting:
         calls = []
 
         class FakeAdvisor:
-            def reply(self, message, choices=None, k=5, custom_policy=None):
+            def reply(self, message, choices=None, k=5, custom_policy=None, customer_context=None):
                 calls.append((message, choices, k, custom_policy))
                 return ChatResponse(message="stateless")
 
@@ -39,7 +39,8 @@ class TestSessionRouting:
             def __init__(self):
                 self.calls = []
 
-            def reply(self, message, choices=None, k=5, session_id=None, custom_policy=None):
+            def reply(self, message, choices=None, k=5, session_id=None, custom_policy=None,
+                      customer_context=None):
                 self.calls.append((message, session_id, custom_policy))
                 return ChatResponse(message="stateful")
 

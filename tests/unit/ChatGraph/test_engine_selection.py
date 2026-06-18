@@ -21,7 +21,8 @@ def capture_engine(monkeypatch):
     contexts: list[object] = []
 
     class FakeEngine:
-        def reply(self, message, choices=None, k=5, session_id=None, custom_policy=None):
+        def reply(self, message, choices=None, k=5, session_id=None, custom_policy=None,
+                  customer_context=None):
             contexts.append(custom_policy)
             return ChatResponse(message="ok")
 
@@ -91,7 +92,7 @@ class TestEngineSelection:
         calls = []
 
         class FakeAdvisor:
-            def reply(self, message, choices=None, k=5, custom_policy=None):
+            def reply(self, message, choices=None, k=5, custom_policy=None, customer_context=None):
                 calls.append(message)
                 return ChatResponse(message="stateless")
 

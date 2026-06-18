@@ -12,9 +12,10 @@ class FakeEngine:
         self.calls: list[dict] = []
 
     def reply(self, message, choices=None, k=5, session_id="default",
-              custom_policy=None) -> ChatResponse:
+              custom_policy=None, customer_context=None) -> ChatResponse:
         self.calls.append({"message": message, "choices": choices, "k": k,
-                           "session_id": session_id, "custom_policy": custom_policy})
+                           "session_id": session_id, "custom_policy": custom_policy,
+                           "customer_context": customer_context})
         if self.raises:
             raise RuntimeError("primary engine down")
         return self.response

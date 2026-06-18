@@ -12,6 +12,7 @@ advisor.py builds a GenerationContext, so this module must not import advisor at
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
+from app.chat.models.customer_context import CustomerContext
 from app.chat.models.response import ChatResponse
 from app.models.game_hit import GameHit
 
@@ -29,11 +30,14 @@ class GenerationContext:
     history: str | None = None
     llm: object | None = None
     prompt_blocks: list[str] = field(default_factory=list)
+    # The customer's commerce state for this turn (Phase 6): pitch applies the enforced-vs-
+    # generated split. A policy may read/reshape it before generation, like any other field.
+    customer_context: CustomerContext | None = None
 
     def execute(self) -> ChatResponse:
         """Run the grounded pitch with the policy-accumulated prompt blocks."""
         return self.advisor.pitch(
             self.message, self.hits, strategy=self.strategy,
             expertise_level=self.expertise, history=self.history, llm=self.llm,
-            extra_blocks=self.prompt_blocks,
+            extra_blocks=self.prompt_blocks, customer_context=self.customer_context,
         )

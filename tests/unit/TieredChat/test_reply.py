@@ -9,6 +9,7 @@ What it tests:
 How: two FakeEngine instances (preset response or raising), no LLM, no graph.
 """
 
+from app.chat.models.customer_context import CustomerContext
 from app.chat.models.response import ChatResponse
 from app.chat.tiered import TieredChat
 
@@ -26,7 +27,7 @@ class TestReply:
         # The contract travels intact down the ladder.
         assert fallback.calls == [{"message": "ciao", "choices": ["per 2 giocatori"],
                                    "k": 3, "session_id": "s1",
-                                   "custom_policy": None}]
+                                   "custom_policy": None, "customer_context": None}]
 
     def test_healthy_primary_answers_and_fallback_is_untouched(self):
         primary = FakeEngine(response=ChatResponse(message="dal primario", games=[],
@@ -44,12 +45,15 @@ class TestReply:
         fallback = FakeEngine()
         engine = TieredChat(fallback=fallback, primary=primary)
 
+        cc = CustomerContext(received_products=[7])
         res = engine.reply("ciao", choices=["max 30 minuti"], k=4, session_id="s2",
-                           custom_policy=["christmas_sale"])
+                           custom_policy=["christmas_sale"], customer_context=cc)
 
-        # The primary was tried, the failure never surfaced, the fallback got the SAME turn.
+        # The primary was tried, the failure never surfaced, the fallback got the SAME turn —
+        # including the customer_context, so a degraded turn keeps the Phase 6 split.
         assert res is fallback.response
         assert primary.calls == fallback.calls == [{"message": "ciao",
                                                     "choices": ["max 30 minuti"],
                                                     "k": 4, "session_id": "s2",
-                                                    "custom_policy": ["christmas_sale"]}]
+                                                    "custom_policy": ["christmas_sale"],
+                                                    "customer_context": cc}]

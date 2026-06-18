@@ -6,6 +6,14 @@
 > semantic search over a messy product catalog actually *good* — and to practice
 > production-shaped RAG (LangChain · Qdrant · FastAPI · Ollama). Local-first, offline-runnable,
 > provider-swappable. Not a product; a place to do the engineering well.
+>
+> Being R&D shapes the design on purpose: where a question had more than one defensible answer,
+> the repo builds **several arms and measures them on the same bench** instead of guessing. The
+> conversational seller ships as **three interchangeable engines** (deterministic pipeline ·
+> code-piloted loop · tool-driving agent), and pieces like the optional policy layer or the
+> weak-local-model stance exist to *see how the system reacts to those variables* — not because
+> production would keep all of them. What survives into production is then an evidence-backed
+> choice, not a default.
 
 > **Part of a three-repo storefront.** This repo is the **AI brain** — the retrieval engine and
 > the conversational seller, exposed over HTTP. The storefront that consumes it lives in two
@@ -38,6 +46,42 @@ The repo is two stories. **Part 1 — the retrieval engine**: done, measured, an
 the project. **Part 2 — the conversational seller** on top of it: working end-to-end, being
 finalized, measured the same way. Each part builds to its payoff: the mechanism first, then
 what it does on real games.
+
+---
+
+## Proof first — the numbers, before the narrative
+
+The rest of this README explains *why*. If you only want to know whether it's real, here is the
+measured short version — wins **and** losses, since an R&D repo that hides the losses isn't one:
+
+**Retrieval — does shaping the embedded text actually move the ranking?** *(frozen 50-game corpus,
+same embedder, the only thing that changes is the text we embed)*
+
+| Real game | Before | After |
+|-----------|:------:|:-----:|
+| 🚀 Terraforming Mars — thin entry, no description | rank **#45** | rank **#1** |
+| ⚖️ Viticulture — already richly described | rank **#4** | rank **#23** — *worse: an honest regression we kept and pinned* |
+
+**Conversational seller — three engines on the same bench** *(local 7-8B model, `ChatConversation`
+eval; the contrast is the point, not the leaderboard)*
+
+| engine | who drives the search | case pass | tok / chat |
+|--------|-----------------------|:---------:|:----------:|
+| pipeline | deterministic code | 0.70 | 5 699 |
+| piloted | code loop, model reformulates | 0.80 | ↓ 18% |
+| agent · `qwen2.5:7b` | the model itself, via a tool | **0.867** | 6 225 |
+
+Not a leaderboard — a **quality/cost curve**: the agent converts the most but costs the most per
+chat, the pipeline is the floor you can afford at volume. Which one a storefront runs is an economic
+call (*how many tokens is one extra sale worth?*), swapped by `CHAT_ENGINE` behind one contract.
+
+→ **See it, don't take my word:** [retrieval walkthroughs on real games](docs/showcase/README.md) ·
+[the chat, two engines side by side](docs/showcase/chat.md) ·
+[full auto-generated scorecard](tests/eval/RESULTS.md) ·
+[every reply the seller actually wrote](tests/eval/ChatConversation/REVIEW.md).
+
+*Numbers are session-stamped and regenerate on every eval run, so a stale figure is visible as
+stale rather than dressed up. They will move when the larger real catalog lands.*
 
 ---
 
@@ -297,7 +341,7 @@ Behind that same `reply(...)` contract sit interchangeable engines, switched by 
   *catalog language* (it turns *"we all play together against the game"* into *"cooperative,
   win or lose as a team"* — the lexical gap the embedder can't bridge on its own), the code
   fetches, and a zero-result turn triggers one **informed** retry or an honest no-match.
-- **agent** — *experimental*: the model drives a `search_catalog` tool itself, deciding when and
+- **agent** — the model drives a `search_catalog` tool itself, deciding when and
   with what words to search; the answer is still assembled in code over the union of what the tool
   returned (same grounding). Confirmed on a real model: the pipeline's `llama3.1:8b` can't drive
   tools — as predicted — but `qwen2.5:7b` runs the loop end-to-end (~8-10s/turn), searching itself
@@ -305,12 +349,16 @@ Behind that same `reply(...)` contract sit interchangeable engines, switched by 
   is recorded (`{query, filters, hits}`) so tool-use quality is measurable, the tool tolerates the
   model's malformed args, and a failed turn still degrades to the pipeline.
 
-Measured head to head on the same fixtures, arm B lifted **case pass 0.700 → 0.800 at −18%
-tokens** — more quality *and* cheaper. The **agent** runs end-to-end but has no *scored* numbers
-yet — the next step is pointing the same ChatConversation harness at `engine=agent`. `TieredChat`
-degrades a failed primary turn to the pipeline so the customer always gets an answer. Full design +
-the per-failure breakdown (what recovered, what merely *moved*, the one predicted regression):
-[`docs/idee.md` §Q](docs/idee.md).
+Measured head to head on the same fixtures: the **pipeline** scores **case pass 0.70**, the
+**piloted** loop lifts it to **0.80 at −18% tokens** (more quality *and* cheaper), and the **agent**
+now tops them at **0.867** — letting the model drive its own search converts hard convergences the
+deterministic router can't (the [Terraforming Mars case](docs/showcase/chat.md), pipeline-fails /
+agent-passes, is the clean example). The agent is stochastic, so that's a *sample, not a verdict* —
+the same 15 cases scored 0.60 / 0.80 / 0.87 across three runs. They aren't a ranking to crown a
+winner but a **quality/cost curve**: which arm a storefront runs depends on how many tokens an extra
+sale is worth. `TieredChat` degrades a failed primary turn to the pipeline so the customer always
+gets an answer. Full design + the per-failure breakdown (what recovered, what merely *moved*, the
+one predicted regression): [`docs/idee.md` §Q](docs/idee.md).
 
 ## Measured the same way as the pipeline
 
@@ -339,35 +387,40 @@ agent is stochastic, so the same 15 cases scored 0.60 / 0.80 / 0.87 across three
 
 ## What a session looks like
 
-*Simulated transcript — it shows the target shape and will be replaced by a real recorded
-session once the layer is finalized; the before → after walkthrough is staged in
-[`docs/showcase/chat.md`](docs/showcase/chat.md).*
+A **real** turn from the agent run (case `infeasibile-recupero`, lifted verbatim from the
+[review bundle](tests/eval/ChatConversation/REVIEW.md)) — the anti-hallucination rule and the
+click→filter mechanic, on actual catalog games:
 
-> 🧑 *«Cerco un gioco cooperativo per due, niente di troppo impegnativo»*
+> 🧑 *«in pausa pranzo io e un collega abbiamo solo cinque minuti liberi»* · click `[per 2 giocatori] [max 5 minuti]`
 >
-> 🤖 *«Se giocate in due e volete collaborare, ho due proposte: **Pandemic** — si vince o si
-> perde insieme, regole spiegate in dieci minuti — e **Codenames Duet**, perfetto se vi
-> piacciono i giochi di parole.»*
-> &nbsp;&nbsp;🎴 `[Pandemic] [Codenames Duet]` · quick replies: `[max 30 minuti] [più strategico] [un'altra idea]`
+> 🤖 *«Al momento non ho in catalogo un gioco che corrisponde bene a quello che cerchi…»*
+> &nbsp;&nbsp;— `duration ≤ 5` matches **nothing in the catalog**, so the seller says so. No cards, no invented game.
 >
-> 🧑 click su `max 30 minuti`
+> 🧑 *«ok, in realtà possiamo arrivare a mezz'ora»* · click `[max 30 minuti]`
 >
-> 🤖 *«Allora **Codenames Duet** è il candidato perfetto: partite da un quarto d'ora e tanta
-> voglia di rivincita.»* — il click è diventato un filtro `duration ≤ 30` sulla ricerca reale.
+> 🤖 *«**Onitama** è perfetto per voi: un duello veloce e strategico… in solo 10 minuti! **Tao
+> Long** offre un gioco di strategia breve…»*
+> &nbsp;&nbsp;— the click became a real `duration ≤ 30` filter; games reappear, both really in stock.
 
-*A demo GIF of a real session will land here.*
+The same customer run through **two engines side by side** — including the convergence case where
+the deterministic pipeline gets stuck and the agent doesn't — is in
+[`docs/showcase/chat.md`](docs/showcase/chat.md).
 
 ## Still being finalized 🚧
 
 Honest status — this layer is still a work in progress; these pieces just aren't done yet:
 
-- **Pitch quality on the local 8B is the open bottleneck.** The *mechanics* hold end-to-end
-  (grounding, memory, fallback, traces — no 500s), but the 8B's sales copy is thin. The stance:
-  *if it works on the 8B, it flies on a stronger model* — design notes in
+- **Pitch quality on the local 7-8B is the open bottleneck.** The *mechanics* hold end-to-end
+  (grounding, memory, fallback, traces — no 500s), but the small model's sales copy is thin. The
+  stance: *if it works on the 8B, it flies on a stronger model* — design notes in
   [`docs/chat.md`](docs/chat.md) · [`docs/seller.md`](docs/seller.md).
-- **The transcript above is simulated.** A real recorded session + demo GIF land here once the
-  layer is signed off.
-- **The autonomous agent (arm A) and the tier circuit breaker are designed, not built** — see
+- **A few cases are still red** — e.g. constraint *reversal* across turns (`contrordine-giocatori`),
+  where a corrected click should *replace* the old filter, not pile on. It maps to a known gap in
+  the agent tier (click→filter merge isn't wired there yet); tracked by the eval, not hidden — see
+  the [chat walkthrough](docs/showcase/chat.md).
+- **`TieredChat` degrades, but its circuit breaker isn't built.** The wrapper already snapshots the
+  conversation and falls back to the pipeline on a failed primary turn; the sliding-window *circuit
+  breaker* that would stop hammering a failing primary is still designed-only — see
   [`docs/idee.md` §Q](docs/idee.md).
 
 ---

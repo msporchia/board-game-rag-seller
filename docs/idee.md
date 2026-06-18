@@ -254,7 +254,7 @@ context requires it; **LOW** = nice-to-have / when scaling.
   distributed locking until there are multiple API replicas.
 - **Measure**: none — robustness. A unit test with two interleaved turns documents the limit.
 
-## Q. Tiered chat engine: agentic retrieval behind the pipeline — MEDIUM (seam + tool built, runs end-to-end on qwen2.5:7b; scored eval pending)
+## Q. Tiered chat engine: agentic retrieval behind the pipeline — MEDIUM (seam + tool built, runs end-to-end on qwen2.5:7b; scored on ChatConversation — case pass 0.867, session 20260618-103413; still missing: click→filter merge, session history, circuit breaker)
 
 - **BUILT (2026-06-17, groundwork)**: the `search_catalog` tool (`app/chat/tools/`, wraps
   GameRetriever+SearchFilters, reuses `SearchIntent` as the arg schema) and `AgenticChat`

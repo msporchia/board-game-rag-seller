@@ -26,8 +26,10 @@ distractors, in two indexes identical except for the target game's text.
 | 🔬 [**Onitama**](onitama.md) | the **anti-hallucination** discipline: every recovered fact carries a verbatim quote | a gap filled *with evidence*, fabrications dropped |
 | ⚖️ [**Viticulture**](viticulture.md) | an **honest regression** we measured and didn't hide | full pipeline ranks **worse** than the baseline — and the open test that tracks it |
 
-The conversational layer will get the same treatment — one customer's session, before → after,
-enforced vs generated: [**Chat**](chat.md) (🚧 structure staged, awaiting a real recorded session).
+The conversational layer gets the same treatment — real recorded sessions, enforced vs generated,
+with the deterministic **pipeline** and the tool-driving **agent** put **side by side on the same
+customer**: [**Chat**](chat.md) — including the convergence case the pipeline can't crack, the
+honest no-match, and a failure kept on the page.
 
 ## How to read each file
 

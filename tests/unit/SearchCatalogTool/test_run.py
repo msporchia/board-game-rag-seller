@@ -41,3 +41,22 @@ class TestRun:
         tool.run(query="qualcosa di bello")
 
         assert retriever.calls[0][2] is None
+
+    def test_unwraps_a_dict_wrapped_int_arg(self):
+        # The model sometimes nests the number (qwen2.5 emitted max_minutes={"max": 180}).
+        retriever = FakeRetriever([make_hit(1, "A")])
+        tool = SearchCatalogTool(retriever=retriever, k=5)
+
+        tool.run(query="gestionale lungo", max_minutes={"max": 180})
+
+        assert tool.calls[-1].max_minutes == 180
+        assert retriever.calls[0][2] is not None  # the coerced constraint became a real filter
+
+    def test_drops_uncoercible_constraints_instead_of_raising(self):
+        retriever = FakeRetriever([make_hit(1, "A")])
+        tool = SearchCatalogTool(retriever=retriever, k=5)
+
+        tool.run(query="x", players="tanti", max_minutes={})  # neither coerces to an int
+
+        assert tool.calls[-1].players is None and tool.calls[-1].max_minutes is None
+        assert retriever.calls[0][2] is None  # no filters — the bad args were dropped, not raised

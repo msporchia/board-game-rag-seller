@@ -288,17 +288,19 @@ Behind that same `reply(...)` contract sit interchangeable engines, switched by 
   *catalog language* (it turns *"we all play together against the game"* into *"cooperative,
   win or lose as a team"* — the lexical gap the embedder can't bridge on its own), the code
   fetches, and a zero-result turn triggers one **informed** retry or an honest no-match.
-- **agent** — *groundwork, experimental*: the strong model drives a `search_catalog` tool itself,
-  deciding when and with what words to search; the answer is still assembled in code over the
-  union of what the tool returned (same grounding). The local 8B can't drive tools reliably, so it
-  sits behind the same fallback and degrades to the pipeline — the seam and tool are built and
-  unit-tested, an agentic-native model is the swap-in.
+- **agent** — *experimental*: the model drives a `search_catalog` tool itself, deciding when and
+  with what words to search; the answer is still assembled in code over the union of what the tool
+  returned (same grounding). Confirmed on a real model: the pipeline's `llama3.1:8b` can't drive
+  tools — as predicted — but `qwen2.5:7b` runs the loop end-to-end (~8-10s/turn), searching itself
+  *and* using the structured filters (`players=2`, not buried in the query text). Every tool call
+  is recorded (`{query, filters, hits}`) so tool-use quality is measurable, the tool tolerates the
+  model's malformed args, and a failed turn still degrades to the pipeline.
 
 Measured head to head on the same fixtures, arm B lifted **case pass 0.700 → 0.800 at −18%
-tokens** — more quality *and* cheaper (the **agent** has no quality numbers yet — its machinery is
-unit-tested, but no real model has been run through it). `TieredChat` degrades a failed primary
-turn to the pipeline so the customer always gets an answer. Full design + the per-failure
-breakdown (what recovered, what merely *moved*, the one predicted regression):
+tokens** — more quality *and* cheaper. The **agent** runs end-to-end but has no *scored* numbers
+yet — the next step is pointing the same ChatConversation harness at `engine=agent`. `TieredChat`
+degrades a failed primary turn to the pipeline so the customer always gets an answer. Full design +
+the per-failure breakdown (what recovered, what merely *moved*, the one predicted regression):
 [`docs/idee.md` §Q](docs/idee.md).
 
 ## Measured the same way as the pipeline

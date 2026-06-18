@@ -19,9 +19,10 @@ from app.rag.filters.search_filters import SearchFilters
 from app.rag.retriever import GameRetriever
 
 _DESCRIPTION = (
-    "Cerca giochi da tavolo nel catalogo del negozio. Passa una `query` descrittiva nel "
-    "linguaggio del catalogo (tema, meccaniche, tipo di esperienza, per chi è) e, SOLO se il "
-    "cliente li ha dichiarati, i vincoli players / max_minutes / youngest_player_age. "
+    "Cerca giochi da tavolo nel catalogo del negozio. La `query` descrive il gioco SOLO per "
+    "tema, meccaniche, tipo di esperienza, per chi è (linguaggio del catalogo). I vincoli "
+    "numerici (players / max_minutes / youngest_player_age) vanno negli appositi campi interi, "
+    "NON nella query: la ricerca semantica non li recepisce, li applica un filtro esatto. "
     "Restituisce i giochi più affini. Chiama questo strumento prima di rispondere: puoi "
     "proporre solo giochi che esso restituisce."
 )
@@ -33,16 +34,33 @@ class SearchCatalogTool:
         self.k = k
         self.calls: list[SearchIntent] = []
 
-    def run(self, query: str = "", players: int | None = None,
-            max_minutes: int | None = None, youngest_player_age: int | None = None
-            ) -> list[GameHit]:
-        """Execute one model-requested search. Reuses SearchIntent's constraint→filter mapping."""
-        intent = SearchIntent(query=query, players=players, max_minutes=max_minutes,
-                              youngest_player_age=youngest_player_age)
+    def run(self, query: str = "", players=None, max_minutes=None,
+            youngest_player_age=None) -> list[GameHit]:
+        """Execute one model-requested search. Reuses SearchIntent's constraint→filter mapping.
+
+        Robust to the model's imperfect tool args (the model proposes, the code disposes): a
+        constraint that won't coerce to an int — e.g. qwen2.5 sometimes emits `{"max": 180}`
+        instead of `180` — is dropped rather than crashing the turn (`_as_int`).
+        """
+        intent = SearchIntent(
+            query=query if isinstance(query, str) else (str(query) if query else ""),
+            players=self._as_int(players), max_minutes=self._as_int(max_minutes),
+            youngest_player_age=self._as_int(youngest_player_age))
         self.calls.append(intent)
         spec = intent.to_filters_spec()
         filters = SearchFilters.from_dict(spec) if spec else None
-        return self.retriever.search(intent.query or query, k=self.k, filters=filters)
+        return self.retriever.search(intent.query, k=self.k, filters=filters)
+
+    @staticmethod
+    def _as_int(value) -> int | None:
+        """Coerce a model-supplied constraint to int, or None. Unwraps a dict like {"max": 180}
+        (a single scalar value) — the model occasionally nests the number it meant to pass."""
+        if isinstance(value, dict):
+            value = next((v for v in value.values() if not isinstance(v, (dict, list))), None)
+        try:
+            return int(value) if value is not None and not isinstance(value, bool) else None
+        except (TypeError, ValueError):
+            return None
 
     def as_tool(self) -> StructuredTool:
         """The bindable LangChain tool (`llm.bind_tools([tool.as_tool()])`)."""

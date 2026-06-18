@@ -207,11 +207,14 @@ iterate on the prompt in 10s instead of 3min. Used to evolve v1→v4.
   `promote_cooperative`, `force_quick_match`) resolved by `PolicySet` into middleware around the
   turn's stages (`app/chat/policies/`, §O implemented). It does **not** need to be perfect; open
   retrieval/pitch/model issues stay in `idee.md` and eval reports.
-- **Tool-calling groundwork (§Q) — BUILT (stub)**: `search_catalog` (`app/chat/tools/`) exposes
-  the catalog as an LLM tool, and `AgenticChat` (`app/chat/agentic.py`) drives it behind
-  `engine=agent`, filling TieredChat's primary slot. Experimental: per-turn, no session history
-  yet, no circuit breaker — the local 8B can't drive tools reliably, so it degrades to the
-  pipeline fallback. Point `llm_model_strong` at an agentic-native model to exercise it for real.
+- **Tool-calling agent (§Q) — RUNS end-to-end, experimental**: `search_catalog` (`app/chat/tools/`)
+  exposes the catalog as an LLM tool, and `AgenticChat` (`app/chat/agentic.py`) drives it behind
+  `engine=agent`, filling TieredChat's primary slot. Confirmed on a real model (2026-06-18):
+  `llama3.1:8b` can't drive tools (as predicted), `qwen3:14b` thrashes the 8GB-VRAM dev box, but
+  **`qwen2.5:7b` runs the loop end-to-end (~8-10s/turn)** — searches itself and uses the structured
+  filters. Each tool call is logged (`last_turn_searches` → measurable), malformed args are
+  tolerated, a failed turn degrades to the pipeline. Still missing: a SCORED eval (point
+  ChatConversation at `engine=agent`), session history, the circuit breaker.
 - **SynthEnricher — DONE (first version)**: implemented (`app/ingestion/enricher/synth.py`),
   wired into `build_pipeline()`, 6 unit tests, and it **beats the baseline** on the `core` suite
   (see Measured results). Left to do: (a) **fidelity eval** in isolation (coverage + no-invention)

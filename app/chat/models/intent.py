@@ -15,16 +15,24 @@ class SearchIntent(BaseModel):
 
     query: str = Field(
         default="", description="riformulazione nel linguaggio del catalogo del gioco ideale "
-                                "da consigliare (tema, meccaniche, esperienza)"
+                                "da consigliare: SOLO tema, meccaniche, tipo di esperienza, per "
+                                "chi è. NON inserire qui i vincoli numerici (numero di giocatori, "
+                                "durata, età): vanno nei campi appositi, perché la ricerca "
+                                "semantica non li recepisce in modo affidabile — li applica un "
+                                "filtro esatto. Es. NON 'gioco cooperativo per 2 persone' ma "
+                                "'gioco cooperativo, si vince e si perde insieme' (+ players=2)."
     )
     players: int | None = Field(
-        default=None, description="numero di giocatori dichiarato dal cliente, se presente"
+        default=None, description="numero di giocatori dichiarato dal cliente, se presente. Il "
+                                  "vincolo va QUI come intero, non nel testo della query"
     )
     max_minutes: int | None = Field(
-        default=None, description="durata massima in minuti dichiarata dal cliente, se presente"
+        default=None, description="durata massima in minuti dichiarata dal cliente, se presente. "
+                                  "QUI come intero (es. 60), non nel testo della query"
     )
     youngest_player_age: int | None = Field(
-        default=None, description="età in anni del giocatore più giovane, se dichiarata"
+        default=None, description="età in anni del giocatore più giovane, se dichiarata. QUI come "
+                                  "intero, non nel testo della query"
     )
 
     def to_filters_spec(self) -> dict:

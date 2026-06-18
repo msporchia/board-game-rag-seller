@@ -23,6 +23,7 @@ from langchain_core.messages import HumanMessage, SystemMessage, ToolMessage
 from langchain_ollama import ChatOllama
 
 from app.chat.advisor import ChatAdvisor
+from app.chat.models.customer_context import CustomerContext
 from app.chat.models.response import ChatResponse
 from app.chat.policies.generation_context import GenerationContext
 from app.chat.policies.policy_set import PolicySet
@@ -58,16 +59,24 @@ class AgenticChat:
             model=self._model, base_url=settings.ollama_url, temperature=0.2,
             callbacks=get_trace_callbacks("chat.agent"),
         )
+        # The last turn's searches, the agent's equivalent of the piloted engine's
+        # `turn_searches` (it has no checkpointed state): one record per tool call —
+        # {query, filters, n_hits, hit_ids} — so a debugger/eval can see WHAT the model searched
+        # for and, crucially, whether it used the structured constraint fields (players/duration)
+        # or stuffed everything into free text (`filters` empty → a crude, all-text query).
+        self.last_turn_searches: list[dict] = []
 
     def reply(self, message: str, choices: list[str] | None = None, k: int = 5,
               session_id: str = "default",
-              custom_policy: list[str] | None = None) -> ChatResponse:
+              custom_policy: list[str] | None = None,
+              customer_context: CustomerContext | None = None) -> ChatResponse:
         policies = PolicySet.from_names(custom_policy)
         tool = SearchCatalogTool(retriever=self.advisor.retriever, k=k)
         llm = self._llm.bind_tools([tool.as_tool()])
 
         messages = [SystemMessage(content=_SYSTEM), HumanMessage(content=message)]
         hits_by_id: dict[int, object] = {}  # union across all tool calls, first occurrence wins
+        searches: list[dict] = []
         rounds = 0
         while rounds < self.max_rounds:
             rounds += 1
@@ -77,7 +86,21 @@ class AgenticChat:
             if not tool_calls:
                 break
             for call in tool_calls:
-                found = tool.run(**(call.get("args") or {}))
+                try:
+                    found = tool.run(**(call.get("args") or {}))
+                except Exception as exc:  # noqa: BLE001 — a bad tool call must not kill the turn
+                    log.warning("agent_tool_call_failed", args=call.get("args"), error=str(exc))
+                    messages.append(ToolMessage(
+                        content="Ricerca fallita: riprova con argomenti più semplici.",
+                        tool_call_id=call.get("id", "")))
+                    continue
+                intent = tool.calls[-1]  # the SearchIntent the model just produced
+                record = {"query": intent.query, "filters": intent.to_filters_spec(),
+                          "n_hits": len(found), "hit_ids": [h.id_product for h in found]}
+                searches.append(record)
+                log.info("agent_search_done", query=record["query"],
+                         filters=record["filters"] or None, n_hits=record["n_hits"],
+                         hit_ids=record["hit_ids"])
                 for hit in found:
                     hits_by_id.setdefault(hit.id_product, hit)
                 names = ", ".join(h.name for h in found) or "nessuno"
@@ -85,8 +108,10 @@ class AgenticChat:
                                             tool_call_id=call.get("id", "")))
 
         hits = list(hits_by_id.values())
-        log.info("agent_turn_done", rounds=rounds, searches=len(tool.calls),
+        self.last_turn_searches = searches
+        log.info("agent_turn_done", rounds=rounds, searches=len(searches),
                  hits=len(hits), policies=policies.names)
         gctx = GenerationContext(advisor=self.advisor, message=message, hits=hits,
-                                 expertise=policies.force_expertise(None))
+                                 expertise=policies.force_expertise(None),
+                                 customer_context=customer_context)
         return policies.run_generate(gctx, lambda c: c.execute())

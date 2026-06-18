@@ -6,6 +6,10 @@ message that ends the loop). The retriever and pitch model are the usual ChatAdv
 the test asserts the LOOP — tool calls → union of hits → grounded pitch — not the models.
 """
 
+from langchain_core.messages import AIMessage
+
+from app.chat.advisor import ChatAdvisor
+from app.chat.agentic import AgenticChat
 from app.chat.models.reply import ChatReply
 from app.models.game_hit import GameHit
 
@@ -14,6 +18,21 @@ def make_hit(id_product: int, name: str, **overrides) -> GameHit:
     data = {"score": 0.9, "id_product": id_product, "name": name}
     data.update(overrides)
     return GameHit(**data)
+
+
+def tool_call(args: dict, call_id: str = "1") -> AIMessage:
+    """A scripted `search_catalog` tool call with the given args (e.g. {"query": ..., "players": 2})."""
+    return AIMessage(content="", tool_calls=[
+        {"name": "search_catalog", "args": args, "id": call_id}])
+
+
+def make_engine(scripted, hits_batches, reply):
+    """Wire an AgenticChat over fakes; returns (engine, retriever, pitch)."""
+    retriever = FakeBatchRetriever(hits_batches)
+    pitch = FakePitchLLM(reply)
+    advisor = ChatAdvisor(retriever=retriever, llm=pitch)
+    engine = AgenticChat(advisor=advisor, llm=FakeToolCallingLLM(scripted))
+    return engine, retriever, pitch
 
 
 class FakeToolCallingLLM:

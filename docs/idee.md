@@ -254,7 +254,7 @@ context requires it; **LOW** = nice-to-have / when scaling.
   distributed locking until there are multiple API replicas.
 - **Measure**: none — robustness. A unit test with two interleaved turns documents the limit.
 
-## Q. Tiered chat engine: agentic retrieval behind the pipeline — MEDIUM (seam + tool + agent STUB built)
+## Q. Tiered chat engine: agentic retrieval behind the pipeline — MEDIUM (seam + tool built, runs end-to-end on qwen2.5:7b; scored eval pending)
 
 - **BUILT (2026-06-17, groundwork)**: the `search_catalog` tool (`app/chat/tools/`, wraps
   GameRetriever+SearchFilters, reuses `SearchIntent` as the arg schema) and `AgenticChat`
@@ -264,6 +264,25 @@ context requires it; **LOW** = nice-to-have / when scaling.
   TieredChat's primary slot (the empty slot this section described). STUB: per-turn/stateless (no
   history yet), no click→filter merge, no circuit breaker — exercised offline with a fake
   tool-calling LLM; the local 8B can't drive tools, so it degrades to the pipeline fallback.
+- **RAN end-to-end on a real model (2026-06-18)**: confirmed the prediction AND found the model
+  size that works on the dev box.
+  - `llama3.1:8b` (the pipeline's model): does NOT drive the tool usefully — as predicted.
+  - `qwen3:14b`: drives the tool correctly (emits valid `search_catalog` calls, uses the
+    structured `players` field), BUT a full turn is impractical on the 8GB-VRAM dev box — it's
+    10GB so only ~63% fits the GPU, and a turn touches THREE models (agent + nomic embedder +
+    pitch) that don't coexist → constant load/unload thrashing. Plus qwen3's thinking mode is slow
+    and conflicts with the structured-output pitch.
+  - `qwen2.5:7b` (non-reasoning, ~4.9GB → fits the GPU fully, coexists with nomic): **works
+    end-to-end, ~8-10s/turn.** Drives the search itself, USES the structured fields (`players=2`),
+    grounded multi-game pitch. The realistic local agent tier on this hardware.
+  - Lessons baked back in: (a) `last_turn_searches` + an `agent_search_done` log per tool call —
+    {query, filters, n_hits, hit_ids}, the agent's equivalent of the piloted `turn_searches` — so
+    tool-use quality is MEASURABLE; (b) `SearchCatalogTool` now coerces/drops malformed tool args
+    (qwen2.5 sometimes emits `max_minutes={'max':180}`) and the loop survives a failed tool call;
+    (c) `SearchIntent`/tool descriptions now tell the model to keep numeric constraints OUT of the
+    embedded query (the dense vector can't match them precisely — that is what the hard filter is
+    for). Still missing for a real tier: a SCORED eval (point ChatConversation at `engine=agent`),
+    session history, the circuit breaker.
 
 - **What**: two chat engines behind one stable contract (`reply(message, choices, k,
   session_id) → ChatResponse`): today's decomposed pipeline (weak local model, every decision

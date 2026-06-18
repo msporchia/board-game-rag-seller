@@ -7,6 +7,15 @@
 > production-shaped RAG (LangChain · Qdrant · FastAPI · Ollama). Local-first, offline-runnable,
 > provider-swappable. Not a product; a place to do the engineering well.
 
+> **Part of a three-repo storefront.** This repo is the **AI brain** — the retrieval engine and
+> the conversational seller, exposed over HTTP. The storefront that consumes it lives in two
+> sibling repos:
+> [**board-game-shop-api**](https://github.com/msporchia/board-game-shop-api) — a Node + TypeScript
+> commerce BFF (typed catalog, server-side carts, transactional checkout) that proxies this
+> advisor's `/chat` + `/search` through validated boundaries — and
+> [**board-game-shop-web**](https://github.com/msporchia/board-game-shop-web) — a React + TypeScript
+> storefront where the chat advisor recommends games and adds them straight to the cart.
+
 ## The problem this answers
 
 A board-game shop has a wall of boxes to sell, and selling them is genuinely hard. Board games

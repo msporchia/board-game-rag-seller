@@ -19,9 +19,14 @@ points on the quality/cost curve **at the same time**:
 - an **anonymous visitor** is a more uncertain purchase — here we may prefer to spend fewer tokens
   (the cheaper pipeline) until the intent firms up.
 
-So the choice is per-conversation, not global — which is exactly why the engine is overridable
-per request, not only by an env default. Committing to one engine up front would bake in a single
-guess for every customer and throw away both the comparison and that per-segment flexibility.
+So the choice is per-conversation, not global. But **it is not ours to make**: which engine fits
+which customer is a commerce/identity decision, and this service is deliberately
+identity-ignorant — only the BFF knows whether the caller is a retailer, a known expert community,
+or an anonymous visitor (the three-repo boundary; see the storefront BFF). Our responsibility is
+therefore not to *route*, but to stay **open** to being routed: expose the engine as a per-request
+choice and let the caller decide. Committing to one engine up front would bake in a single guess
+for every customer and slam that door — throwing away both the comparison and the BFF's ability to
+make the call where the customer is actually known.
 
 ## Decision
 
@@ -57,10 +62,11 @@ checkpointer, so a session is portable across whichever arm serves a turn.
   across three runs. The numbers are a sample, not a verdict, and are session-stamped so a stale one
   reads as stale.
 - **A structure that holds several arms is cheap to keep.** Because they share one contract and one
-  checkpointer, hosting more than one engine carries little structural cost — and it lets the same
-  storefront route different customers (retailer, expert community, anonymous visitor) to different
-  arms at once. Branches that stop earning their keep can simply be **pruned**: deleting an engine
-  is removing one implementation behind the contract, not unpicking it from the rest of the system.
+  checkpointer, hosting more than one engine carries little structural cost — and it keeps the seam
+  open for the BFF to route different customers (retailer, expert community, anonymous visitor) to
+  different arms at once, without this service ever learning who they are. Branches that stop
+  earning their keep can simply be **pruned**: deleting an engine is removing one implementation
+  behind the contract, not unpicking it from the rest of the system.
 - **Cost:** every engine must honor the one contract and the shared checkpointer — more discipline,
   and a wider surface to test (one eval suite per node, plus the whole-conversation suite).
 - The `TieredChat` seam exists and is exercised, but its **circuit breaker** (stop paying for a

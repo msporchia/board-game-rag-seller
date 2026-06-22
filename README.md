@@ -328,7 +328,7 @@ is **one file and one registry line** — the rest of the code doesn't move.
 The boundary that keeps it safe: a policy changes **behavior, not truth**. `promote_cooperative`
 can only reorder games that were actually retrieved; no policy can override the grounding rule. And
 because each policy is one isolated class, its effect is **unit-tested on its own** — it keeps
-doing its job even as the rest of the prompt changes around it. Design: [`docs/idee.md` §O](docs/idee.md).
+doing its job even as the rest of the prompt changes around it. Design: [`docs/idee.md`](docs/idee.md).
 
 ## Pushing it further — three engines, one contract
 
@@ -358,7 +358,7 @@ the same 15 cases scored 0.60 / 0.80 / 0.87 across three runs. They aren't a ran
 winner but a **quality/cost curve**: which arm a storefront runs depends on how many tokens an extra
 sale is worth. `TieredChat` degrades a failed primary turn to the pipeline so the customer always
 gets an answer. Full design + the per-failure breakdown (what recovered, what merely *moved*, the
-one predicted regression): [`docs/idee.md` §Q](docs/idee.md).
+one predicted regression): [`docs/idee.md`](docs/idee.md).
 
 ## Measured the same way as the pipeline
 
@@ -421,7 +421,7 @@ Honest status — this layer is still a work in progress; these pieces just aren
 - **`TieredChat` degrades, but its circuit breaker isn't built.** The wrapper already snapshots the
   conversation and falls back to the pipeline on a failed primary turn; the sliding-window *circuit
   breaker* that would stop hammering a failing primary is still designed-only — see
-  [`docs/idee.md` §Q](docs/idee.md).
+  [`docs/idee.md`](docs/idee.md).
 
 ---
 
@@ -486,6 +486,8 @@ seller/
 ├── docs/
 │   ├── enrichment/             # one doc per pipeline step (the "why & how we know")
 │   ├── showcase/               # before → after walkthroughs on real games  ← start here
+│   ├── adr/                    # architecture decision records (the non-obvious forks)
+│   ├── tickets/                # the working backlog (one file per ticket)
 │   ├── chat.md                 # the conversational layer: design, findings, eval
 │   ├── valutazione.md          # how embeddings work & how we measure
 │   └── observability.md        # eval & observability: status and roadmap
@@ -498,3 +500,11 @@ By default the API ingests from the bundled mock (synthetic sample catalog). Poi
 at your own dataset, or point `PRESTASHOP_BASE_URL` at a real PrestaShop "seller" endpoint to
 ingest a live catalog — see [`.env.example`](.env.example) and
 [`docs/pipeline-dati.md`](docs/pipeline-dati.md).
+
+## Decisions & backlog
+
+The non-obvious forks — the ones with a defensible alternative we rejected — are written up as
+short [architecture decision records](docs/adr/README.md): why we enrich the text instead of
+swapping the embedder, why grounding lives in code, why retrieval is scored by rank not absolute
+score. What's open or planned lives in the [ticket backlog](docs/tickets/README.md): one file per
+item, traced back to the design notes it came from.

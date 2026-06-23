@@ -11,6 +11,7 @@ Italian-language LLM over an Italian catalog (system behavior), so they are not 
 """
 
 import json
+import re
 from langchain_ollama import ChatOllama
 
 from app.config import settings
@@ -22,6 +23,12 @@ from app.models.game_data import GameData
 from app.models.game_doc import GameDoc
 
 logger = get_logger(__name__)
+
+# The catalog's certain-data signal for cooperative play (the deterministic shortcut below). We
+# match the Italian stem 'cooperativ' (covers cooperativo/-a/-i/-e) on a word boundary — so the
+# retailer brand abbrev "Coop" never counts — and reject an explicit negation ("non cooperativo").
+_COOP_STEM = re.compile(r"\bcooperativ", re.IGNORECASE)
+_COOP_NEGATED = re.compile(r"\bnon[\s-]+cooperativ", re.IGNORECASE)
 
 
 class CuratorEnricher(Enricher):
@@ -138,10 +145,19 @@ class CuratorEnricher(Enricher):
     def _cooperative_verdict(self, game: GameDoc, e: GameData) -> bool | None:
         """The `cooperative` flag: True / False / None. CERTAIN data wins (an explicit catalog
         co-op tag/category → True, no LLM); otherwise the mode is INFERRED from the description."""
-        if e.mentions_cooperative():
+        if self._catalog_says_cooperative(e):
             return True
         desc = (game.original.description or e.description or "").strip()
         return self._infer_cooperative(desc) if desc else None
+
+    @staticmethod
+    def _catalog_says_cooperative(e: GameData) -> bool:
+        """Deterministic shortcut: the CERTAIN data (catalog tags + category) explicitly names
+        cooperative play. A reliable POSITIVE only — checked per field so an explicit negation
+        ("non cooperativo") cannot poison a clean positive in another, and so "Coop" (a retailer
+        brand) never trips the match."""
+        return any(_COOP_STEM.search(s) and not _COOP_NEGATED.search(s)
+                   for s in [e.categoria or "", *e.tags])
 
     def _infer_cooperative(self, desc: str) -> bool | None:
         """LLM INFERENCE (not verbatim extraction): classify the play mode from the MEANING of

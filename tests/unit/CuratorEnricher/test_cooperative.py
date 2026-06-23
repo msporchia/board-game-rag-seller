@@ -2,8 +2,9 @@
 only deterministic shortcut. The verdict is semantic (True/False/None), NOT a verbatim/keyword
 match — a game that plays co-op without ever using the word is still caught.
 
-The "hide the data, check against the ORACLE" cross-test: the catalog co-op tag is ground truth;
-we strip it and assert the inference recovers the verdict.
+These are deterministic UNIT tests (fake LLM): they verify the WIRING — how the curator routes a
+given verdict onto the flag. Whether the PROMPT actually deduces the mode from a real description
+is a separate, real-LLM check on real games in tests/e2e/enrichment/test_cooperative_inference.py.
 
 HOW: fake LLM via `make_curator(content)`. The inference call expects `{"modalita": ...}`; the
 extraction batches harmlessly ignore that JSON (no labels match), so one fake content drives the
@@ -11,17 +12,8 @@ bit under test. The co-op prompt is identifiable by the "MODALITÀ" marker.
 """
 
 import json
-from pathlib import Path
-
-import pytest
 
 from tests.factories.game import make_game
-
-FIXTURE = Path(__file__).parent / "fixtures" / "games.json"
-_DTOS = json.loads(FIXTURE.read_text(encoding="utf-8"))
-# the oracle: the games the catalog itself marks cooperative (the tag is ground truth)
-COOP_DTOS = [d for d in _DTOS if any("cooperativ" in t.lower() for t in d.get("tags", []))]
-COOP_IDS = [f"{d['id_product']}-{d['name'][:20]}" for d in COOP_DTOS]
 
 # means cooperative WITHOUT using the word — only inference (not a keyword hunt) can classify it
 _COOP_NO_WORD = ("I giocatori uniscono le forze e affrontano insieme il morbo: "
@@ -70,12 +62,12 @@ class TestCuratorCooperative:
         assert out.enriched.cooperative is None
         assert not any("MODALITÀ" in call for call in c._llm.calls)
 
-    @pytest.mark.parametrize("dto", COOP_DTOS, ids=COOP_IDS)
-    def test_recovered_from_inference_when_tag_hidden(self, make_curator, dto):
-        """THE CROSS-TEST: blank the co-op tag (oracle = cooperative); with only the description
-        left, the inference path recovers the verdict → matches the oracle."""
-        desc = dto.get("description") or "Si gioca tutti insieme contro il gioco."
-        hidden = make_game(tags=[], description=desc)  # the co-op tag stripped → unknown
-        assert hidden.enriched.cooperative is None
+    def test_tag_hidden_routes_through_inference_wiring(self, make_curator):
+        """WIRING (deterministic, fake LLM): with the co-op tag stripped the verdict is no longer
+        a shortcut, so the inference path drives the flag — here a faked 'cooperativo' sets True.
+        This proves the plumbing only; whether the PROMPT actually deduces co-op from a real
+        description is validated against real games in tests/e2e (test_cooperative_inference)."""
+        hidden = make_game(tags=[], description="Si gioca tutti insieme contro il gioco.")
+        assert hidden.enriched.cooperative is None  # tag stripped → unknown at construction
         out = make_curator(_coop("cooperativo")).enrich(hidden)
-        assert out.enriched.cooperative is True  # recovered → matches the oracle
+        assert out.enriched.cooperative is True

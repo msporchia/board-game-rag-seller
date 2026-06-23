@@ -157,7 +157,10 @@ Pensa a quale gioco consiglieresti e descrivi QUEL gioco. Compila:
   Tieni nella query anche i bisogni emersi nei turni precedenti che restano validi.
 - players / max_minutes / youngest_player_age: SOLO i vincoli che il cliente ha dichiarato
   (numero di giocatori, durata massima in minuti, età del giocatore più giovane). Lascia
-  vuoto ciò che non ha detto: un vincolo inventato esclude giochi validi."""
+  vuoto ciò che non ha detto: un vincolo inventato esclude giochi validi.
+- cooperative: true se il cliente chiede un gioco cooperativo (si gioca tutti insieme contro il
+  gioco), false se chiede esplicitamente un gioco competitivo (uno contro l'altro). È un vincolo
+  netto: lascialo null se non esprime una preferenza."""
 
 # Template: {message}, {query}, {active}.
 RETRY = """La ricerca a catalogo NON ha prodotto NESSUN risultato.
@@ -192,6 +195,7 @@ SEARCH_CATALOG = (
     "tema, meccaniche, tipo di esperienza, per chi è (linguaggio del catalogo). I vincoli "
     "numerici (players / max_minutes / youngest_player_age) vanno negli appositi campi interi, "
     "NON nella query: la ricerca semantica non li recepisce, li applica un filtro esatto. "
-    "Restituisce i giochi più affini. Chiama questo strumento prima di rispondere: puoi "
-    "proporre solo giochi che esso restituisce."
+    "Se il cliente chiede una modalità precisa, usa cooperative (true=cooperativo, "
+    "false=competitivo) come vincolo esatto, non nella query. Restituisce i giochi più affini. "
+    "Chiama questo strumento prima di rispondere: puoi proporre solo giochi che esso restituisce."
 )

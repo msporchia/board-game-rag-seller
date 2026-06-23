@@ -29,7 +29,7 @@ class SearchCatalogTool:
         self.calls: list[SearchIntent] = []
 
     def run(self, query: str = "", players=None, max_minutes=None,
-            youngest_player_age=None) -> list[GameHit]:
+            youngest_player_age=None, cooperative=None) -> list[GameHit]:
         """Execute one model-requested search. Reuses SearchIntent's constraint→filter mapping.
 
         Robust to the model's imperfect tool args (the model proposes, the code disposes): a
@@ -39,7 +39,8 @@ class SearchCatalogTool:
         intent = SearchIntent(
             query=query if isinstance(query, str) else (str(query) if query else ""),
             players=self._as_int(players), max_minutes=self._as_int(max_minutes),
-            youngest_player_age=self._as_int(youngest_player_age))
+            youngest_player_age=self._as_int(youngest_player_age),
+            cooperative=self._as_bool(cooperative))
         self.calls.append(intent)
         spec = intent.to_filters_spec()
         filters = SearchFilters.from_dict(spec) if spec else None
@@ -56,6 +57,20 @@ class SearchCatalogTool:
             return int(value) if value is not None and not isinstance(value, bool) else None
         except (TypeError, ValueError):
             return None
+
+    @staticmethod
+    def _as_bool(value) -> bool | None:
+        """Coerce a model-supplied cooperative flag to a real bool, or None. Only an explicit
+        truthy/falsy token counts: anything ambiguous stays None (we never guess False)."""
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, str):
+            token = value.strip().lower()
+            if token in ("true", "sì", "si", "yes", "cooperativo"):
+                return True
+            if token in ("false", "no", "competitivo"):
+                return False
+        return None
 
     def as_tool(self) -> StructuredTool:
         """The bindable LangChain tool (`llm.bind_tools([tool.as_tool()])`)."""

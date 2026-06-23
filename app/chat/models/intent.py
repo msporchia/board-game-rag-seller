@@ -34,6 +34,13 @@ class SearchIntent(BaseModel):
         default=None, description="età in anni del giocatore più giovane, se dichiarata. QUI come "
                                   "intero, non nel testo della query"
     )
+    cooperative: bool | None = Field(
+        default=None, description="modalità richiesta dal cliente, come vincolo netto (non nella "
+                                  "query): True se chiede un gioco COOPERATIVO (si gioca tutti "
+                                  "insieme contro il gioco), False se chiede esplicitamente un "
+                                  "gioco COMPETITIVO (uno contro l'altro). Lascia null se non "
+                                  "esprime una preferenza — non dedurla dal tono."
+    )
 
     def to_filters_spec(self) -> dict:
         """The proposed constraints as a `SearchFilters.from_dict` spec fragment.
@@ -49,4 +56,6 @@ class SearchIntent(BaseModel):
             spec["duration"] = {"max": self.max_minutes}
         if self.youngest_player_age and self.youngest_player_age > 0:
             spec["age"] = {"max": self.youngest_player_age}
+        if self.cooperative is not None:  # True → cooperative, False → competitive (SEL-142)
+            spec["cooperative"] = {"val": self.cooperative}
         return spec

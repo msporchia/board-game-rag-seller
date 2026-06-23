@@ -41,6 +41,15 @@ class TestHardFiltering:
         # Echo is the only expansion → keep is_expansion == False
         assert ids(retriever, {"expansions": {"val": False}}) == {1, 2, 3, 4, 6}
 
+    def test_cooperative_only(self, retriever):
+        # cooperative == True: Bravo, Delta. Alpha (False) and the UNKNOWN ones are excluded.
+        assert ids(retriever, {"cooperative": {"val": True}}) == {2, 4}
+
+    def test_competitive_only(self, retriever):
+        # cooperative == False: Alpha. The co-op (2,4) and UNKNOWN ones are excluded — the flag is
+        # genuine tri-state, so a competitive request narrows just as precisely (SEL-142).
+        assert ids(retriever, {"cooperative": {"val": False}}) == {1}
+
     def test_and_between_fields(self, retriever):
         # players contains 2 AND duration_min <= 60: Alpha, Bravo. Foxtrot(90) and Delta(None) out.
         assert ids(retriever, {"players": {"vals": [2]}, "duration": {"max": 60}}) == {1, 2}

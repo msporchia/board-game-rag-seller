@@ -13,7 +13,6 @@ stays stable while the rest of the prompt/pipeline changes.
 
 from app.chat.policies.policy import Policy
 from app.chat.policies.retrieval_context import RetrievalContext
-from app.models.game_hit import GameHit
 
 _QUERY_BIAS = "gioco cooperativo, si gioca tutti insieme contro il gioco"
 
@@ -25,9 +24,6 @@ class PromoteCooperative(Policy):
     def around_retrieve(self, ctx: RetrievalContext, call_next):
         ctx.query = f"{ctx.query}\n{_QUERY_BIAS}"
         hits = call_next(ctx)
-        return sorted(hits, key=lambda h: not self._is_cooperative(h))
-
-    @staticmethod
-    def _is_cooperative(hit: GameHit) -> bool:
-        haystack = " ".join([hit.categoria or "", *(hit.tags or [])]).lower()
-        return "cooperativ" in haystack
+        # The structured `cooperative` flag is the single source of truth (SEL-142): only a
+        # confirmed co-op (True) is promoted; competitive (False) and UNKNOWN (None) stay put.
+        return sorted(hits, key=lambda h: h.cooperative is not True)

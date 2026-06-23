@@ -17,15 +17,20 @@ from tests.factories.embeddings import FakeEmbeddings
 
 # Known corpus: each game's payload is fixed so the expected filter results are unambiguous.
 # Note D has duration_min/complexity_level = None (missing data) and E is an expansion.
+# cooperative: Bravo & Delta are co-op (True), Alpha is explicitly competitive (False), the rest
+# leave the field absent (UNKNOWN) — so a hard `cooperative: True` keeps only {2, 4}.
 GAMES = [
     {"id_product": 1, "name": "Alpha", "players": [2], "duration_min": 30, "complexity_level": 2,
-     "age_min": 8, "year": 2018, "internal_rating": 7.5, "is_expansion": False, "categoria": "carte"},
+     "age_min": 8, "year": 2018, "internal_rating": 7.5, "is_expansion": False, "categoria": "carte",
+     "cooperative": False},
     {"id_product": 2, "name": "Bravo", "players": [2, 3, 4], "duration_min": 60, "complexity_level": 3,
-     "age_min": 10, "year": 2020, "internal_rating": 8.0, "is_expansion": False, "categoria": "tavolo"},
+     "age_min": 10, "year": 2020, "internal_rating": 8.0, "is_expansion": False, "categoria": "tavolo",
+     "cooperative": True},
     {"id_product": 3, "name": "Charlie", "players": [3, 4, 5], "duration_min": 120, "complexity_level": 4,
      "age_min": 12, "year": 2015, "internal_rating": 6.0, "is_expansion": False, "categoria": "tavolo"},
     {"id_product": 4, "name": "Delta", "players": [1, 2], "duration_min": None, "complexity_level": None,
-     "age_min": 14, "year": 2022, "internal_rating": 7.0, "is_expansion": False, "categoria": "tavolo"},
+     "age_min": 14, "year": 2022, "internal_rating": 7.0, "is_expansion": False, "categoria": "tavolo",
+     "cooperative": True},
     {"id_product": 5, "name": "Echo", "players": [4], "duration_min": 45, "complexity_level": 1,
      "age_min": 6, "year": 2019, "internal_rating": 5.5, "is_expansion": True, "categoria": "carte"},
     {"id_product": 6, "name": "Foxtrot", "players": [2, 3], "duration_min": 90, "complexity_level": 5,

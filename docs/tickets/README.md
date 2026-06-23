@@ -5,11 +5,12 @@ Lightweight ticket log for the seller (board-game RAG) service. One file per tic
 engineering tickets. Most items are distilled from `docs/idee.md`, `docs/note.md` and
 `docs/stato.md`.
 
-**In progress:** `SEL-142` — the cooperative-mechanic retrieval fix.
+**In progress:** none. `SEL-142` (cooperative fix) is resolved — see **Resolved** below; it spawned
+`SEL-120`, `SEL-143` and `SEL-121`, all open.
 
 | ID | Title | Area | Type | Priority | Status |
 |----|-------|------|------|----------|--------|
-| [SEL-142](SEL-142-cooperative-not-understood.md) | Chat suggests the wrong kind of game for a "cooperative" request | chat / retrieval | Bug | High | **In progress** |
+| [SEL-143](SEL-143-cooperative-fabricated-from-unknown-reference.md) | Intent fabricates a hard `cooperative` verdict for an unknown reference game | chat / retrieval | Bug | High | Open |
 | [SEL-101](SEL-101-langfuse-tracing.md) | Wire Langfuse tracing into the running stack | observability | Tech-debt | High | Open |
 | [SEL-102](SEL-102-eval-model-digest.md) | Record the model weight digest in eval runs | eval | Tech-debt | Low | Open |
 | [SEL-103](SEL-103-trace-token-counts.md) | Aggregate token counts into eval reports | observability | Feature | Medium | Open |
@@ -29,6 +30,16 @@ engineering tickets. Most items are distilled from `docs/idee.md`, `docs/note.md
 | [SEL-117](SEL-117-ab-experiment-infra.md) | A/B experiment infrastructure | chat/state + api | Feature | Medium | Open |
 | [SEL-118](SEL-118-concurrent-session-lock.md) | Define the concurrent-request contract for a session | chat/api | Tech-debt | Low | Open |
 | [SEL-119](SEL-119-anthropic-prompt-caching.md) | Anthropic prompt caching for Synth on cloud | enricher + config | Feature | Medium | Open |
+| [SEL-120](SEL-120-cooperative-inference-prompt-design.md) | Decide how the cooperative verdict is produced: dedicated inference vs. one enriched prompt | ingestion/enricher | Research | Medium | Open |
+| [SEL-121](SEL-121-tickets-folder-vs-github-issues.md) | Decide whether to move the backlog from in-repo files to GitHub Issues | repo / process | Research | Low | Open |
+
+## Resolved
+
+Closed tickets live in [`resolved/`](resolved/).
+
+| ID | Title | Area | Type | Resolved |
+|----|-------|------|------|----------|
+| [SEL-142](resolved/SEL-142-cooperative-not-understood.md) | Chat suggests the wrong kind of game for a "cooperative" request | chat / retrieval | Bug | 2026-06-23 |
 
 ## Conventions
 

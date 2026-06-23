@@ -16,6 +16,7 @@ from langchain_ollama import ChatOllama
 from app.config import settings
 from app.core.logging import get_logger
 from app.core.tracing.callbacks import get_trace_callbacks
+from app.ingestion.enricher import prompts
 from app.ingestion.enricher.enricher import Enricher
 from app.models.game_data import GameData
 from app.models.game_doc import GameDoc
@@ -75,6 +76,13 @@ class CuratorEnricher(Enricher):
         deduced_mec = a.get("estratti", {}).get("meccaniche principali")
         new_enriched = (e.model_copy(update={"tags": deduced_mec})
                         if (not e.tags and isinstance(deduced_mec, list) and deduced_mec) else e)
+        # cooperative (SEL-142): an explicit catalog tag is certain data and wins; otherwise the
+        # mode is INFERRED from the description (a semantic verdict True/False/None) — not a
+        # verbatim match, so a game that plays co-op without the word is still caught.
+        if new_enriched.cooperative is None:
+            verdict = self._cooperative_verdict(game, new_enriched)
+            if verdict is not None:
+                new_enriched = new_enriched.model_copy(update={"cooperative": verdict})
         return game.model_copy(update={
             "enriched": new_enriched,
             "missing_info": a.get("mancanti", []),
@@ -127,6 +135,35 @@ class CuratorEnricher(Enricher):
         """Structured labels ALREADY in the certain data → go straight to `presenti`, no LLM."""
         return [label for label, has in cls.STRUCTURED_INFO.items() if has(e)]
 
+    def _cooperative_verdict(self, game: GameDoc, e: GameData) -> bool | None:
+        """The `cooperative` flag: True / False / None. CERTAIN data wins (an explicit catalog
+        co-op tag/category → True, no LLM); otherwise the mode is INFERRED from the description."""
+        if e.mentions_cooperative():
+            return True
+        desc = (game.original.description or e.description or "").strip()
+        return self._infer_cooperative(desc) if desc else None
+
+    def _infer_cooperative(self, desc: str) -> bool | None:
+        """LLM INFERENCE (not verbatim extraction): classify the play mode from the MEANING of
+        the description. True (cooperativo) / False (competitivo) / None (incerto or failure).
+        On unknown we stay None — never a guessed verdict (SEL-142)."""
+        try:
+            raw = self._llm.invoke(self._coop_prompt(desc)).content
+            modalita = str((json.loads(raw) or {}).get("modalita", "")).strip().lower()
+        except Exception:  # noqa: BLE001  LLM/parse/network failure → unknown, not a wrong verdict
+            logger.warning("curator_coop_infer_failed", exc_info=True)
+            return None
+        if modalita == "cooperativo":
+            return True
+        if modalita == "competitivo":
+            return False
+        return None
+
+    @staticmethod
+    def _coop_prompt(desc: str) -> str:
+        """Inference prompt: a reasoned classification of the play mode, not a keyword hunt."""
+        return prompts.COOP_INFER.format(desc=desc[:8000])
+
     def _ask_llm(self, labels: list[str], desc: str) -> dict:
         """A single LLM call over a BATCH of labels. {} on failure."""
         try:
@@ -145,34 +182,8 @@ class CuratorEnricher(Enricher):
         otherwise). The 8B's cognitive load is reduced to a minimum.
         """
         bullet = "\n".join(f"- {l}" for l in labels)
-        return f"""Compito: per OGNI etichetta della LISTA estrai dalla DESCRIZIONE il
-valore richiesto. Anti-invenzione: se non puoi copiare una citazione VERBATIM dalla
-DESCRIZIONE che lo dimostri, scrivi "NESSUNO".
-
-ETICHETTE da analizzare (esattamente {len(labels)}, nell'ordine):
-{bullet}
-
-Per OGNI etichetta produci un oggetto con questi campi:
-- "citazione": testo VERBATIM (max 80 caratteri) copiato dalla DESCRIZIONE. DEVE essere
-  copiato letteralmente — sarà verificato a valle. Stringa vuota se non c'è.
-- "valore_normalizzato": valore breve e normalizzato (es. "fantasy", "mitologia greca",
-  "cooperativo", "famiglie", "120 minuti", "1-4", "media"). Stringa "NESSUNO" se non si
-  riesce a citare.
-
-Regole rigide:
-- Se la DESCRIZIONE non contiene esplicitamente l'informazione → "valore_normalizzato":
-  "NESSUNO" e "citazione": "". NON inferire dal tono o dall'atmosfera.
-- "numero giocatori" si estrae SOLO se c'è un numero/range esplicito (es. "2 a 4
-  giocatori"). NON inferire dal genere o da "famiglia".
-- "durata" si estrae SOLO se c'è un numero esplicito di minuti/ore. Non aggiungere range
-  "verosimili".
-
-DESCRIZIONE:
-{description[:8000]}
-
-Rispondi SOLO con JSON, una chiave per ogni etichetta della LISTA:
-{{"<etichetta1>": {{"citazione":"...","valore_normalizzato":"..."}},
-  "<etichetta2>": {{...}}, ...}}"""
+        return prompts.CURATOR_EXTRACT.format(
+            count=len(labels), bullet=bullet, description=description[:8000])
 
     @classmethod
     def _validate_extraction(cls, per_label: dict, labels: list[str], desc_n: str) -> dict:

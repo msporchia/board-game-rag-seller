@@ -21,10 +21,12 @@ def _run(hits):
 
 class TestPromoteCooperative:
     def test_cooperative_hits_move_to_the_front_stably(self):
-        hits = [make_hit(1, "Solo", categoria="Strategico"),
-                make_hit(2, "CoopTag", tags=["Cooperativo"]),
-                make_hit(3, "Filler", categoria="Party"),
-                make_hit(4, "CoopCat", categoria="Cooperativo")]
+        # the structured flag is the single source of truth: co-op == True leads, regardless of
+        # any categoria/tags text on the hit.
+        hits = [make_hit(1, "Solo", cooperative=False),
+                make_hit(2, "CoopA", cooperative=True),
+                make_hit(3, "Filler", cooperative=None),
+                make_hit(4, "CoopB", cooperative=True)]
 
         out, _ = _run(hits)
 
@@ -42,3 +44,14 @@ class TestPromoteCooperative:
         out, _ = _run(hits)
 
         assert [h.id_product for h in out] == [1, 2]
+
+    def test_structured_flag_drives_ordering(self):
+        # the indexed `cooperative` flag is authoritative: a co-op game leads even with no co-op
+        # wording, and an explicit False stays behind despite a "Cooperativo" category text.
+        hits = [make_hit(1, "FlagFalse", categoria="Cooperativo", cooperative=False),
+                make_hit(2, "Plain", categoria="Strategico"),
+                make_hit(3, "FlagTrue", categoria="Party", cooperative=True)]
+
+        out, _ = _run(hits)
+
+        assert [h.id_product for h in out] == [3, 1, 2]

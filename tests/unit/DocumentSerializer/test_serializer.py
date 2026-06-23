@@ -13,6 +13,12 @@ class TestDocumentSerializer:
         assert doc.metadata["tags"] == ["A"]
         assert doc.metadata["duration_min"] == 30
 
+    def test_cooperative_flag_is_in_the_payload(self):
+        # the flag (set upstream by the curator) must reach the indexed payload, otherwise the
+        # CooperativeFilter can't see it
+        g = make_game(id_product=7, cooperative=True)
+        assert DocumentSerializer().to_document(g).metadata["cooperative"] is True
+
     def test_page_content_is_embed_text(self):
         g = RuleComposeEnricher().enrich(make_game(name="Avel"))
         doc = DocumentSerializer().to_document(g)

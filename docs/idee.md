@@ -32,7 +32,7 @@ lines**, and the few **raw ideas not yet scoped** into a ticket.
 | Q (residual) | Harden the agentic chat engine | [SEL-113](tickets/SEL-113-complete-agentic-chat.md) |
 | Q (residual) | Token counts → cost per arm | [SEL-103](tickets/SEL-103-trace-token-counts.md) |
 | Q (residual) | Transactional failover checkpoint | [SEL-115](tickets/SEL-115-tieredchat-checkpoint-txn.md) |
-| — | Cooperative mechanic as a retrieval signal (from `note.md`) | [SEL-142](tickets/SEL-142-cooperative-not-understood.md) |
+| — | Cooperative mechanic as a retrieval signal (from `note.md`) | [SEL-142](tickets/resolved/SEL-142-cooperative-not-understood.md) (resolved) |
 
 Anthropic prompt caching for Synth (from `note.md`) → [SEL-119](tickets/SEL-119-anthropic-prompt-caching.md).
 

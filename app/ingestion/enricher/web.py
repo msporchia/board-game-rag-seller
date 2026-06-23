@@ -27,6 +27,7 @@ from app.core.web_search.ddgs import DdgsSearch
 from app.core.web_search.fetcher import PageFetcher
 from app.core.web_search.provider import WebSearchProvider
 from app.core.web_search.result import SearchResult
+from app.ingestion.enricher import prompts
 from app.ingestion.enricher.enricher import Enricher
 from app.models.game_doc import GameDoc
 
@@ -187,26 +188,8 @@ class WebEnricher(Enricher):
             return None
 
     def _prompt(self, name: str, missing: list[str], text: str) -> str:
-        aspects = ", ".join(missing)
-        return f"""Sei un redattore di giochi da tavolo. Ricevi il TESTO di una pagina web
-e devi giudicarla ed estrarne informazioni sul gioco "{name}".
-
-Regole rigide (zero invenzioni):
-- Estrai un'informazione SOLO se è ESPLICITA nel testo. Per ognuna fornisci una CITAZIONE
-  verbatim (`quote`) copiata ESATTAMENTE dal testo (serve a verificarti).
-- Se un'informazione non c'è, NON includerla. Mai dedurre o usare conoscenza tua.
-- `is_this_game`: il testo parla DAVVERO del gioco "{name}" (non un omonimo/altro gioco)?
-- `is_serious`: è una recensione/scheda informativa (non un mero elenco prodotti di un negozio)?
-
-Estrai SOLO queste informazioni mancanti, se presenti: {aspects}.
-
-Rispondi SOLO con JSON valido in questo formato:
-{{"is_this_game": true/false, "is_serious": true/false,
-  "found": {{"<info>": {{"value": "...", "quote": "...verbatim dal testo..."}}}}}}
-
-TESTO:
-{text}
-"""
+        return prompts.WEB_JUDGE_EXTRACT.format(
+            name=name, aspects=", ".join(missing), text=text)
 
     @staticmethod
     def _normalize(s: str) -> str:

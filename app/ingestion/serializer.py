@@ -30,6 +30,7 @@ class DocumentSerializer:
             "internal_rating": e.internal_rating,
             "tags": e.tags,
             "is_expansion": e.is_expansion,
+            "cooperative": e.cooperative,
             "categoria": e.categoria,
             "marca": e.marca,
             "image": e.image,

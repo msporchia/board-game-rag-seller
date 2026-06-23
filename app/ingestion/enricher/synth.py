@@ -29,6 +29,7 @@ from langchain_ollama import ChatOllama
 from app.config import settings
 from app.core.logging import get_logger
 from app.core.tracing.callbacks import get_trace_callbacks
+from app.ingestion.enricher import prompts
 from app.ingestion.enricher.enricher import Enricher
 from app.models.game_data import GameData
 from app.models.game_doc import GameDoc
@@ -116,22 +117,6 @@ class SynthEnricher(Enricher):
     # ---- prompt ---------------------------------------------------------------
 
     def _prompt(self, name: str, material: str) -> str:
-        return f"""Sei un redattore di giochi da tavolo. Scrivi UNA sintesi descrittiva, densa e
-concisa, del gioco "{name}", basandoti sul materiale qui sotto.
-
-A cosa serve: questo testo descrive l'ESPERIENZA del gioco — di cosa parla e com'è giocarlo.
-I dati numerici (giocatori, durata, complessità, anno) sono registrati ALTROVE: NON ripeterli.
-
-Regole rigide:
-- Concentrati su: ambientazione/tema, genere, a chi è adatto, e cosa si fa nel gioco.
-- NON indicare numero di giocatori, durata in minuti, complessità o anno: sono aggiunti a parte.
-- Usa SOLO fatti presenti nel materiale. NON inventare nulla. Se un'informazione non c'è, non
-  scriverla. I [DATI CERTI] danno solo il contesto: non contraddirli.
-- MANTIENI le parole-chiave di tema, ambientazione e meccaniche (es. "cooperativo", "fantasy",
-  "Toscana", "piazzamento lavoratori"): servono alla ricerca. Togli il marketing vuoto.
-- Stile: testo scorrevole, niente elenchi né titoli. Circa {self.max_chars // 5}-{self.max_chars // 4} parole.
-
-MATERIALE:
-{material}
-
-Rispondi SOLO con la sintesi, senza preamboli."""
+        return prompts.SYNTH_DESCRIPTION.format(
+            name=name, min_words=self.max_chars // 5, max_words=self.max_chars // 4,
+            material=material)

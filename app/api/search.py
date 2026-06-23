@@ -42,6 +42,8 @@ def search(
     categoria: list[str] = Query(default=[]),
     marca: list[str] = Query(default=[]),
     exclude_expansions: bool = Query(default=False),
+    cooperative: bool | None = Query(default=None, description="True → only cooperative, "
+                                     "False → only competitive (None → no constraint)"),
     soft: list[str] = Query(default=[], description="constraint names to treat as boost, not "
                             "exclude: players,duration,complexity,age,year,rating,categoria,marca"),
 ):
@@ -65,6 +67,8 @@ def search(
         spec["rating"] = r
     if exclude_expansions:
         spec["expansions"] = {"val": False}
+    if cooperative is not None:
+        spec["cooperative"] = {"val": cooperative}
     for name in soft:
         if name in spec:
             spec[name]["soft"] = True

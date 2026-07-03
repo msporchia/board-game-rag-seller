@@ -29,15 +29,24 @@ from app.ingestion.enricher.trim import TrimEnricher
 from app.ingestion.ingester import Ingester
 from app.ingestion.sources.json_source import JsonSource
 from app.rag.retriever import GameRetriever
+from tests.eval_variants.append_synth_enricher import AppendSynthEnricher
+from tests.eval_variants.uncapped_compose_enricher import UncappedComposeEnricher
 
 SUITES = Path(__file__).parent / "fixtures" / "suites"
 
-# Pipeline configurations comparable on the harness (each ends with a compose)
+# Pipeline configurations comparable on the harness (each ends with a compose).
+# The text-budget experiment variants (SEL-144, docs/experiments.md rows 7-8) live in
+# tests/eval_variants/ — one class per file, measurement-only, never production.
 PIPELINES = {
     "rule": [RuleComposeEnricher()],                    # baseline: deterministic compose
     "trim": [TrimEnricher(350), RuleComposeEnricher()],  # aggressive-cut experiment (§6); the default is the 1000 failsafe
     "curator": [CuratorEnricher(), RuleComposeEnricher()],  # SEMANTIC compression (LLM) + compose
     "synth": [CuratorEnricher(), SynthEnricher(), RuleComposeEnricher()],  # the missing link: fuse facts into the text
+    # saturation/dilution cell: full original description, zero LLM
+    "rule-uncapped": [UncappedComposeEnricher()],
+    # additive synth counter-proof: full description + fused synth layer on top (uncapped
+    # compose, otherwise the appended layer would just be truncated away)
+    "synth-append": [CuratorEnricher(), AppendSynthEnricher(), UncappedComposeEnricher()],
 }
 
 

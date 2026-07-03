@@ -84,20 +84,34 @@ TESTO:
 
 # Synthesize ONE dense experiential description from all the material (numeric data lives
 # elsewhere — do not repeat it). Template: {name}, {min_words}, {max_words}, {material}.
-SYNTH_DESCRIPTION = """Sei un redattore di giochi da tavolo. Scrivi UNA sintesi descrittiva, densa e
-concisa, del gioco "{name}", basandoti sul materiale qui sotto.
+# v2 (SEL-144): searchable-concepts checklist + explicit ban on could-be-any-game phrasing —
+# the synth normalizes the FORMAT while maximizing per-game distinctiveness of the content.
+SYNTH_DESCRIPTION = """Sei un redattore di giochi da tavolo. Scrivi UNA sintesi descrittiva e densa
+del gioco "{name}", basandoti ESCLUSIVAMENTE sul materiale qui sotto.
 
-A cosa serve: questo testo descrive l'ESPERIENZA del gioco — di cosa parla e com'è giocarlo.
-I dati numerici (giocatori, durata, complessità, anno) sono registrati ALTROVE: NON ripeterli.
+A cosa serve: questo testo è ciò che il motore di ricerca semantica "vede" del gioco. Un cliente
+lo troverà cercando concetti ("un cooperativo per la famiglia", "un gestionale sul vino in
+Toscana"): la sintesi deve contenere, con parole precise, TUTTI i concetti cercabili presenti nel
+materiale. I dati numerici (giocatori, durata, complessità, anno) sono registrati ALTROVE: NON
+ripeterli.
+
+Copri, se presenti nel materiale, in quest'ordine:
+1. Le meccaniche di gioco coi loro nomi precisi ("piazzamento lavoratori", "deck-building",
+   "cooperativo", "aste"...) e cosa si fa concretamente durante il proprio turno.
+2. Ambientazione e tema, coi nomi propri (luoghi, epoche, personaggi, divinità...).
+3. A chi è adatto e per quale occasione (famiglia, esperti, serata tra amici, in coppia...).
+4. Tono ed esperienza (teso e competitivo, rilassato, narrativo, umoristico...).
 
 Regole rigide:
-- Concentrati su: ambientazione/tema, genere, a chi è adatto, e cosa si fa nel gioco.
+- USA le parole distintive del materiale. VIETATE le frasi che andrebbero bene per qualunque
+  gioco ("esperienza coinvolgente", "divertimento assicurato", "mette alla prova le tue
+  abilità", "trasporta i giocatori in un mondo..."): ogni frase deve distinguere QUESTO gioco
+  dagli altri.
 - NON indicare numero di giocatori, durata in minuti, complessità o anno: sono aggiunti a parte.
 - Usa SOLO fatti presenti nel materiale. NON inventare nulla. Se un'informazione non c'è, non
   scriverla. I [DATI CERTI] danno solo il contesto: non contraddirli.
-- MANTIENI le parole-chiave di tema, ambientazione e meccaniche (es. "cooperativo", "fantasy",
-  "Toscana", "piazzamento lavoratori"): servono alla ricerca. Togli il marketing vuoto.
-- Stile: testo scorrevole, niente elenchi né titoli. Circa {min_words}-{max_words} parole.
+- Togli il marketing vuoto: esclamazioni, inviti all'acquisto, superlativi senza contenuto.
+- Stile: prosa scorrevole, niente elenchi né titoli. Circa {min_words}-{max_words} parole.
 
 MATERIALE:
 {material}

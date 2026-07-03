@@ -34,8 +34,10 @@ from app.ingestion.enricher.enricher import Enricher
 from app.models.game_data import GameData
 from app.models.game_doc import GameDoc
 
-# Keep the synthesis short: dense facts beat long prose (less dilution of the embedding).
-_MAX_CHARS = 700
+# Synthesis budget (SEL-144): ~1600 chars sits at the measured semantic sweet spot of the
+# embedder (docs/experiments.md rows 5-8) — v1's 700 normalized BELOW the optimum and lost
+# recall; raw text beyond ~2-2.5k dilutes the centroid even on bge-m3.
+_MAX_CHARS = 1600
 
 logger = get_logger(__name__)
 

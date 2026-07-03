@@ -25,11 +25,16 @@ class ConversationReport(EvalReport):
     title = "ChatConversation — full multi-turn sessions"
     measure = "whole-conversation pass rates"
 
-    def __init__(self, runs_dir: Path, engine: str = "pipeline"):
+    def __init__(self, runs_dir: Path, engine: str = "pipeline", model_label: str | None = None):
         super().__init__(runs_dir)
         self.engine = engine
+        # Simulation runs (tests/eval/ChatConversation/simulation/) label the numbers with the
+        # external responder instead of an Ollama model name; None preserves the original lookup.
+        self._model_label_override = model_label
 
     def model(self) -> str:
+        if self._model_label_override:
+            return self._model_label_override
         from app.config import settings
         # The agent arm runs on the strong / tool-capable model (LLM_MODEL_STRONG); pipeline and
         # piloted run on llm_model. Label the numbers with the model that actually produced them.

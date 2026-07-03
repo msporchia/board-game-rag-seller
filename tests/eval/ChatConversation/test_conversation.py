@@ -53,9 +53,7 @@ from pathlib import Path
 
 import pytest
 
-from app.chat.advisor import ChatAdvisor
-from app.chat.models.response import ChatResponse
-from app.models.game_hit import GameHit
+from tests.eval.ChatConversation.conversation_driver import ConversationDriver
 
 pytestmark = pytest.mark.llm
 
@@ -63,122 +61,18 @@ FIXTURE = Path(__file__).parent / "fixtures" / "conversation_cases.json"
 CASES = json.loads(FIXTURE.read_text(encoding="utf-8"))
 IDS = [c["id"] for c in CASES]
 
-_PROPOSAL = {"QUICK_MATCH", "DISCOVERY"}
-
-
-def _is_fallback(response: ChatResponse, hits: list[GameHit]) -> bool:
-    """True iff `response` is byte-identical to `ChatAdvisor._fallback(hits)` (the ChatPitch
-    reconstruction, over the hits the graph state had on the table this turn)."""
-    return bool(hits) and (
-        response.message == ChatAdvisor._plain_pitch(hits[:3])
-        and response.quick_replies == []
-        and [g.id_product for g in response.games] == [h.id_product for h in hits[:3]]
-    )
-
-
-def _turn_checks(expect: dict, strategy: str, response: ChatResponse) -> list[tuple[str, bool]]:
-    """Evaluate the per-turn oracles a case declares; absent keys are out of scope — and so is
-    `strategy_in` when the engine has no strategy router (state leaves `strategy` unset)."""
-    checks = []
-    if "strategy_in" in expect and strategy is not None:
-        checks.append(("strategy_in", strategy in expect["strategy_in"]))
-    if "min_games" in expect:
-        checks.append(("min_games", len(response.games) >= expect["min_games"]))
-    if "no_match" in expect:
-        checks.append(("no_match", (len(response.games) == 0) == expect["no_match"]))
-    return checks
-
 
 class TestConversation:
     """Scripted conversations replayed through graph.reply(), one session per case; after each
     turn the checkpointed state is read back (graph.state) — the per-turn 'spying' that turns
-    strategy, filters and analysis into recordable trajectory data."""
+    strategy, filters and analysis into recordable trajectory data.
+
+    The turn loop and the oracle scoring live in `ConversationDriver` (conversation_driver.py):
+    factored out so the strong-model simulation harness (simulation/run.py) replays the exact
+    same driver over an engine wired with FileExchange* LLMs instead of Ollama — the comparison
+    is only meaningful if both arms are scored by the identical oracle.
+    """
 
     @pytest.mark.parametrize("case", CASES, ids=IDS)
     def test_case(self, graph, case, record_conversation, llm_usage):
-        session = f"eval-{case['id']}"
-        usage_before = llm_usage.snapshot()
-        trajectory: list[dict] = []
-        turn_failures: list[str] = []
-        n_turn_checks = 0
-        recommended: list[list[int]] = []
-        strategies: list[str] = []
-        fallback_turns = 0
-
-        for t, turn in enumerate(case["turns"], start=1):
-            response = graph.reply(turn["message"], choices=turn.get("choices") or [],
-                                   session_id=session)
-            state = graph.state(session)
-            strategy = state.get("strategy")
-            fallback = _is_fallback(response, state.get("hits") or [])
-
-            recommended.append([g.id_product for g in response.games])
-            strategies.append(strategy)
-            fallback_turns += int(fallback)
-
-            checks = _turn_checks(turn.get("expect") or {}, strategy, response)
-            n_turn_checks += len(checks)
-            turn_failures += [f"turn{t}:{name}" for name, ok in checks if not ok]
-
-            trajectory.append({
-                "turn": t,
-                "user": turn["message"],
-                "choices": turn.get("choices") or [],
-                "strategy": strategy,
-                "enthusiasm": state.get("enthusiasm"),
-                "decisiveness": state.get("decisiveness"),
-                "expertise": state.get("expertise_level"),
-                "escalate": bool(state.get("escalate")),
-                "fallback": fallback,
-                # piloted arm only: this turn's searches {query, filters, n_hits} — the
-                # intent reformulations and the retry path, readable in the run file.
-                "searches": state.get("turn_searches"),
-                "game_ids": [g.id_product for g in response.games],
-                "games": [g.name for g in response.games],
-                "bot": response.message,
-            })
-
-        final = case.get("final") or {}
-        converged = turns_to = by_turn = None
-        if final.get("accept_ids"):
-            by_turn = final.get("by_turn") or len(case["turns"])
-            accepted = set(final["accept_ids"])
-            turns_to = next((i + 1 for i, ids in enumerate(recommended[:by_turn])
-                             if accepted & set(ids)), None)
-            converged = turns_to is not None
-
-        # The final-filters oracle needs an engine that accumulates a session filter spec; a
-        # black-box agent reports filters_spec=None (it re-derives constraints per turn via the
-        # tool, carrying no cross-turn spec), so the oracle is out of scope for it — like
-        # strategy_in for an engine with no router.
-        state_filters = graph.state(session).get("filters_spec")
-        final_filters = state_filters or {}
-        filters_ok = None
-        if final.get("filters") and state_filters is not None:
-            filters_ok = all(final_filters.get(k) == v for k, v in final["filters"].items())
-
-        proposal_ok = None
-        if final.get("proposal_by_turn") and any(s is not None for s in strategies):
-            proposal_ok = any(s in _PROPOSAL
-                              for s in strategies[:final["proposal_by_turn"]])
-
-        usage = llm_usage.delta_since(usage_before)
-        record_conversation({
-            "case": case["id"],
-            "n_turns": len(case["turns"]),
-            "n_turn_checks": n_turn_checks,
-            "turn_failures": turn_failures,
-            "converged": converged,
-            "turns_to_converge": turns_to,
-            "by_turn": by_turn,
-            "filters_ok": filters_ok,
-            "proposal_ok": proposal_ok,
-            "fallback_turns": fallback_turns,
-            "llm_calls": usage["llm_calls"],
-            "tokens_in": usage["tokens_in"],
-            "tokens_out": usage["tokens_out"],
-            "trajectory": trajectory,
-            "final_filters": final_filters,
-            "expected": final,
-            "note": case["note"],
-        })
+        record_conversation(ConversationDriver().run(graph, case, llm_usage))

@@ -96,7 +96,18 @@ class EvalReport:
         arrow = "→" if abs(d) < 1e-4 else ("↑" if d > 0 else "↓")
         return f"{curr:.3f} {arrow} (Δ {d:+.3f}, was: {prev:.3f})"
 
-    def finish(self, exitstatus: int) -> None:
+    def finish(self, exitstatus: int, out_name: str | None = None, persist_last: bool = True,
+              write_markdown: bool = True) -> None:
+        """Score, persist and print the run.
+
+        `out_name`/`persist_last`/`write_markdown` exist for callers OUTSIDE the pytest suite
+        that reuse this same scoring machinery on a different cadence (e.g. the ChatConversation
+        simulation harness, tests/eval/ChatConversation/simulation/run.py): a simulation run must
+        never overwrite `last.json` (the real baseline other runs diff against) or regenerate the
+        committed RESULTS.md/index, only its own `runs/<out_name>.json`. Defaults reproduce the
+        original behavior exactly, so every existing `report.finish(int(exitstatus))` call is
+        unaffected.
+        """
         if not self.records:
             return
         metrics = self.aggregate()
@@ -113,8 +124,10 @@ class EvalReport:
             **self.sections(),
         }
         text = json.dumps(payload, ensure_ascii=False, indent=2)
-        (self.runs / f"{self.prefix}_{self.started}.json").write_text(text, encoding="utf-8")
-        (self.runs / "last.json").write_text(text, encoding="utf-8")
+        (self.runs / f"{out_name or f'{self.prefix}_{self.started}'}.json").write_text(
+            text, encoding="utf-8")
+        if persist_last:
+            (self.runs / "last.json").write_text(text, encoding="utf-8")
 
         print("\n" + "=" * 70)
         print(f"  EVAL {self.title} | {self.model_label}: {payload['model']} | {self.measure}")
@@ -123,7 +136,8 @@ class EvalReport:
             print(line)
         print("=" * 70 + "\n")
 
-        self._write_markdown(metrics, prev, payload["model"])
+        if write_markdown:
+            self._write_markdown(metrics, prev, payload["model"])
 
     # ---- versioned markdown (the showcase surface: RESULTS.md + the suite index) ----------
 

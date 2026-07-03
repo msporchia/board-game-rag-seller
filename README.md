@@ -54,28 +54,52 @@ what it does on real games.
 The rest of this README explains *why*. If you only want to know whether it's real, here is the
 measured short version — wins **and** losses, since an R&D repo that hides the losses isn't one:
 
-**Retrieval — does shaping the embedded text actually move the ranking?** *(frozen 50-game corpus,
-same embedder, the only thing that changes is the text we embed)*
+**One measured day (2026-07-03) — every lever on the same frozen rulers, before → after**
+*(the full chronology, one ledger row per change with the re-runnable command, is
+[`docs/experiments.md`](docs/experiments.md))*
+
+| Lever | Before | After |
+|-------|:------:|:-----:|
+| Embedder `nomic` → `bge-m3` (suite Recall@5) | 0.25 | **0.43** |
+| Ranking quality (mean NDCG, frozen corpus) | 0.386 | **0.726** |
+| Conversational retrieval (ChatRetrieve recall) | 0.545 | **0.818** |
+| «un cooperativo per la famiglia» on the live 501-game index | competitive titles | **5/5 genuinely cooperative** |
+
+The same day also *falsified* two comfortable hypotheses ("give the strong embedder everything",
+"the synth's compression is free") and exposed two bugs the fixes then closed under declared
+acceptance criteria — that's the point of the ledger.
+
+**Retrieval — does shaping the embedded text actually move the ranking?** *(the deliberately
+impoverished-source scenario: same embedder, only the text changes)*
 
 | Real game | Before | After |
 |-----------|:------:|:-----:|
-| 🚀 Terraforming Mars — thin entry, no description | rank **#45** | rank **#1** |
+| 🚀 Terraforming Mars — entry stripped of its description | rank **#45** | rank **#1** |
 | ⚖️ Viticulture — already richly described | rank **#4** | rank **#23** — *worse: an honest regression we kept and pinned* |
 
-**Conversational seller — three engines on the same bench** *(local 7-8B model, `ChatConversation`
-eval; the contrast is the point, not the leaderboard)*
+*Measured in the `nomic` era. Under `bge-m3` the same stripped-source gap shrinks to
+avg rank 2.33 → 1.33 — the stronger embedder reads name+tags on its own, and enrichment's
+unique value concentrates where no embedder can help: truly opaque records, mechanic axes
+(structured filters), provenance. Ledger rows 4-6.*
 
-| engine | who drives the search | case pass | tok / chat |
-|--------|-----------------------|:---------:|:----------:|
-| pipeline | deterministic code | 0.70 | 5 699 |
-| piloted | code loop, model reformulates | 0.80 | ↓ 18% |
-| agent · `qwen2.5:7b` | the model itself, via a tool | **0.867** | 6 225 |
+**Conversational seller — three engines on the same bench** *(local 7-8B models,
+`ChatConversation` eval; the contrast is the point, not the leaderboard)*
 
-Not a leaderboard — a **quality/cost curve**: the agent converts the most but costs the most per
-chat, the pipeline is the floor you can afford at volume. Which one a storefront runs is an economic
-call (*how many tokens is one extra sale worth?*), swapped by `CHAT_ENGINE` behind one contract.
+| engine | who drives the search | case pass | note |
+|--------|-----------------------|:---------:|------|
+| pipeline | deterministic code | 0.667 | re-baselined 2026-07-03 |
+| piloted | code loop, model reformulates | 0.80 · −18% tok | June bench, re-run pending |
+| agent · `qwen2.5:7b` | the model itself, via a tool | **0.733** | re-baselined; both cooperative cases pass |
 
-→ **See it, don't take my word:** [retrieval walkthroughs on real games](docs/showcase/README.md) ·
+Case-pass is honestly noisy run-to-run (the same 15 cases scored 0.60/0.80/0.87 on identical
+inputs in June) — single runs are samples, not verdicts. Not a leaderboard — a **quality/cost
+curve**: the agent converts the most but costs the most per chat, the pipeline is the floor you
+can afford at volume. Which one a storefront runs is an economic call (*how many tokens is one
+extra sale worth?*), swapped by `CHAT_ENGINE` behind one contract.
+
+→ **See it, don't take my word:** [a real session on the live 501-game index — one take,
+unedited, whiff included](docs/showcase/live-session.md) ·
+[retrieval walkthroughs on real games](docs/showcase/README.md) ·
 [the chat, two engines side by side](docs/showcase/chat.md) ·
 [full auto-generated scorecard](tests/eval/RESULTS.md) ·
 [every reply the seller actually wrote](tests/eval/ChatConversation/REVIEW.md).
@@ -151,8 +175,8 @@ flowchart TB
 | | Local (free, offline) | Production swap |
 |---|---|---|
 | Vector store | **Qdrant** (Docker) | same (managed) |
-| Embeddings | `nomic-embed-text` (Ollama) | OpenAI `text-embedding-3` / `bge-m3` |
-| LLM | `llama3.1` 8B (Ollama) | a stronger model (Claude / GPT-4-class) |
+| Embeddings | `bge-m3` (Ollama; replaced `nomic-embed-text` on measured evidence — [ledger](docs/experiments.md) rows 1-3) | OpenAI `text-embedding-3` / managed |
+| LLM | `llama3.1` 8B + `qwen2.5:7b` for the agent tier (Ollama) | a stronger model (Claude / GPT-4-class) |
 | Orchestration | LangChain · LangGraph · FastAPI | same |
 
 ## The enrichment pipeline
@@ -251,7 +275,7 @@ verbatim-cited facts the pipeline adds, and the measured rank delta.
 
 ---
 
-# Part 2 — the conversational seller 💬 — 🚧 being finalized
+# Part 2 — the conversational seller 💬
 
 This is the salesperson the problem at the top asked for. A customer who only knows *Monopoly*
 won't browse a genre tree — so the seller doesn't show one. Each turn it **reads the message**,
@@ -349,16 +373,18 @@ Behind that same `reply(...)` contract sit interchangeable engines, switched by 
   is recorded (`{query, filters, hits}`) so tool-use quality is measurable, the tool tolerates the
   model's malformed args, and a failed turn still degrades to the pipeline.
 
-Measured head to head on the same fixtures: the **pipeline** scores **case pass 0.70**, the
-**piloted** loop lifts it to **0.80 at −18% tokens** (more quality *and* cheaper), and the **agent**
-now tops them at **0.867** — letting the model drive its own search converts hard convergences the
-deterministic router can't (the [Terraforming Mars case](docs/showcase/chat.md), pipeline-fails /
-agent-passes, is the clean example). The agent is stochastic, so that's a *sample, not a verdict* —
-the same 15 cases scored 0.60 / 0.80 / 0.87 across three runs. They aren't a ranking to crown a
-winner but a **quality/cost curve**: which arm a storefront runs depends on how many tokens an extra
-sale is worth. `TieredChat` degrades a failed primary turn to the pipeline so the customer always
-gets an answer. Full design + the per-failure breakdown (what recovered, what merely *moved*, the
-one predicted regression): [`docs/idee.md`](docs/idee.md).
+Measured head to head on the same fixtures, twice: on the June bench (nomic era) the **pipeline**
+scored **0.70**, the **piloted** loop **0.80 at −18% tokens**, the **agent** **0.867** — letting
+the model drive its own search converts hard convergences the deterministic router can't (the
+[Terraforming Mars case](docs/showcase/chat.md), pipeline-fails / agent-passes, is the clean
+example). Re-baselined 2026-07-03 (bge-m3 embedder, honest cooperative data): pipeline **0.667**,
+agent **0.733** — same ordering, and both cooperative cases now pass in the agent arm. Every one
+of these is a *sample, not a verdict*: the same 15 cases scored 0.60 / 0.80 / 0.87 across three
+identical June runs, so single-run deltas are noise by measurement. They aren't a ranking to crown
+a winner but a **quality/cost curve**: which arm a storefront runs depends on how many tokens an
+extra sale is worth. `TieredChat` degrades a failed primary turn to the pipeline so the customer
+always gets an answer. Full design + the per-failure breakdown: [`docs/idee.md`](docs/idee.md) ·
+current numbers: [`tests/eval/RESULTS.md`](tests/eval/RESULTS.md).
 
 ## Measured the same way as the pipeline
 
@@ -404,20 +430,29 @@ click→filter mechanic, on actual catalog games:
 
 The same customer run through **two engines side by side** — including the convergence case where
 the deterministic pipeline gets stuck and the agent doesn't — is in
-[`docs/showcase/chat.md`](docs/showcase/chat.md).
+[`docs/showcase/chat.md`](docs/showcase/chat.md). And for the real thing, not the eval bench:
+**[a live session on the full 501-game index](docs/showcase/live-session.md)** — one unedited
+take, the agent searching the actual catalog, the cooperative filter working on honest data, and
+the one turn that whiffed kept on the page with its ticket.
 
-## Still being finalized 🚧
+## Known limits, tracked 🚧
 
-Honest status — this layer is still a work in progress; these pieces just aren't done yet:
+Honest status — every open edge has a ticket or a red eval pinning it, none is hidden:
 
 - **Pitch quality on the local 7-8B is the open bottleneck.** The *mechanics* hold end-to-end
   (grounding, memory, fallback, traces — no 500s), but the small model's sales copy is thin. The
-  stance: *if it works on the 8B, it flies on a stronger model* — design notes in
-  [`docs/chat.md`](docs/chat.md) · [`docs/seller.md`](docs/seller.md).
+  stance *"if it works on the 8B, it flies on a stronger model"* is no longer just a stance: the
+  [simulation harness](tests/eval/ChatConversation/simulation/) replays the same 15 cases with an
+  external (stronger) responder under the same oracle, so the claim is now measurable.
 - **A few cases are still red** — e.g. constraint *reversal* across turns (`contrordine-giocatori`),
-  where a corrected click should *replace* the old filter, not pile on. It maps to a known gap in
-  the agent tier (click→filter merge isn't wired there yet); tracked by the eval, not hidden — see
-  the [chat walkthrough](docs/showcase/chat.md).
+  where a corrected click should *replace* the old filter, not pile on (click→filter merge isn't
+  wired in the agent tier yet); and the live take's false no-match on «cooperativo per due»
+  ([SEL-147](docs/tickets/SEL-147-agent-false-nomatch-coop-two.md)) — the anti-invention guarantee
+  held, the search assembly whiffed.
+- **The cooperative verdict policy is a declared stopgap** — True only from curated catalog
+  signal, because the local model's inferred True failed a zero-wrong-verdict gate (measured
+  v1→v3, ledger row 12); the revisit is
+  [SEL-146](docs/tickets/SEL-146-cooperative-verdict-revisit.md).
 - **`TieredChat` degrades, but its circuit breaker isn't built.** The wrapper already snapshots the
   conversation and falls back to the pipeline on a failed primary turn; the sliding-window *circuit
   breaker* that would stop hammering a failing primary is still designed-only — see
@@ -437,8 +472,9 @@ docker compose up -d
 #    (NVIDIA GPU optional: add -f docker-compose.gpu.yml — the LLM steps are slow on CPU)
 
 # 2. Pull the models into Ollama (ONCE — the container starts empty)
-docker exec seller-ollama ollama pull nomic-embed-text   # embeddings (ingest/search)
-docker exec seller-ollama ollama pull llama3.1            # LLM (enrichment/eval)
+docker exec seller-ollama ollama pull bge-m3       # embeddings (ingest/search)
+docker exec seller-ollama ollama pull llama3.1     # LLM (enrichment/eval)
+docker exec seller-ollama ollama pull qwen2.5:7b   # LLM for the agent chat tier (optional)
 
 # 3. Ingest the demo catalog (runs the full Curator → Web → Synth → Compose pipeline)
 docker compose exec seller-api python -m app.ingestion.ingester

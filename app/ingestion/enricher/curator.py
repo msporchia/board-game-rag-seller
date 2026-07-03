@@ -144,11 +144,20 @@ class CuratorEnricher(Enricher):
 
     def _cooperative_verdict(self, game: GameDoc, e: GameData) -> bool | None:
         """The `cooperative` flag: True / False / None. CERTAIN data wins (an explicit catalog
-        co-op tag/category → True, no LLM); otherwise the mode is INFERRED from the description."""
+        co-op tag/category → True, no LLM); otherwise the mode is INFERRED from the description —
+        but only under the SEL-145 discipline: the flag feeds a HARD retrieval filter, so a wrong
+        verdict in either direction is unacceptable while a None costs nothing. The inference is
+        abstention-biased by prompt and evidence-gated in code (see `_infer_cooperative`); its
+        ship gate is ZERO false verdicts, either direction, on the hand oracle."""
         if self._catalog_says_cooperative(e):
             return True
         desc = (game.original.description or e.description or "").strip()
-        return self._infer_cooperative(desc) if desc else None
+        inferred = self._infer_cooperative(desc) if desc else None
+        # Strict-gate outcome (SEL-145, measured on the hand oracle): the False direction has
+        # zero recorded errors across all prompt versions, so it ships; the True direction still
+        # produced a proven-but-wrong verdict at v3 (marketing that lies about "squadra"), so an
+        # inferred True is capped to the honest None until a stronger model clears the gate.
+        return inferred if inferred is not True else None
 
     @staticmethod
     def _catalog_says_cooperative(e: GameData) -> bool:
@@ -160,20 +169,34 @@ class CuratorEnricher(Enricher):
                    for s in [e.categoria or "", *e.tags])
 
     def _infer_cooperative(self, desc: str) -> bool | None:
-        """LLM INFERENCE (not verbatim extraction): classify the play mode from the MEANING of
-        the description. True (cooperativo) / False (competitivo) / None (incerto or failure).
-        On unknown we stay None — never a guessed verdict (SEL-142)."""
+        """LLM INFERENCE with the same evidence discipline as the extractions (SEL-145): the
+        model classifies the play mode AND must return the quote that proves it; the code
+        validates the quote is verbatim in the description, otherwise the verdict degrades to
+        the honest None. True (cooperativo) / False (competitivo) / None (incerto, unproven, or
+        failure) — never a guessed verdict (SEL-142)."""
         try:
             raw = self._llm.invoke(self._coop_prompt(desc)).content
-            modalita = str((json.loads(raw) or {}).get("modalita", "")).strip().lower()
+            data = json.loads(raw) or {}
+            modalita = str(data.get("modalita", "")).strip().lower()
+            prova = str(data.get("prova", "")).strip()
         except Exception:  # noqa: BLE001  LLM/parse/network failure → unknown, not a wrong verdict
             logger.warning("curator_coop_infer_failed", exc_info=True)
             return None
-        if modalita == "cooperativo":
-            return True
-        if modalita == "competitivo":
+        if modalita not in ("cooperativo", "competitivo"):
+            return None
+        if not self._quote_in_text(prova, desc):
+            logger.info("curator_coop_verdict_unproven", modalita=modalita)
+            return None
+        return modalita == "cooperativo"
+
+    @staticmethod
+    def _quote_in_text(quote: str, text: str) -> bool:
+        """Verbatim check, tolerant only to case and whitespace runs (the same spirit as the
+        extraction validation): an empty or unfindable quote proves nothing."""
+        if not quote:
             return False
-        return None
+        norm = " ".join(quote.lower().split())
+        return norm in " ".join(text.lower().split())
 
     @staticmethod
     def _coop_prompt(desc: str) -> str:

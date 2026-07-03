@@ -14,16 +14,40 @@ Sections: CuratorEnricher (cooperative inference · label extraction) · WebEnri
 
 # Cooperative play-mode inference (SEL-142): a reasoned classification of the meaning, NOT a
 # keyword hunt. Template: {desc}.
-COOP_INFER = """Sei un esperto di giochi da tavolo. In base alla DESCRIZIONE, stabilisci la
-MODALITÀ di gioco RAGIONANDO sul significato (non cercare solo la parola "cooperativo"):
-- "cooperativo": i giocatori giocano INSIEME contro il gioco, si vince o si perde tutti insieme;
-- "competitivo": i giocatori giocano l'UNO CONTRO L'ALTRO;
-- "incerto": la descrizione non basta per stabilirlo con certezza.
+# v3 (SEL-145): the verdict feeds a HARD retrieval filter, so a wrong answer in EITHER direction
+# is unacceptable while «incerto» costs nothing. v1 read family/social wording as co-op
+# (precision 0.33 vs the hand oracle); v2 added strict definitions and traps (0.50 — still not
+# hard-filter grade). v3 is abstention-first: a verdict is allowed ONLY with an exact quote as
+# evidence — and the CODE re-validates the quote verbatim against the description
+# (`CuratorEnricher._infer_cooperative`), degrading unproven verdicts to «incerto».
+COOP_INFER = """Sei un esperto di giochi da tavolo. In base alla DESCRIZIONE, classifica la
+MODALITÀ di gioco. La regola più importante: UNA RISPOSTA SBAGLIATA È MOLTO PEGGIO DI NESSUNA
+RISPOSTA. Rispondi "cooperativo" o "competitivo" SOLO se la descrizione lo AFFERMA in modo
+esplicito e inequivocabile; in ogni altro caso rispondi "incerto".
+
+Definizioni STRETTE:
+- "cooperativo": la descrizione dice esplicitamente che i giocatori vincono o perdono INSIEME,
+  come squadra, contro il gioco stesso (o contro un giocatore che fa da mostro/traditore).
+- "competitivo": la descrizione dice esplicitamente che i giocatori si affrontano tra loro e
+  alla fine vince UNO (punti, maggioranze, aste, battere gli avversari...).
+- "incerto": tutto il resto. Nel dubbio, SEMPRE "incerto".
+
+ATTENZIONE agli errori tipici — questi NON bastano per "cooperativo":
+- "da giocare in famiglia / con gli amici / tutti insieme al tavolo" descrive la COMPAGNIA, non
+  la modalità: anche un gioco competitivo si gioca in gruppo;
+- squadre contrapposte (es. 2 contro 2) = competitivo;
+- "collaborare" o "negoziare" durante la partita quando alla fine vince UNO solo = competitivo.
+
+PROVA OBBLIGATORIA: se rispondi "cooperativo" o "competitivo", copia in "prova" la frase della
+DESCRIZIONE che lo afferma, ESATTAMENTE carattere per carattere (verrà verificata: se la frase
+non è presente identica nella descrizione, la risposta sarà scartata). Se non trovi una frase
+del genere, la modalità è "incerto".
 
 DESCRIZIONE:
 {desc}
 
-Rispondi SOLO con JSON: {{"modalita": "cooperativo" | "competitivo" | "incerto"}}"""
+Rispondi SOLO con JSON:
+{{"modalita": "cooperativo" | "competitivo" | "incerto", "prova": "la frase esatta copiata dalla descrizione, o stringa vuota"}}"""
 
 # Focused label extraction: only the LABELS we need, only the DESCRIPTION (no certain data — we
 # apply those downstream, they always win). Template: {count}, {bullet}, {description}.

@@ -13,7 +13,7 @@ perfect hit and a wrong one can sit ~0.06 apart, and the absolute value drifts w
 ## Decision
 
 **Rank, don't score.** Evaluate retrieval by where the right games land relative to the wrong ones,
-never by an absolute similarity value. The harness (`tests/eval.py`) reports, on a frozen labeled
+never by an absolute similarity value. The harness (`tests/eval_suite.py`) reports, on a frozen labeled
 corpus:
 
 - **Recall@K** and **Precision@K**;

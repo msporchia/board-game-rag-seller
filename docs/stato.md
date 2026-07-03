@@ -47,7 +47,7 @@ measure), `note.md` (ideas), `seller.md` (overview).
     the fact is extracted with `value_contains` + a verbatim quote in the text. The oracle
     (`expect.{ranking,judgment,extraction}` in the fixtures) is PARTIAL by design — we assert
     only what we're sure of.
-  - `tests/eval.py` (retrieval, suite `core`, pipeline `rule`/`trim`/`curator`),
+  - `tests/eval_suite.py` (retrieval, suite `core`, pipeline `rule`/`trim`/`curator`),
     `tests/try_web.py` (manual end-to-end WebEnricher run).
 
 ## Enrichment pipeline (current architecture)
@@ -259,6 +259,6 @@ docker exec seller-api python -m pytest tests/eval/WebEnricher/test_judgment.py 
 docker exec seller-api python -m pytest tests/eval/WebEnricher/test_extraction.py -q     # extraction phase (LLM)
 docker exec seller-api python -m tests.eval.WebEnricher.recorder --slug <s> --name "<game>" --missing "ambientazione,durata"
                                                                               # records real search+pages; then fill in `expect` by hand
-docker exec seller-api python -m tests.eval --suite core --k 5 --pipeline curator   # retrieval ablation
+docker exec seller-api python -m tests.eval_suite --suite core --k 5 --pipeline curator   # retrieval ablation
 docker exec seller-api python -m app.ingestion.ingester --max-pages 2   # ingest + store
 ```

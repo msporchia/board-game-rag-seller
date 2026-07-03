@@ -143,7 +143,7 @@ seller/tests/
   collection `games` is never touched. (In CI you can also use in-memory Qdrant.)
 - **Reproducible source**: `JsonSource` gives the system "exactly the API DTO" from a file,
   without depending on a running PrestaShop.
-- **Run**: `docker exec seller-api python -m tests.eval --k 5`.
+- **Run**: `docker exec seller-api python -m tests.eval_suite --k 5`.
 
 Current anchors: Lords of Hellas (Greek mythology, management), Onitama (abstract, 2-player
 duel), Massive Darkness (coop fantasy dungeon crawler), Dixit (party/storytelling). The

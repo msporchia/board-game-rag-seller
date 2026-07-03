@@ -19,7 +19,7 @@ common queries:
 the same queries with the same 47 distractors, in two collections identical except the target
 game's text (`e2e_enrichment_full` vs `e2e_enrichment_base`). The baseline is the DTO **as-is**
 through the deterministic compose only (= the `rule` pipeline, the official baseline-to-beat in
-`tests/eval.py`), indexed and queried by the vector.
+`tests/eval_suite.py`), indexed and queried by the vector.
 
 **Cause.** The `SynthEnricher` rewrites `enriched.description` with a `~700 char` cap
 (`synth.py:_MAX_CHARS`). On rich-sheet games, the full embed_text is ≈1200 chars vs ≈2300 for the

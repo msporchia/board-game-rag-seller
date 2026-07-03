@@ -67,7 +67,7 @@ The four steps are wired together as the production chain by `build_pipeline()` 
 `app/ingestion/ingester.py` (`Curator → Web → Synth → Compose`), which is the `Ingester`'s
 default — so a plain `python -m app.ingestion.ingester` now runs the full enrichment, not just
 Compose. Eval keeps its own experiment variants (`rule`, `trim`, `curator`, `synth`) in
-`tests/eval.py`, injected explicitly.
+`tests/eval_suite.py`, injected explicitly.
 
 ## Where the curated data lands
 
@@ -122,7 +122,7 @@ docker compose exec seller-api python -m pytest tests/eval/WebEnricher/test_rank
 docker compose exec -e EVAL_LIMIT=2 seller-api python -m pytest tests/eval/CuratorEnricher -q
 
 # Retrieval scorecard (compare pipelines on the frozen 'core' suite):
-docker compose exec -e PYTHONPATH=/app seller-api python tests/eval.py --suite core --k 5 --pipeline rule
+docker compose exec seller-api python -m tests.eval_suite --suite core --k 5 --pipeline rule
 ```
 
 > Tip: the LLM steps are slow on CPU (an 8B model). Enable the GPU override

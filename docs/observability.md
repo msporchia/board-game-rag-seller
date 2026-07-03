@@ -8,7 +8,7 @@ caught, not just tooling for its own sake.
 
 | Capability | Where | What it gives us |
 |---|---|---|
-| Retrieval scorecard | `tests/eval.py`, [`valutazione.md`](valutazione.md) | recall@K and ranks on frozen queries — rank-based, because cosine scores are uncalibrated |
+| Retrieval scorecard | `tests/eval_suite.py`, [`valutazione.md`](valutazione.md) | recall@K and ranks on frozen queries — rank-based, because cosine scores are uncalibrated |
 | Regression gate | `tests/e2e/enrichment/` + versioned `baseline.json` | no metric may regress beyond tolerance vs the committed baseline |
 | Per-step LLM evals | `tests/eval/<Unit>/` + `tests/eval.py --pipeline …` | each enrichment/chat step measured against hand-written oracles |
 | Chat eval suites | `tests/eval/TurnAnalyzer`, `ChatRetrieve`, `ChatPitch`, `ChatConversation` | turn reading, retrieval, grounded pitch, and whole-session convergence measured on scripted cases |

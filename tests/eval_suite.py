@@ -13,7 +13,7 @@ Per-query metrics:
 
 `--pipeline` chooses the enricher chain applied to the data before embedding.
 
-    docker exec seller-api python -m tests.eval --suite core --k 5 --pipeline trim
+    docker exec seller-api python -m tests.eval_suite --suite core --k 5 --pipeline trim
 """
 
 import argparse

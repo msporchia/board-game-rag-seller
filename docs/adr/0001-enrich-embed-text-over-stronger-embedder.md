@@ -45,3 +45,16 @@ the retriever ranks the games, not their data entry. Structured "certain data" b
   the lever is the one that actually moves the ranking.
 - A future intentional boost layer (margin, promotions) must stay an **explicit** layer on top —
   never re-inherited from data quality, which is exactly what this decision removed.
+
+## Revisited 2026-07-03 — the deferred alternative, measured
+
+The alternative this ADR rejected *as the first move* was eventually made and measured
+([SEL-107](../tickets/resolved/SEL-107-multilingual-embedder.md), ledger rows 1-2 in
+[`docs/experiments.md`](../experiments.md)): swapping `nomic-embed-text` → `bge-m3` lifted
+Recall@5 0.25 → 0.43 **on the raw, un-enriched text** — an aggregate gain roughly 9× what the
+enrichment pipeline had bought (+0.02). The decision's core claim survives — a better model
+still embeds an empty record as empty, and only enrichment *creates* signal where there is
+none — but its implicit bet that the text was the *larger* lever did not: `nomic` was leaving
+most of the already-present Italian signal unread. Both levers stay, because they fix different
+failure modes: embedder = read the signal that exists; enrichment = create the signal that
+doesn't; structured filters = the axes prose never carries (see SEL-142).

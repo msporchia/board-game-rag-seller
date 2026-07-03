@@ -11,7 +11,10 @@ from pydantic_settings import BaseSettings
 class Settings(BaseSettings):
     qdrant_url: str = "http://seller-qdrant:6333"
     ollama_url: str = "http://seller-ollama:11434"
-    embedding_model: str = "nomic-embed-text"
+    # bge-m3 (multilingual) replaced nomic-embed-text on 2026-07-03: measured on the same
+    # frozen rulers it lifted Recall@5 0.25→0.43 and mean NDCG 0.386→0.701 (docs/experiments.md
+    # rows 1-2). Changing this requires re-indexing the collection (vector dim changes).
+    embedding_model: str = "bge-m3"
     llm_model: str = "llama3.1"
     # Chat model tiering (Phase 5): the model the generate step escalates to when the analyze
     # step sets `escalate=true`. Empty → falls back to `llm_model`, so locally the escalation

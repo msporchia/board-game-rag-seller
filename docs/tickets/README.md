@@ -17,7 +17,6 @@ engineering tickets. Most items are distilled from `docs/idee.md`, `docs/note.md
 | [SEL-104](SEL-104-structured-output-retry.md) | Enforce structured LLM output with validated retry | ingestion/enricher | Feature | High | Open |
 | [SEL-105](SEL-105-game-quality-score.md) | Compute a per-game quality score and gate on it | ingestion/enricher | Feature | Medium | Open |
 | [SEL-106](SEL-106-webenricher-cache-extractions.md) | Cache Web enricher LLM extractions, not just fetches | ingestion/enricher | Refactor | Medium | Open |
-| [SEL-107](SEL-107-multilingual-embedder.md) | Evaluate a multilingual embedder (bge-m3 / e5) | rag/retrieval | Feature | High | Open |
 | [SEL-108](SEL-108-unicode-normalization.md) | Normalize unicode in quote/label matching | ingestion/enricher | Tech-debt | Low | Open |
 | [SEL-109](SEL-109-evaluate-qwen-gemma.md) | Evaluate Qwen2.5 / Gemma for Curator & Synth | ingestion/enricher | Research | Medium | Open |
 | [SEL-110](SEL-110-litellm-transport.md) | Move LLM transport behind LiteLLM | enricher + chat | Refactor | Low | Open |
@@ -40,6 +39,7 @@ Closed tickets live in [`resolved/`](resolved/).
 | ID | Title | Area | Type | Resolved |
 |----|-------|------|------|----------|
 | [SEL-142](resolved/SEL-142-cooperative-not-understood.md) | Chat suggests the wrong kind of game for a "cooperative" request | chat / retrieval | Bug | 2026-06-23 |
+| [SEL-107](resolved/SEL-107-multilingual-embedder.md) | Evaluate a multilingual embedder (bge-m3 / e5) — **adopted bge-m3** | rag/retrieval | Feature | 2026-07-03 |
 
 ## Conventions
 

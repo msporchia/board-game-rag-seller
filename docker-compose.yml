@@ -48,7 +48,7 @@ services:
     environment:
       QDRANT_URL: http://seller-qdrant:6333
       OLLAMA_URL: http://seller-ollama:11434
-      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-nomic-embed-text}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-bge-m3}
       LLM_MODEL: ${LLM_MODEL:-llama3.1}
       # Data source for ingest. Default = the bundled mock; point at a real PrestaShop
       # "seller" endpoint to ingest a live catalog (see .env.example).

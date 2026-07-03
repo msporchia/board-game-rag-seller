@@ -97,8 +97,8 @@ curve**: the agent converts the most but costs the most per chat, the pipeline i
 can afford at volume. Which one a storefront runs is an economic call (*how many tokens is one
 extra sale worth?*), swapped by `CHAT_ENGINE` behind one contract.
 
-→ **See it, don't take my word:** [a real session on the live 501-game index — one take,
-unedited, whiff included](docs/showcase/live-session.md) ·
+→ **See it, don't take my word:** [four real sessions on the live 501-game index — unedited
+takes, every search the agent ran on the page, flaws annotated](docs/showcase/live-session.md) ·
 [retrieval walkthroughs on real games](docs/showcase/README.md) ·
 [the chat, two engines side by side](docs/showcase/chat.md) ·
 [full auto-generated scorecard](tests/eval/RESULTS.md) ·
@@ -431,9 +431,10 @@ click→filter mechanic, on actual catalog games:
 The same customer run through **two engines side by side** — including the convergence case where
 the deterministic pipeline gets stuck and the agent doesn't — is in
 [`docs/showcase/chat.md`](docs/showcase/chat.md). And for the real thing, not the eval bench:
-**[a live session on the full 501-game index](docs/showcase/live-session.md)** — one unedited
-take, the agent searching the actual catalog, the cooperative filter working on honest data, and
-the one turn that whiffed kept on the page with its ticket.
+**[four live sessions on the full 501-game index](docs/showcase/live-session.md)** — unedited
+takes with the agent's actual searches on the page (query, filters, hits — regenerable with one
+command: `python -m tests.record_live_session --all`), the cooperative filter working on honest
+data, and every flaw annotated with its ticket.
 
 ## Known limits, tracked 🚧
 
@@ -446,9 +447,11 @@ Honest status — every open edge has a ticket or a red eval pinning it, none is
   external (stronger) responder under the same oracle, so the claim is now measurable.
 - **A few cases are still red** — e.g. constraint *reversal* across turns (`contrordine-giocatori`),
   where a corrected click should *replace* the old filter, not pile on (click→filter merge isn't
-  wired in the agent tier yet); and the live take's false no-match on «cooperativo per due»
-  ([SEL-147](docs/tickets/SEL-147-agent-false-nomatch-coop-two.md)) — the anti-invention guarantee
-  held, the search assembly whiffed.
+  wired in the agent tier yet). The live recordings also caught the local model *going silent*
+  on later turns (no tool call → false no-match): diagnosed and floored the same day
+  ([SEL-147](docs/tickets/resolved/SEL-147-agent-false-nomatch-coop-two.md) — the no-match must
+  now be *earned* by an empty search); *why* the 7B stops driving tools with longer history
+  remains a model-quality question (SEL-113).
 - **The cooperative verdict policy is a declared stopgap** — True only from curated catalog
   signal, because the local model's inferred True failed a zero-wrong-verdict gate (measured
   v1→v3, ledger row 12); the revisit is

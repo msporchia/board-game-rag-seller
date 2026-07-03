@@ -30,8 +30,8 @@ The conversational layer gets the same treatment — real recorded sessions, enf
 with the deterministic **pipeline** and the tool-driving **agent** put **side by side on the same
 customer**: [**Chat**](chat.md) — including the convergence case the pipeline can't crack, the
 honest no-match, and a failure kept on the page. And beyond the eval bench:
-[**a live session on the full 501-game index**](live-session.md) — one unedited take, whiff
-included, with the cooperative filter working on honest data.
+[**four live sessions on the full 501-game index**](live-session.md) — unedited takes with the
+agent's actual searches on the page, regenerable with one command, every flaw annotated.
 
 ## How to read each file
 

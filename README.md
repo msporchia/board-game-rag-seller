@@ -40,36 +40,20 @@ exist" moves nobody — nobody buys a category. What sells is a **salesperson**:
 right few questions, opens up possibilities the customer didn't know to ask for, and lands on a
 **specific box on the shelf they can buy today**.
 
-That conversation is what this project automates. The repo is two stories: **Part 1 — the
-retrieval engine** (done, measured, the heart of the project) and **Part 2 — the conversational
-seller** on top of it (working end-to-end, measured the same way).
+That conversation is what this project automates, in two parts.
 
 ---
 
-# Part 1 — the retrieval engine
+## Part 1 — the retrieval engine
 
-A real catalog is heterogeneous and incomplete: some games arrive richly described, many are a
-name and a few fields. Fed raw to an embedder, that difference silently *becomes* the ranking —
-Terraforming Mars at **#45** wasn't less relevant, it just had a thinner record. That's not a
-ranking; it's a data-entry accident.
-
-> **Every game must be equally findable and equally sellable, whatever the quality of its source
-> data.** If one game is to outrank another, it must be intentional — margin, a promotion —
-> applied as an explicit layer, never inherited from data quality.
-
-The lever that makes the principle enforceable: **retrieval quality is decided by the text you
-embed — not only by the embedding model** (an embedding is a *lossy semantic centroid* of its
-input; see [`docs/valutazione.md`](docs/valutazione.md)). **Enrichment is the equalizer**: it
-turns uneven records into uniform, dense, factual, search-friendly text before embedding — adding
-signal, never inventing. This is representation engineering, and it is measured end-to-end.
-
-> #### 🇮🇹 Why the data, prompts and queries are in Italian
-> Code and docs are English; catalog text, LLM prompts and embedded strings are **Italian on
-> purpose** — real marketing DTOs and real frozen review pages from an Italian catalog. Tidy
-> English toy data would prove a *tailored* example works, not that the mechanism survives real
-> messy prose. The realism **is** the test.
-
-## Architecture
+A real catalog is uneven: some games arrive richly described, many are a name and a few fields.
+Fed raw to an embedder, that difference silently *becomes* the ranking — Terraforming Mars at
+**#45** wasn't less relevant, it just had a thinner record. The principle: **no game is penalized
+for its source**; the lever: **retrieval quality is decided by the text you embed**. A four-step
+enrichment pipeline (Curator → Web → Synth → Compose) turns uneven records into dense, factual,
+cited text before embedding — adding signal, never inventing — and the effect is measured
+end-to-end on frozen corpora: **#45 → #1** on the thin record, a verbatim-quote gate that drops
+plausible fabrications, and one honest regression kept visible (#4 → #23).
 
 ```mermaid
 flowchart TB
@@ -102,46 +86,27 @@ flowchart TB
 | LLM | `llama3.1` 8B + `qwen2.5:7b` for the agent tier (Ollama) | a stronger model (Claude / GPT-4-class) |
 | Orchestration | LangChain · LangGraph · FastAPI | same |
 
-## The enrichment pipeline
-
-One record per game, four steps. The golden rule throughout: **certain data always wins** — if
-the catalog states the player count, no LLM guess can override it.
-
-| # | Step | What it does | Doc |
-|---|------|--------------|-----|
-| 1 | **Curator** | LLM pass that classifies every fact as *known / extractable / missing* — **no invention**, every extraction backed by a verbatim quote | [01-curator](docs/enrichment/01-curator.md) |
-| 2 | **Web** | fallback, fires only on gaps: recovers facts from trusted reviews, **each with a citation verified against the page** | [02-web](docs/enrichment/02-web.md) |
-| 3 | **Synth** | runs on every game: fuses recovered facts into dense prose, strips marketing noise | [03-synth](docs/enrichment/03-synth.md) |
-| 4 | **Compose** | deterministically assembles the final `embed_text` — the baseline to beat | [04-compose](docs/enrichment/04-compose.md) |
-
-We decide with numbers, not vibes — three eval levels so a gain in one step can't hide a loss in
-another: **unit tests** (contracts: "certain data wins", "a fact needs a verbatim quote"),
-**per-step quality** (real LLM vs a hand-written oracle, never fed to the system), and an
-**end-to-end retrieval scorecard** (Recall@K / NDCG on a frozen corpus — we *rank*, we don't
-trust uncalibrated similarity scores; [ADR-0004](docs/adr/0004-rank-not-score.md)).
-
-## The results, on real games
-
-Three real catalog games, carried end-to-end and ranked by the real retriever on a frozen
-50-game corpus — same embedder, same queries, only the embedded text changes:
-
-| | Game | What it demonstrates | Before → after |
-|---|------|----------------------|----------------|
-| 🚀 | [**Terraforming Mars**](docs/showcase/terraforming-mars.md) | the recovery: a thin record made findable | rank **#45 → #1** |
-| 🔬 | [**Onitama**](docs/showcase/onitama.md) | the guarantee: every added fact carries a verified verbatim quote; a plausible guess with no quote is **dropped** | fabrication → discarded |
-| ⚖️ | [**Viticulture**](docs/showcase/viticulture.md) | the honest loss: Synth compressed an already-rich record and lost signal — kept, pinned by an `xfail` test | rank **#4 → #23** |
-
-> ⚡ **See it live:** [follow each game through the pipeline, step by step, in the interactive
-> demo](https://msporchia.github.io/board-game-rag-seller/demo/) — or read the
-> [written walkthroughs](docs/showcase/README.md) with the exact fixtures.
+> 📖 **The full story — [`docs/retrieval-engine.md`](docs/retrieval-engine.md)**: the principle,
+> the pipeline step by step, how it's measured, and every claim linked to the class that enforces
+> it and the test that proves it.
+>
+> ⚡ **See it live:** [follow three real games through the pipeline in the interactive
+> demo](https://msporchia.github.io/board-game-rag-seller/demo/) · [written
+> walkthroughs](docs/showcase/README.md) with the exact fixtures.
 
 ---
 
-# Part 2 — the conversational seller 💬
+## Part 2 — the conversational seller 💬
 
-The salesperson the problem asked for: each turn it reads the customer, decides how to answer
-(ask one clarifying question, explain a mechanic, or just propose), and always lands on real
-boxes on the shelf.
+The salesperson on top of Part 1: each turn it reads the customer (enthusiasm, decisiveness,
+expertise), routes a per-turn strategy in code — ask one clarifying question, explain a mechanic,
+or propose concrete games *now* — and always lands on real boxes on the shelf. Two invariants are
+enforced in code, never trusted to the model: an invented game id is **dropped with its sales
+pitch**, and a failed turn degrades to an honest scripted reply, never a 500. Quick-reply taps
+become **real search filters**; storefront bias (a Christmas push, a campaign) enters as **named
+policy classes**, never a free prompt field. Behind one contract sit **three interchangeable
+engines** — deterministic pipeline, code-piloted loop, tool-driving agent — measured head-to-head
+as a quality/cost curve, not a leaderboard.
 
 ```mermaid
 flowchart LR
@@ -156,66 +121,22 @@ flowchart LR
     style MEM fill:#5a2b7e,color:#fff
 ```
 
-Two invariants are enforced **in code, never trusted to the model**: a pitched game must be in
-the retrieved set (an invented id is dropped *and its sales pitch goes with it* — the reply is
-assembled in code from the survivors), and a failed structured output degrades to an honest
-scripted reply, never a 500. The strategy (GUIDED · EXPLANATORY · DISCOVERY · QUICK_MATCH) is
-routed deterministically from how the customer reads, and after 3 turns with no concrete proposal
-a QUICK_MATCH is forced. Quick-reply buttons aren't decorative: a tap becomes a **real search
-filter** on the game's own attributes. Storefront bias (a Christmas campaign, push a category)
-enters as **named policies** — small registered classes wrapped around the turn's stages, never a
-free prompt field; a policy changes behavior, not truth. Design: [`docs/idee.md`](docs/idee.md) ·
-full chat design & findings: [`docs/chat.md`](docs/chat.md).
-
-## Three engines, one contract
-
-Behind the same `reply(...)` contract sit three interchangeable engines, switched by
-`CHAT_ENGINE` ([ADR-0003](docs/adr/0003-interchangeable-chat-engines.md)): **pipeline** (every
-decision in code, the weak 8B only pitches), **piloted** (a code loop, the model reformulates the
-query into catalog language), and **agent** (the model drives a `search_catalog` tool itself —
-`qwen2.5:7b` runs the loop end-to-end, and every tool call is recorded as `{query, filters,
-hits}` so tool-use quality is measurable).
-
 | engine | who drives the search | case pass | note |
 |--------|-----------------------|:---------:|------|
 | pipeline | deterministic code | 0.667 | re-baselined 2026-07-03 |
 | piloted | code loop, model reformulates | 0.80 · −18% tok | June bench |
-| agent | the model itself, via a tool | **0.733** | both cooperative cases pass |
+| agent · `qwen2.5:7b` | the model itself, via a tool | **0.733** | both cooperative cases pass |
 
-Single runs are samples, not verdicts (the same 15 cases scored 0.60/0.80/0.87 on identical
-inputs) — and this isn't a leaderboard but a **quality/cost curve**: which arm a storefront runs
-is an economic call. `TieredChat` degrades a failed primary turn to the pipeline so the customer
-always gets an answer. Eval: one suite per node plus whole-conversation replays, all rule-scored
-against hand-written oracles — latest results in [`tests/eval/RESULTS.md`](tests/eval/RESULTS.md),
-every reply the seller actually wrote in the
-[review bundle](tests/eval/ChatConversation/REVIEW.md).
+*(Single runs are samples, not verdicts — the same 15 cases scored 0.60/0.80/0.87 on identical
+inputs; the noise is measured too.)*
 
+> 📖 **The full story — [`docs/conversational-seller.md`](docs/conversational-seller.md)**: the
+> grounding invariants, the strategy routing, the policy middleware, the three engines and their
+> eval suites — every claim linked to its class and its test.
+>
 > ⚡ **Watch it sell:** [four unedited sessions on the live 501-game index in the interactive
 > demo](https://msporchia.github.io/board-game-rag-seller/demo/) — every search the agent
-> composed, the FORCED safety-net turns, the flaws annotated with their tickets. Written version:
-> [`docs/showcase/live-session.md`](docs/showcase/live-session.md).
-
-A taste — the anti-hallucination rule and the click→filter mechanic on real catalog games
-(case `infeasibile-recupero`, verbatim):
-
-> 🧑 *«in pausa pranzo io e un collega abbiamo solo cinque minuti liberi»* · click `[per 2 giocatori] [max 5 minuti]`
->
-> 🤖 *«Al momento non ho in catalogo un gioco che corrisponde bene a quello che cerchi…»*
-> &nbsp;&nbsp;— `duration ≤ 5` matches **nothing**, so the seller says so. No cards, no invented game.
->
-> 🧑 *«ok, in realtà possiamo arrivare a mezz'ora»* · click `[max 30 minuti]`
->
-> 🤖 *«**Onitama** è perfetto per voi: un duello veloce e strategico… in solo 10 minuti!…»*
-> &nbsp;&nbsp;— the click became a real `duration ≤ 30` filter; games reappear, both really in stock.
-
-**Known limits, tracked 🚧** — every open edge has a ticket or a red eval pinning it: pitch
-quality on the local 7-8B is the open bottleneck (the [simulation
-harness](tests/eval/ChatConversation/simulation/) measures how much a stronger model recovers);
-constraint *reversal* across turns is still red; the model going silent on later turns was floored
-the same day it was caught
-([SEL-147](docs/tickets/resolved/SEL-147-agent-false-nomatch-coop-two.md)); the cooperative
-verdict policy is a declared stopgap
-([SEL-146](docs/tickets/SEL-146-cooperative-verdict-revisit.md)).
+> composed, the flaws annotated with their tickets · [written version](docs/showcase/live-session.md).
 
 ---
 
@@ -226,8 +147,8 @@ You know best what you care about — every row is a self-contained entry point:
 | You're interested in… | Start here | What you'll find |
 |---|---|---|
 | **Seeing it work, right now** | [▶ the interactive demo](https://msporchia.github.io/board-game-rag-seller/demo/) | real sessions replayed turn by turn · a game's journey through the pipeline |
-| **RAG / representation engineering** | [Terraforming Mars #45→#1](docs/showcase/terraforming-mars.md) → [enrichment/](docs/enrichment/README.md) | why the embedded text beats the embedder |
-| **Agents & tool-use** | [live sessions](docs/showcase/live-session.md) → [chat design](docs/chat.md) | a 7B driving its own search, every call recorded |
+| **RAG / representation engineering** | [the retrieval engine, in full](docs/retrieval-engine.md) → [enrichment/](docs/enrichment/README.md) | why the embedded text beats the embedder — claims linked to classes and tests |
+| **Agents & tool-use** | [the conversational seller, in full](docs/conversational-seller.md) → [live sessions](docs/showcase/live-session.md) | a 7B driving its own search, every call recorded |
 | **How to measure an LLM system** | [experiments ledger](docs/experiments.md) → [RESULTS.md](tests/eval/RESULTS.md) → [valutazione.md](docs/valutazione.md) | frozen rulers, before→after, rank-not-score |
 | **Honest engineering (what does NOT work)** | [Viticulture, the kept regression](docs/showcase/viticulture.md) → [e2e-findings](docs/enrichment/e2e-findings.md) → [tickets/](docs/tickets/README.md) | measured failures, pinned by `xfail`, tracked |
 | **The non-obvious decisions** | [ADRs](docs/adr/README.md) | the forks with a defensible alternative we rejected |
@@ -288,6 +209,8 @@ seller/
 │   ├── core/                   # vector store · enrichment store · web search · logging · tracing
 │   └── rag/                    # hybrid retriever + filters
 ├── docs/
+│   ├── retrieval-engine.md     # Part 1, in full  ← the story behind the diagram above
+│   ├── conversational-seller.md# Part 2, in full
 │   ├── demo/                   # the interactive demo (GitHub Pages) + its recording scripts
 │   ├── showcase/               # before → after walkthroughs on real games
 │   ├── enrichment/             # one doc per pipeline step (the "why & how we know")

@@ -10,6 +10,7 @@ engineering tickets. Most items are distilled from `docs/idee.md`, `docs/note.md
 
 | ID | Title | Area | Type | Priority | Status |
 |----|-------|------|------|----------|--------|
+| [SEL-147](SEL-147-agent-false-nomatch-coop-two.md) | Agent arm: false honest-no-match on «cooperativo per due» in the recorded live session | chat/agent | Bug | High | Open |
 | [SEL-146](SEL-146-cooperative-verdict-revisit.md) | Revisit the cooperative verdict — the SEL-145 policy is a stopgap (recall lost on untagged co-ops) | enricher + rag | Research | High | Open |
 | [SEL-143](SEL-143-cooperative-fabricated-from-unknown-reference.md) | Intent fabricates a hard `cooperative` verdict for an unknown reference game | chat / retrieval | Bug | High | Open |
 | [SEL-101](SEL-101-langfuse-tracing.md) | Wire Langfuse tracing into the running stack | observability | Tech-debt | High | Open |

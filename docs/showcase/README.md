@@ -29,7 +29,9 @@ distractors, in two indexes identical except for the target game's text.
 The conversational layer gets the same treatment — real recorded sessions, enforced vs generated,
 with the deterministic **pipeline** and the tool-driving **agent** put **side by side on the same
 customer**: [**Chat**](chat.md) — including the convergence case the pipeline can't crack, the
-honest no-match, and a failure kept on the page.
+honest no-match, and a failure kept on the page. And beyond the eval bench:
+[**a live session on the full 501-game index**](live-session.md) — one unedited take, whiff
+included, with the cooperative filter working on honest data.
 
 ## How to read each file
 

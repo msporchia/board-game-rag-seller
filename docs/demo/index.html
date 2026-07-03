@@ -1,0 +1,1192 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Seller — live demo replay</title>
+<meta name="description" content="Unedited replays of a grounded AI board-game seller on a live 501-game index — every search the agent ran, flaws kept.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎲</text></svg>">
+<style>
+  :root{
+    /* board-game-shop-web theme: Tailwind slate + emerald, light */
+    --bg:#f8fafc; --panel:#ffffff; --raised:#f1f5f9; --line:#e2e8f0; --line2:#cbd5e1;
+    --ink:#0f172a; --ink-2:#334155; --mut:#64748b; --faint:#94a3b8;
+    --dark:#0f172a; --dark-2:#1e293b;
+    --grn:#047857; --grn-bright:#10b981; --grn-soft:#a7f3d0; --grn-bg:#ecfdf5;
+    --amb:#d97706; --amb-line:#fcd34d; --amb-bg:#fffbeb; --amb-ink:#92400e;
+    --red:#b91c1c; --red-soft:#fecaca; --red-bg:#fef2f2; --red-pin:#f87171;
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    background:var(--bg); color:var(--ink-2); font-family:var(--sans);
+    font-size:16px; line-height:1.55; min-height:100vh;
+  }
+  a{color:var(--grn)}
+  a:hover{color:#065f46}
+  ::selection{background:var(--dark);color:#fff}
+
+  /* ---------- header ---------- */
+  header{
+    position:sticky; top:0; z-index:40;
+    background:color-mix(in srgb, #ffffff 92%, transparent);
+    backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--line);
+  }
+  .bar{max-width:1060px;margin:0 auto;padding:.65rem 1rem;display:flex;align-items:center;gap:1rem;flex-wrap:wrap}
+  .wordmark{font-family:var(--sans);font-weight:700;color:var(--ink);font-size:1.1rem;text-decoration:none;white-space:nowrap}
+  .wordmark b{color:var(--ink);font-weight:700}
+  .gloss-toggle{
+    display:flex;align-items:center;gap:.45rem;font-size:.78rem;color:var(--mut);
+    cursor:pointer;user-select:none;white-space:nowrap;
+  }
+  .gloss-toggle .pill{
+    width:34px;height:19px;border-radius:999px;background:var(--line);border:1px solid var(--line2);position:relative;transition:background .2s;
+  }
+  .gloss-toggle .pill::after{
+    content:"";position:absolute;top:2px;left:2px;width:13px;height:13px;border-radius:50%;
+    background:#fff;box-shadow:0 1px 2px rgba(15,23,42,.25);transition:transform .2s;
+  }
+  body.gloss .gloss-toggle .pill{background:var(--grn-bright);border-color:var(--grn-bright)}
+  body.gloss .gloss-toggle .pill::after{transform:translateX(15px)}
+
+  /* ---------- hero ---------- */
+  .hero{max-width:1060px;margin:0 auto;padding:2.4rem 1rem 1.2rem}
+  .hero h1{font-family:var(--sans);font-weight:700;color:var(--ink);font-size:clamp(1.5rem,3.4vw,2.05rem);line-height:1.25;max-width:46ch;letter-spacing:-.015em}
+  .hero h1 em{color:var(--grn);font-style:normal}
+  .hero p{margin-top:.7rem;max-width:72ch;font-size:.93rem}
+  .hero p .it-note{color:var(--mut)}
+  .modes-q{font-weight:600;color:var(--ink);font-size:1rem;margin-top:1.6rem!important}
+  .modes{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:.8rem;margin-top:.7rem;max-width:820px}
+  .mode{
+    display:flex;gap:.8rem;align-items:flex-start;text-align:left;cursor:pointer;
+    background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:.9rem 1rem;color:var(--ink-2);font-family:var(--sans);
+    transition:border-color .15s, box-shadow .15s;
+  }
+  .mode:hover{border-color:var(--line2);box-shadow:0 2px 8px rgba(15,23,42,.06)}
+  .mode[aria-selected="true"]{border-color:var(--dark);box-shadow:0 0 0 1px var(--dark)}
+  .mode .m-ico{font-size:1.4rem;line-height:1.2}
+  .mode .m-title{display:block;font-weight:700;color:var(--ink);font-size:.95rem}
+  .mode .m-desc{display:block;font-size:.78rem;line-height:1.45;margin-top:.2rem;color:var(--mut)}
+
+  main{max-width:1060px;margin:0 auto;padding:0 1rem 4rem}
+  section[hidden]{display:none}
+
+  /* ---------- session picker ---------- */
+  .picker-title{font-weight:700;color:var(--ink);font-size:1.25rem;margin-top:1.2rem;letter-spacing:-.01em}
+  .picker-sub{font-size:.85rem;color:var(--mut);margin-top:.3rem;max-width:70ch}
+  .picker-sub strong{color:var(--ink-2)}
+  .rail{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:.8rem;margin:1.1rem 0 1.4rem}
+  .sess{
+    text-align:left;background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:1rem 1.1rem 1.05rem;cursor:pointer;color:var(--ink-2);font-family:var(--sans);
+    transition:border-color .15s, box-shadow .15s, transform .15s;
+    display:flex;flex-direction:column;gap:.45rem;
+  }
+  .sess:hover{border-color:var(--line2);transform:translateY(-2px);box-shadow:0 4px 12px rgba(15,23,42,.08)}
+  .sess .sid{font-family:var(--mono);font-size:.74rem;color:var(--grn);letter-spacing:.02em}
+  .sess .tease{
+    font-style:italic;font-size:.9rem;line-height:1.45;color:var(--ink);
+  }
+  .sess .tease::before{content:"🧑 «"} .sess .tease::after{content:"»"}
+  .sess .shook{display:block;font-size:.8rem;line-height:1.45;color:var(--ink-2)}
+  .sess .smeta{display:block;font-size:.7rem;color:var(--faint);margin-top:auto;padding-top:.3rem;border-top:1px dashed var(--line)}
+  .sess .flag{color:var(--amb)}
+  .sess .win{color:var(--grn)}
+  .sess .watch{font-family:var(--sans);font-size:.78rem;font-weight:700;color:var(--ink)}
+  .sess .demotag{
+    font-family:var(--mono);font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--grn);
+  }
+  #pipeRail .sess .shook{color:var(--ink-2)}
+
+  /* ---------- stage ---------- */
+  .stage{
+    background:var(--panel);
+    border:1px solid var(--line);border-radius:14px;padding:1.2rem clamp(.8rem,3vw,2rem) 5.2rem;
+    position:relative;min-height:420px;box-shadow:0 1px 3px rgba(15,23,42,.05);
+  }
+  .stage-head{display:flex;align-items:baseline;gap:.8rem;flex-wrap:wrap;border-bottom:1px dashed var(--line);padding-bottom:.7rem}
+  .stage-head .sid{font-family:var(--mono);color:var(--grn);font-size:.8rem}
+  .stage-head .env{font-family:var(--mono);font-size:.68rem;color:var(--faint);margin-left:auto}
+
+  .turns{max-width:720px;margin:0 auto}
+  .turn{padding-top:1.4rem;scroll-margin-top:70px}
+  .turn-label{font-family:var(--mono);font-size:.65rem;color:var(--faint);letter-spacing:.12em;text-transform:uppercase;margin-bottom:.6rem;text-align:center}
+
+  @keyframes rise{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:none}}
+  .turn .step{animation:rise .4s ease both}
+  .turn .step:nth-child(2){animation-delay:.05s}
+  .turn .step:nth-child(3){animation-delay:.45s}
+  .turn .step:nth-child(4){animation-delay:.85s}
+  .turn .step:nth-child(5){animation-delay:1.15s}
+  .turn .step:nth-child(6){animation-delay:1.35s}
+  .turn .step:nth-child(7){animation-delay:1.5s}
+  @media (prefers-reduced-motion: reduce){
+    .turn .step{animation:none}
+    *{transition:none!important}
+  }
+
+  /* bubbles — customer dark (as in the storefront chat), seller light */
+  .bubble{max-width:88%;border-radius:14px;padding:.7rem .95rem;font-size:.92rem;line-height:1.5;position:relative}
+  .u-row{display:flex;justify-content:flex-end;margin:.5rem 0}
+  .u-row .bubble{
+    background:var(--dark);color:#f8fafc;border-bottom-right-radius:4px;
+    box-shadow:0 1px 2px rgba(15,23,42,.2);
+  }
+  .s-row{display:flex;justify-content:flex-start;margin:.5rem 0}
+  .s-row .bubble{
+    background:var(--raised);color:var(--ink);border-bottom-left-radius:4px;
+    border-left:3px solid var(--grn-bright);
+  }
+  .who{display:block;font-family:var(--mono);font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;margin-bottom:.25rem}
+  .u-row .who{color:var(--faint)}
+  .s-row .who{color:var(--mut)}
+  .gloss-t{display:none;margin-top:.45rem;padding-top:.4rem;font-style:italic;font-size:.84rem}
+  .u-row .gloss-t{border-top:1px dashed rgba(248,250,252,.25);color:#cbd5e1}
+  .s-row .gloss-t{border-top:1px dashed rgba(15,23,42,.15);color:var(--mut)}
+  body.gloss .gloss-t{display:block}
+
+  /* machine strip — the receipt under the glass (stays dark on purpose) */
+  .machine{
+    margin:.65rem 0;background:var(--dark);border:1px solid var(--dark-2);border-radius:8px;
+    font-family:var(--mono);font-size:.78rem;color:#6ee7b7;overflow:hidden;
+  }
+  .machine .m-line{display:flex;align-items:flex-start;gap:.6rem;padding:.55rem .75rem;flex-wrap:wrap}
+  .machine .m-tag{color:var(--faint);white-space:nowrap}
+  .machine .m-q{color:#6ee7b7;word-break:break-word;flex:1;min-width:200px}
+  .machine .m-q::before{content:"“"}.machine .m-q::after{content:"”"}
+  .chips{display:flex;gap:.35rem;flex-wrap:wrap;padding:0 .75rem .55rem;align-items:center}
+  .chip{
+    border:1px solid #047857;color:#6ee7b7;border-radius:4px;
+    padding:.05rem .45rem;font-size:.7rem;white-space:nowrap;
+  }
+  .chip.warn{border-color:var(--amb-line);color:var(--amb-line)}
+  .chip.hits{border-color:#334155;color:var(--faint)}
+  .badge-forced{
+    background:#fbbf24;color:var(--dark);border-radius:4px;padding:.05rem .45rem;
+    font-size:.68rem;font-weight:700;letter-spacing:.05em;
+  }
+  .how-btn{
+    display:block;width:100%;text-align:left;background:#0b1120;border:0;border-top:1px dashed #334155;
+    color:var(--faint);font-family:var(--mono);font-size:.68rem;padding:.4rem .75rem;cursor:pointer;
+  }
+  .how-btn:hover{color:#6ee7b7}
+  .how-btn::before{content:"▸ ";color:#34d399}
+  .how-btn[aria-expanded="true"]::before{content:"▾ "}
+  .how{display:none;border-top:1px solid #334155;padding:.8rem .75rem;background:#0b1120}
+  .how.open{display:block}
+  .how p{font-family:var(--sans);font-size:.78rem;color:#cbd5e1;margin-bottom:.6rem;max-width:64ch}
+  .how p code{font-family:var(--mono);color:#6ee7b7;font-size:.72rem}
+  .how a{color:#6ee7b7}
+
+  /* flow diagrams — light inside step panels, dark inside .how */
+  .flow{display:flex;flex-wrap:wrap;gap:.3rem;align-items:center;font-size:.66rem;font-family:var(--mono)}
+  .fbox{border:1px solid var(--grn-soft);border-radius:6px;padding:.3rem .5rem;color:var(--grn);line-height:1.35;background:var(--grn-bg)}
+  .fbox small{display:block;color:var(--mut);font-size:.6rem}
+  .fbox.code{border-color:var(--amb-line);color:var(--amb-ink);background:var(--amb-bg)}
+  .fbox.dead{border-style:dashed;color:var(--mut);border-color:var(--line2);background:transparent;text-decoration:line-through}
+  .farrow{color:var(--faint)}
+  .how .fbox{border-color:#047857;color:#6ee7b7;background:transparent}
+  .how .fbox small{color:var(--faint)}
+  .how .fbox.code{border-color:#fbbf24;color:#fcd34d;background:transparent}
+  .how .fbox.dead{color:#64748b;border-color:#334155}
+  .how .farrow{color:#64748b}
+
+  /* cards */
+  .cards{display:flex;gap:.55rem;flex-wrap:wrap;margin:.6rem 0}
+  .gcard{
+    background:var(--panel);color:var(--ink);border-radius:12px;padding:.55rem .75rem .6rem;
+    min-width:150px;flex:0 1 auto;border:1px solid var(--line);
+    box-shadow:0 1px 2px rgba(15,23,42,.06);position:relative;
+  }
+  .gcard .gname{font-weight:700;font-size:.85rem;line-height:1.25}
+  .gcard .gmeta{font-family:var(--mono);font-size:.64rem;color:var(--mut);margin-top:.3rem}
+  .gcard .coop{color:var(--grn);font-weight:700}
+  .gcard.hot{outline:2px solid var(--grn-bright);outline-offset:1px;border-color:transparent}
+  .gcard.hot .rankpin{
+    position:absolute;top:-.85rem;right:-.5rem;background:var(--grn-bright);color:#fff;
+    font-family:var(--mono);font-size:.62rem;font-weight:700;border-radius:999px;padding:.1rem .5rem;
+  }
+  .cards-cap{font-family:var(--mono);font-size:.62rem;color:var(--faint);margin-top:-.2rem}
+
+  /* quick replies — the light pill chips of the storefront */
+  .quick{display:flex;gap:.4rem;flex-wrap:wrap;margin:.45rem 0 .2rem}
+  .quick .qr{
+    border:1px solid var(--line2);color:var(--ink-2);border-radius:999px;
+    font-size:.72rem;padding:.18rem .65rem;background:var(--panel);
+  }
+  .quick-cap{font-family:var(--mono);font-size:.6rem;color:var(--faint);width:100%;margin-bottom:-.1rem}
+
+  /* annotations */
+  .note{
+    margin:.7rem 0;border-radius:8px;padding:.6rem .8rem .65rem;font-size:.8rem;line-height:1.5;
+    border:1px solid;
+  }
+  .note .n-tag{font-family:var(--mono);font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;display:block;margin-bottom:.25rem}
+  .note.win{background:var(--grn-bg);border-color:var(--grn-soft);color:#065f46}
+  .note.win .n-tag{color:var(--grn)}
+  .note.flaw{background:var(--amb-bg);border-color:var(--amb-line);color:var(--amb-ink)}
+  .note.flaw .n-tag{color:var(--amb)}
+  .note a{color:inherit;text-decoration:underline;white-space:nowrap}
+
+  /* controls */
+  .controls{
+    position:absolute;left:0;right:0;bottom:0;display:flex;align-items:center;gap:.6rem;
+    padding:.7rem clamp(.8rem,3vw,2rem);border-top:1px solid var(--line);
+    background:color-mix(in srgb, #ffffff 92%, transparent);backdrop-filter:blur(6px);
+    border-radius:0 0 14px 14px;flex-wrap:wrap;
+  }
+  .btn{
+    font-family:var(--sans);font-size:.85rem;font-weight:600;border-radius:8px;cursor:pointer;
+    padding:.45rem 1rem;border:1px solid var(--line2);background:var(--panel);color:var(--ink-2);
+  }
+  .btn:hover{border-color:var(--mut)}
+  .btn.primary{background:var(--dark);border-color:var(--dark);color:#fff}
+  .btn.primary:hover{background:#334155;border-color:#334155}
+  .btn:disabled{opacity:.4;cursor:default}
+  .progress{display:flex;gap:.3rem;margin-left:auto;align-items:center}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--line);border:1px solid var(--line2)}
+  .dot.done{background:var(--dark);border-color:var(--dark)}
+  .kbd-hint{font-family:var(--mono);font-size:.62rem;color:var(--faint)}
+
+  .end-note{
+    max-width:720px;margin:1.6rem auto 0;text-align:center;font-size:.8rem;color:var(--mut);
+    border-top:1px dashed var(--line);padding-top:1rem;
+  }
+
+  /* ---------- pipeline ---------- */
+  .pipemap{display:flex;flex-wrap:wrap;gap:.3rem;align-items:center;font-family:var(--mono);font-size:.64rem;margin:0 0 1.3rem}
+  .pipemap .pm{border:1px solid var(--line);border-radius:6px;padding:.32rem .55rem;color:var(--mut);background:var(--panel);line-height:1.3;transition:background .3s,color .3s,border-color .3s}
+  .pipemap .pm small{display:block;font-size:.56rem;color:var(--faint)}
+  .pipemap .pm.on{background:var(--dark);border-color:var(--dark);color:#fff}
+  .pipemap .pm.on small{color:#cbd5e1}
+  .pipemap .pa{color:var(--faint)}
+  .principle{
+    font-style:italic;font-size:.95rem;line-height:1.55;color:var(--ink);
+    border-left:3px solid var(--dark);padding:.4rem 0 .4rem 1rem;margin:1rem 0;max-width:64ch;
+  }
+  .stepper-nav{display:flex;gap:.35rem;margin:1.1rem 0;flex-wrap:wrap}
+  .snav{
+    font-family:var(--mono);font-size:.7rem;border:1px solid var(--line2);background:var(--panel);
+    color:var(--ink-2);border-radius:999px;padding:.3rem .8rem;cursor:pointer;
+  }
+  .snav[aria-selected="true"]{background:var(--dark);border-color:var(--dark);color:#fff;font-weight:700}
+  .spanel{
+    background:var(--panel);
+    border:1px solid var(--line);border-radius:14px;padding:1.4rem clamp(.9rem,3vw,2rem) 5rem;position:relative;min-height:420px;
+    box-shadow:0 1px 3px rgba(15,23,42,.05);
+  }
+  .spanel h2{font-weight:700;color:var(--ink);font-size:1.3rem;margin-bottom:.3rem;letter-spacing:-.01em}
+  .spanel h2 .stepno{font-family:var(--mono);font-size:.72rem;color:var(--grn);vertical-align:.35em;letter-spacing:.1em;margin-right:.5rem;font-weight:400}
+  .spanel .lede{font-size:.9rem;max-width:70ch;margin-bottom:1rem;color:var(--ink-2)}
+  .spanel .lede strong{color:var(--ink)}
+  .codeblock{
+    background:var(--dark);border:1px solid var(--dark-2);border-radius:8px;padding:.8rem .95rem;
+    font-family:var(--mono);font-size:.74rem;line-height:1.6;color:#e2e8f0;
+    overflow-x:auto;white-space:pre;margin:.8rem 0;
+  }
+  .codeblock .c-dim{color:var(--faint)}
+  .codeblock .c-warn{color:#fca5a5}
+  .codeblock .c-hot{color:#6ee7b7}
+  .codeblock .c-new{color:#d1fae5;background:rgba(16,185,129,.16)}
+  .qgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:.7rem;margin:.9rem 0}
+  .quote-card{background:var(--panel);color:var(--ink);border-radius:12px;padding:.75rem .85rem;border:1px solid var(--line);box-shadow:0 1px 2px rgba(15,23,42,.06)}
+  .quote-card .qf{font-weight:700;font-size:.82rem}
+  .quote-card blockquote{font-style:italic;font-size:.82rem;color:var(--ink-2);margin:.45rem 0;border-left:3px solid var(--grn-bright);padding-left:.6rem;line-height:1.45}
+  .quote-card .qs{font-family:var(--mono);font-size:.62rem;color:var(--mut)}
+  .quote-card .qs::before{content:"✓ verified in page · ";color:var(--grn)}
+
+  .meter{margin:.9rem 0}
+  .meter .mq{font-size:.82rem;color:var(--ink-2);margin-bottom:.3rem}
+  .meter .mq em{color:var(--ink);font-weight:600}
+  .track{
+    position:relative;height:14px;border-radius:999px;background:var(--raised);border:1px solid var(--line);
+  }
+  .track .zone{position:absolute;inset:0;border-radius:999px;background:linear-gradient(90deg,rgba(16,185,129,.18),transparent 30%)}
+  .pin{
+    position:absolute;top:50%;width:13px;height:13px;border-radius:50%;transform:translate(-50%,-50%);
+    transition:left 1.1s cubic-bezier(.2,.7,.2,1);
+  }
+  .pin.before{background:#fff;border:2px solid var(--red-pin)}
+  .pin.before.solid{background:var(--red-pin);border:0}
+  .pin.after{background:var(--grn-bright);box-shadow:0 0 8px rgba(16,185,129,.5)}
+  .mlabels{display:flex;justify-content:space-between;font-family:var(--mono);font-size:.6rem;color:var(--faint);margin-top:.2rem}
+  .mres{font-family:var(--mono);font-size:.76rem;margin-top:.25rem}
+  .mres .rb{color:var(--red)} .mres .ra{color:var(--grn);font-weight:700}
+
+  .spanel .controls{border-radius:0 0 14px 14px}
+  .honest{
+    border:1px solid var(--red-soft);border-radius:8px;padding:.7rem .9rem;font-size:.82rem;margin-top:1rem;
+    background:var(--red-bg);color:#991b1b;
+  }
+  .honest .n-tag{font-family:var(--mono);font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:var(--red);display:block;margin-bottom:.25rem}
+  .honest a{color:inherit;text-decoration:underline}
+
+  footer{max-width:1060px;margin:0 auto;padding:1.2rem 1rem 2.5rem;font-size:.76rem;color:var(--mut);border-top:1px solid var(--line)}
+  footer code{font-family:var(--mono);font-size:.7rem;color:var(--grn)}
+  footer .frow{display:flex;gap:1.4rem;flex-wrap:wrap;margin-top:.4rem}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="bar">
+    <a class="wordmark" href="https://github.com/msporchia/board-game-rag-seller">🎲 <b>Seller</b> · demo replay</a>
+    <label class="gloss-toggle" style="margin-left:auto" title="Show English translations under the Italian text">
+      <input type="checkbox" id="glossToggle" hidden>
+      <span class="pill" aria-hidden="true"></span>
+      EN subtitles
+    </label>
+  </div>
+</header>
+
+<div class="hero">
+  <h1>Watch the system work — <em>nothing edited, everything measured.</em></h1>
+  <p>
+    A grounded AI board-game seller and the retrieval engine underneath, shown through real recorded
+    sessions and measured walkthroughs.
+    <span class="it-note">The data is Italian by design — real catalog, real language.
+    <strong>EN subtitles</strong> are on; toggle them in the header.</span>
+  </p>
+
+  <p class="modes-q">What do you want to explore?</p>
+  <div class="modes" role="tablist" aria-label="Demo sections">
+    <button class="mode" id="tab-chat" role="tab" aria-selected="true" aria-controls="panel-chat">
+      <span class="m-ico">💬</span>
+      <span class="m-body"><span class="m-title">Watch it sell</span>
+      <span class="m-desc">Four unedited chat sessions on the live 501-game index — every search the
+      agent ran, on the page, flaws annotated.</span></span>
+    </button>
+    <button class="mode" id="tab-pipe" role="tab" aria-selected="false" aria-controls="panel-pipe">
+      <span class="m-ico">🔬</span>
+      <span class="m-body"><span class="m-title">See why search finds it</span>
+      <span class="m-desc">Follow three real games through the enrichment pipeline — two measured wins
+      and one loss we kept visible.</span></span>
+    </button>
+  </div>
+</div>
+
+<main>
+  <!-- ================= CHAT REPLAY ================= -->
+  <section id="panel-chat" role="tabpanel" aria-labelledby="tab-chat">
+    <div id="picker">
+      <h2 class="picker-title">Which conversation do you want to watch?</h2>
+      <p class="picker-sub">Four one-take recordings, straight from the live index. The ⚠ flags mark the
+      takes where the model slips — kept on purpose, each with its ticket.</p>
+      <div class="rail" id="rail" role="tablist" aria-label="Recorded sessions"></div>
+    </div>
+
+    <div id="stageWrap" hidden>
+      <div class="stage">
+        <div class="stage-head">
+          <button class="btn" id="changeBtn" style="font-size:.75rem;padding:.3rem .7rem">⟵ change conversation</button>
+          <span class="sid" id="stageSid"></span>
+          <span id="stageHook" style="font-size:.82rem"></span>
+          <span class="env">engine=agent · qwen2.5:7b · bge-m3 · 501 games</span>
+        </div>
+        <div class="turns" id="turns"></div>
+        <div class="controls">
+          <button class="btn primary" id="nextBtn">Next turn ▸</button>
+          <button class="btn" id="playBtn">▶ Play all</button>
+          <button class="btn" id="resetBtn" title="Restart this session">↺</button>
+          <span class="kbd-hint">space / → for next turn</span>
+          <div class="progress" id="dots"></div>
+        </div>
+      </div>
+
+      <p class="end-note">
+        Nothing here is piloted, re-rolled or edited — sessions are recorded in-process by
+        <a href="https://github.com/msporchia/board-game-rag-seller/blob/main/tests/record_live_session.py">record_live_session.py</a>,
+        which captures what an HTTP transcript can't: the searches the agent actually composed.
+        Full annotated write-up: <a href="https://github.com/msporchia/board-game-rag-seller/blob/main/docs/showcase/live-session.md">docs/showcase/live-session.md</a>.
+      </p>
+    </div>
+  </section>
+
+  <!-- ================= PIPELINE STORY ================= -->
+  <section id="panel-pipe" role="tabpanel" aria-labelledby="tab-pipe" hidden>
+    <div id="pipePicker">
+      <h2 class="picker-title">One pipeline, three journeys</h2>
+      <p class="picker-sub" style="max-width:76ch">An embedding model turns a whole product record into
+        <strong>one point in semantic space</strong> — a lossy centroid of whatever text you feed it. It's fixed
+        and query-agnostic: it can only embed the text it's given. A real catalog mixes richly-described games
+        with name-plus-a-few-fields ones, so fed raw, that difference silently <strong>becomes the ranking</strong> —
+        well-documented games surface, thin ones vanish. Not relevance; a data-entry accident.</p>
+      <blockquote class="principle">Every game must be equally findable and equally sellable, whatever the
+        quality of its source data. If one game is to outrank another, it must be intentional — never
+        inherited from data quality.</blockquote>
+      <p class="picker-sub" style="max-width:76ch">The embedder is fixed — <strong>the text is the lever</strong>.
+        Three real games, carried end-to-end through the pipeline and ranked by the real retriever on a frozen
+        50-game corpus: same embedder, same queries, only the embedded text changes. Each journey demonstrates
+        a different property of the same machine — including the one where it loses.</p>
+      <div class="rail" id="pipeRail" role="tablist" aria-label="Pipeline walkthroughs"></div>
+    </div>
+
+    <div id="storyWrap" hidden>
+      <div class="stepper-nav" id="snav" role="tablist" aria-label="Pipeline steps"></div>
+      <div class="spanel" id="spanel">
+        <div class="pipemap" id="pipemap" aria-hidden="true"></div>
+        <div id="stepBody"></div>
+        <div class="controls">
+          <button class="btn" id="changeGameBtn" style="font-size:.78rem">⟵ change game</button>
+          <button class="btn" id="sPrev">◂ Back</button>
+          <button class="btn primary" id="sNext">Next step ▸</button>
+          <span class="kbd-hint" id="sCount"></span>
+        </div>
+      </div>
+      <p class="end-note" id="storyEndNote"></p>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div>Numbers regenerate on every eval run — a stale figure shows as stale rather than dressed up.</div>
+  <div class="frow">
+    <span>Regenerate the sessions: <code>python -m tests.record_live_session --all</code></span>
+    <a href="https://github.com/msporchia/board-game-rag-seller">← back to the repo</a>
+  </div>
+</footer>
+
+<script>
+"use strict";
+const REPO = "https://github.com/msporchia/board-game-rag-seller/blob/main/";
+
+/* ---------------- data: four real recorded sessions (curated display copy) ---------------- */
+const SESSIONS = [
+{
+  id:"coppia-serale",
+  hook:"A vague gift request becomes real filters — and survives the model going silent.",
+  meta:[["win","constraint → filter"],["win","SEL-147 floor at work"]],
+  turns:[
+    {
+      user:"ciao! cerco un gioco da regalare a una coppia di amici: giocano spesso in due la sera dopo cena",
+      gloss:"hi! looking for a gift for a couple of friends: they often play in two, evenings after dinner",
+      search:{q:"gioco da tavolo per due persone, giochi serali, non troppo complessi", filters:[["players","= 2",false]], hits:5, forced:false},
+      games:[{n:"Patchwork",m:"2 · 25 min"},{n:"Obscurio",m:"2-8 · 40 min",coop:true}],
+      reply:"Ciao! Sono felice di aiutarti a trovare un gioco da tavolo perfetto per la tua coppia di amici. Patchwork è un gioco strategico creativo e veloce che richiede astuzia e pianificazione per costruire il tessuto più grande. È perfetto per due giocatori che amano sfidarsi e risolvere puzzle. Obscurio è un gioco cooperativo di mistero che richiede deduzione e strategia per risolvere enigmi e scoprire la verità.",
+      rgloss:"Hi! I'm happy to help you find the perfect board game for your couple of friends. Patchwork is a creative, fast strategy game that takes cunning and planning to build the largest quilt. It's perfect for two players who love challenging each other and solving puzzles. Obscurio is a cooperative mystery game that takes deduction and strategy to solve riddles and uncover the truth.",
+      quick:["Vorresti un gioco con tempi di gioco più lunghi?","Hai preferenza per giochi di fantasia o realistici?"],
+      notes:[]
+    },
+    {
+      user:"sì, gli piace la strategia ma niente partite infinite, direi massimo un'ora",
+      gloss:"they like strategy but no endless games — an hour tops",
+      search:{q:"gioco strategico per 2 persone", filters:[["players","= 2",false],["duration","≤ 60",false]], hits:5, forced:false},
+      games:[{n:"Patchwork",m:"2 · 25 min"},{n:"Offboard",m:"2 · 20 min"},{n:"Onitama",m:"2 · 10 min"}],
+      reply:"Patchwork è un gioco creativo e veloce che richiede astuzia e pianificazione. Offboard offre una libertà di movimento unica e richiede strategia per vincere — una sfida veloce e dinamica. Onitama è un gioco di arti marziali strategico ed elegante, ideale per due giocatori che amano la competizione.",
+      rgloss:"Patchwork is a creative, fast game that takes cunning and planning. Offboard offers a unique freedom of movement and takes strategy to win — a fast, dynamic challenge. Onitama is a strategic, elegant martial-arts game, ideal for two players who love competition.",
+      quick:["Vorresti un gioco cooperativo?","Cerchi qualcosa con tematiche più avvincenti?","Sorprendimi!"],
+      notes:[{type:"win",tag:"constraint → filter",text:"«massimo un'ora» became a structured filter (duration ≤ 60) — not just words dropped into the query."}]
+    },
+    {
+      user:"ah, dimenticavo: adorano i giochi cooperativi, dove si vince o si perde insieme. c'è qualcosa di cooperativo che funzioni bene in due?",
+      gloss:"oh, I forgot: they love co-op games, where you win or lose together. anything cooperative that works well in two?",
+      search:{q:"ah, dimenticavo: adorano i giochi cooperativi, dove si vince o si perde insieme…", filters:[], hits:5, forced:true},
+      games:[{n:"Nome in Codice: Duetto",m:"2 · 25 min",coop:true},{n:"Pandemic: Reazione Rapida",m:"2-4 · 20 min",coop:true}],
+      reply:"Ho capito! Ti servono giochi cooperativi per due giocatori. Nome in Codice - Duetto è un gioco di deduzione cooperativa dove dovete lavorare insieme per risolvere enigmi. Pandemic - Reazione Rapida è un gioco cooperativo di avventura dove dovete lavorare insieme per salvare il mondo.",
+      rgloss:"Got it! You need cooperative games for two players. Codenames: Duet is a cooperative deduction game where you have to work together to solve riddles. Pandemic: Rapid Response is a cooperative adventure game where you have to work together to save the world.",
+      quick:["Vuoi giochi con temi fantasy?","Sorprendimi!","Cerchi giochi più lunghi di 30 minuti?"],
+      notes:[{type:"flaw",tag:"kept honest — then floored",text:"The model went silent this turn (no tool call) — the very failure that once produced a false “not in catalog”. The safety net searched with the customer's own words and returned the catalog's two best co-op-for-two answers. An honest no-match must now be earned by an empty search, never granted to silence.",ticket:["SEL-147","docs/tickets/resolved/SEL-147-agent-false-nomatch-coop-two.md"]}]
+    },
+    {
+      user:"perfetto! e se invece volessi qualcosa di cooperativo per quando invitano altri amici, tipo in cinque?",
+      gloss:"perfect! and something cooperative for when they invite friends over — five of them, say?",
+      search:{q:"perfetto! e se invece volessi qualcosa di cooperativo per quando invitano altri amici…", filters:[], hits:5, forced:true},
+      games:[{n:"Unlock! Timeless Adventures",m:"1-6 · 75 min",coop:true},{n:"Dungeon Time",m:"1-5 · 45 min",coop:true}],
+      reply:"Fantastico! Ecco alcuni giochi cooperativi perfetti per 5 giocatori. Unlock! - Timeless Adventures è un'avventura coinvolgente in cui dovete lavorare insieme per risolvere enigmi. Dungeon Time è un gioco di carte cooperativo in tempo reale con avventure da completare in 5 minuti!",
+      rgloss:"Fantastic! Here are some cooperative games perfect for 5 players. Unlock! Timeless Adventures is an engaging adventure where you have to work together to solve puzzles. Dungeon Time is a real-time cooperative card game with adventures to complete in 5 minutes!",
+      quick:["Vorresti giochi con tempi di gioco più lunghi?","Sei interessato a giochi con espansioni disponibili?"],
+      notes:[]
+    }
+  ]
+},
+{
+  id:"cliente-deciso",
+  hook:"The weak take, kept on purpose: a named title missed, an invented filter caught by the log itself.",
+  meta:[["flag","2 flaws annotated"]],
+  turns:[
+    {
+      user:"buongiorno, avete Carcassonne? vorrei regalarlo a mia sorella, mi serve per stasera",
+      gloss:"good morning, do you have Carcassonne? I'd like it as a gift for my sister, I need it tonight",
+      search:{q:"gioco da tavolo per 2-5 persone, meccanica di tessera, tema paesaggio", filters:[["players","= 2",false]], hits:5, forced:false},
+      games:[{n:"Terra Mystica",m:"2-5 · 120 min"},{n:"Descent: Viaggi nelle Tenebre",m:"2-5 · 120 min"}],
+      reply:"Ciao! Terra Mystica è un gioco strategico di avventura fantastica in cui dovrai esplorare il territorio e controllarlo per vincere. Descent: Viaggi nelle Tenebre è un gioco di avventura sotterranea con combattimenti epici!",
+      rgloss:"Hi! Terra Mystica is a strategic fantasy-adventure game where you'll have to explore the territory and control it to win. Descent: Journeys in the Dark is an underground adventure game with epic battles!",
+      quick:["Per 2 giocatori","Sorprendimi"],
+      notes:[{type:"flaw",tag:"kept honest",text:"The customer named a title; the model searched a paraphrase — and Carcassonne is in stock. Exact-title lookup is a retrieval axis semantic search doesn't guarantee: a known lever for the agent tier.",ticket:["SEL-113","docs/tickets/SEL-113-complete-agentic-chat.md"]}]
+    },
+    {
+      user:"perfetto! e c'è qualcosa di simile da affiancare al regalo, sempre di piazzamento tessere ma un po' più moderno?",
+      gloss:"and something similar to go with the gift — still tile placement, a bit more modern?",
+      search:{q:"gioco piazza tessere cooperativo", filters:[["players","= 2",false],["cooperative","= true",true]], hits:5, forced:false},
+      games:[{n:"Magic Maze",m:"1-8 · 15 min",coop:true},{n:"TIME Stories: La Confraternita della Costa",m:"2-4 · 150 min",coop:true},{n:"TIME Stories: Estrella Drive",m:"2-4 · 90 min",coop:true}],
+      reply:"Ho alcune proposte, sempre con piazzamento tessere e un po' più moderne. Magic Maze è un gioco cooperativo in cui dovete esplorare un labirinto lavorando insieme — richiede comunicazione e strategia! TIME Stories: La Confraternita della Costa è un'avventura cooperativa nei Caraibi con una storia avvincente.",
+      rgloss:"I have a few suggestions, still tile placement and a bit more modern. Magic Maze is a cooperative game where you explore a maze working together — it takes communication and strategy! TIME Stories: The Brotherhood of the Coast is a cooperative adventure in the Caribbean with a gripping story.",
+      quick:["Per 2 giocatori","Senza espansioni"],
+      notes:[{type:"flaw",tag:"kept honest — invented filter",text:"Nobody asked for cooperative — the model fabricated cooperative = true. The search log makes the fabrication visible, which is exactly why the searches are on the page. Anti-invented-filters is an open backlog lever.",ticket:["SEL-143","docs/tickets/SEL-143-cooperative-fabricated-from-unknown-reference.md"]}]
+    }
+  ]
+},
+{
+  id:"regalo-bambino",
+  hook:"Constraints accumulate turn over turn; the safety net carries the tail semantically.",
+  meta:[["win","semantic tail"]],
+  turns:[
+    {
+      user:"cerco un regalo per il compleanno di mio figlio, compie 8 anni",
+      gloss:"a birthday gift for my son, he's turning 8",
+      search:{q:"gioco per bambini, età minima 8 anni", filters:[["age","≤ 8",false]], hits:5, forced:false},
+      games:[{n:"Fairy Tile",m:"2-4 · 30 min"},{n:"NasconDino",m:"2-6 · 20 min"}],
+      reply:"Ciao! Fairy Tile è un gioco di avventura fantastica in cui i giocatori costruiscono un mondo incantato con tessere magiche — perfetto per bambini che amano la fantasia! NasconDino è un gioco di carte educativo che aiuta a sviluppare memoria e velocità.",
+      rgloss:"Hi! Fairy Tile is a fantasy-adventure game where players build an enchanted world out of magic tiles — perfect for kids who love imagination! NasconDino is an educational card game that helps develop memory and speed.",
+      quick:["Vorresti un gioco di strategia?","Hai bisogno di consigli per giocatori più piccoli?"],
+      notes:[]
+    },
+    {
+      user:"bello! gioca spesso con la sorella più piccola, meglio qualcosa che possano fare insieme senza litigare",
+      gloss:"he often plays with his younger sister — better something they can do together without fighting",
+      search:{q:"bello! gioca spesso con la sorella più piccola, meglio qualcosa che possano fare insieme…", filters:[], hits:5, forced:true},
+      games:[{n:"Unlock! Secret Adventures",m:"1-6 · 60 min",coop:true},{n:"CuBirds",m:"2-5 · 20 min"},{n:"Coloretto",m:"2-5 · 30 min"}],
+      reply:"Unlock! - Secret Adventures è un'esperienza da escape room in cui i giocatori risolvono enigmi insieme. CuBirds è un gioco di carte divertente con regole semplici e partite da 20 minuti. Coloretto è facile e veloce — ideale per una famiglia!",
+      rgloss:"Unlock! Secret Adventures is an escape-room experience where players solve puzzles together. CuBirds is a fun card game with simple rules and 20-minute games. Coloretto is easy and fast — ideal for a family!",
+      quick:["Vuoi un gioco cooperativo?","Preferisci qualcosa che duri meno di 30 minuti?","Sorprendimi!"],
+      notes:[]
+    },
+    {
+      user:"l'ideale sarebbe una cosa da mezz'oretta, non di più",
+      gloss:"ideally about half an hour, no longer",
+      search:{q:"l'ideale sarebbe una cosa da mezz'oretta, non di più", filters:[], hits:5, forced:true},
+      games:[{n:"Otto Minuti per un Impero",m:"2-5 · 15 min"},{n:"Fantascatti: 5 Minuti a Mezzanotte",m:"2-8 · 20 min"}],
+      reply:"Otto Minuti per un Impero è un gioco strategico veloce e divertente per due-cinque giocatori. Fantascatti - 5 Minuti a Mezzanotte è un gioco di società rapido, perfetto per passare del tempo insieme!",
+      rgloss:"Eight-Minute Empire is a fast, fun strategy game for two to five players. Fantascatti: 5 Minutes to Midnight is a quick party game, perfect for spending time together!",
+      quick:["Sorprendimi","per 2-4 giocatori","max 30 minuti"],
+      notes:[{type:"win",tag:"the semantic tail",text:"Even through the safety net, the semantic layer carried the constraint: «mezz'oretta» surfaced 15–20 minute games with no structured duration filter at all."}]
+    }
+  ]
+},
+{
+  id:"esperti-fantascienza",
+  hook:"Described, never named: the customer paints Terraforming Mars in three turns — found #1 of 501.",
+  meta:[["win","#1 / 501"],["flag","one pitch slip kept"]],
+  turns:[
+    {
+      user:"siamo un gruppo di giocatori esperti e cerchiamo un titolo impegnativo per le nostre serate",
+      gloss:"we're a group of expert players looking for a demanding title for our game nights",
+      search:{q:"gioco da tavolo impegnativo per giocatori esperti", filters:[["players","= 4",false],["cooperative","= false",false]], hits:5, forced:false},
+      games:[{n:"Disney Villainous",m:"2-6 · 90 min"},{n:"Talisman: Il Cataclisma",m:"2-6 · 90 min"},{n:"Jamaica",m:"2-6 · 45 min"}],
+      reply:"Disney Villainous è un gioco strategico dove potrete interpretare i cattivi più famosi della Disney. Talisman: Il Cataclisma vi porterà in un mondo fantastico di avventure e magia. Jamaica vi farà navigare le acque dei Caraibi alla ricerca del tesoro!",
+      rgloss:"Disney Villainous is a strategy game where you get to play Disney's most famous villains. Talisman: The Cataclysm will take you into a fantasy world of adventure and magic. Jamaica will have you sailing Caribbean waters in search of treasure!",
+      quick:["Vorreste giocare con 2-4 giocatori?","Siete disposti a giocare fino a 90 minuti?"],
+      notes:[]
+    },
+    {
+      user:"il tema che ci attira di più è la fantascienza, meglio se gestionale",
+      gloss:"the theme we like most is sci-fi, ideally a management game",
+      search:{q:"gioco fantascienza gestione", filters:[], hits:5, forced:false},
+      games:[{n:"Magnastorm",m:"2-4 · 80 min"},{n:"Terraforming Mars: Turmoil",m:"1-5 · 150 min"}],
+      reply:"Fantascienza e gestionale! Magnastorm è un gioco di esplorazione e strategia in un mondo di fantascienza, dove gestite le risorse per costruire una base spaziale. Terraforming Mars: Turmoil è un gioco di gestione delle risorse su un pianeta alieno.",
+      rgloss:"Sci-fi and management! Magnastorm is an exploration and strategy game in a science-fiction world, where you manage resources to build a space base. Terraforming Mars: Turmoil is a resource-management game on an alien planet.",
+      quick:["Per 2-4 giocatori","Max 150 minuti"],
+      notes:[{type:"win",tag:"closing in",text:"The expansion surfaces — close, not there yet. The customer still hasn't said the name."}]
+    },
+    {
+      user:"ci piacciono i giochi dove costruisci un motore di carte e risorse, tipo rendere abitabile un pianeta",
+      gloss:"we like games where you build an engine of cards and resources — like making a planet habitable",
+      search:{q:"ci piacciono i giochi dove costruisci un motore di carte e risorse, tipo rendere abitabile un pianeta", filters:[], hits:5, forced:true},
+      games:[{n:"Terraforming Mars",m:"1-5 · 120 min",hot:"#1 / 501"},{n:"Smash Up",m:"2-4 · 45 min"}],
+      reply:"Fantascienza, gestione e costruzione! Terraforming Mars è un gioco strategico dove dovete lavorare insieme per trasformare il pianeta Marte in un nuovo mondo abitabile. Svilupperete tecnologie e risorse per renderlo un posto incredibile.",
+      rgloss:"Sci-fi, management and building! Terraforming Mars is a strategy game where you have to work together to transform planet Mars into a habitable new world. You'll develop technologies and resources to make it an incredible place.",
+      quick:["Vorreste giocare a un titolo con più giocatori?","Siete disposti ad investire 2 ore in ogni partita?"],
+      notes:[
+        {type:"win",tag:"described, never named",text:"The customer never says the name; the third message describes the game — and the search, the customer's own words verbatim, puts the right box first out of 501."},
+        {type:"flaw",tag:"kept honest — pitch slip",text:"«dovete lavorare insieme» — Terraforming Mars is competitive, not cooperative. Sales wording on the local 7B is the documented limit; the simulation harness exists to measure how much a stronger model recovers.",ticket:["docs/chat.md","docs/chat.md"]}
+      ]
+    }
+  ]
+}
+];
+
+/* ---------------- chat replay player ---------------- */
+const rail = document.getElementById("rail");
+const turnsEl = document.getElementById("turns");
+const dotsEl = document.getElementById("dots");
+let cur = 0, shown = 0, playTimer = null;
+
+function esc(s){const d=document.createElement("div");d.textContent=s;return d.innerHTML}
+
+function howContent(forced){
+  if(forced){
+    return `<p>The model made <strong>no tool call</strong> this turn. The code notices and runs the
+      safety-net search with the customer's own words — so silence can never become a fake “no match”:
+      an honest no-match must be <em>earned</em> by a search that returns empty
+      (<a href="${REPO}docs/tickets/resolved/SEL-147-agent-false-nomatch-coop-two.md">SEL-147</a>).</p>
+      <div class="flow">
+        <span class="fbox dead">qwen2.5:7b<small>went silent</small></span><span class="farrow">→</span>
+        <span class="fbox code">code floor<small>SEL-147</small></span><span class="farrow">→</span>
+        <span class="fbox">search_catalog<small>customer's words, verbatim</small></span><span class="farrow">→</span>
+        <span class="fbox">Qdrant · 501 games<small>bge-m3 semantic</small></span><span class="farrow">→</span>
+        <span class="fbox">top 5</span><span class="farrow">→</span>
+        <span class="fbox code">grounding gate<small>only retrieved ids</small></span><span class="farrow">→</span>
+        <span class="fbox">reply</span>
+      </div>`;
+  }
+  return `<p>The model itself decided to search, and with what words: it composed the free-text query
+    <em>and</em> the structured filters, then called its <code>search_catalog</code> tool. The query is
+    embedded (bge-m3) and matched against the <strong>501-game</strong> index in Qdrant; structured
+    filters cut hard. Every call is recorded — <code>{query, filters, hits}</code> — so tool-use quality
+    is measurable, not vibes.</p>
+    <div class="flow">
+      <span class="fbox">🧑 message<small>+ history</small></span><span class="farrow">→</span>
+      <span class="fbox">qwen2.5:7b<small>the agent</small></span><span class="farrow">→</span>
+      <span class="fbox">search_catalog<small>query + filters</small></span><span class="farrow">→</span>
+      <span class="fbox">Qdrant · 501 games<small>bge-m3 semantic + filters</small></span><span class="farrow">→</span>
+      <span class="fbox">top 5</span><span class="farrow">→</span>
+      <span class="fbox code">grounding gate<small>only retrieved ids</small></span><span class="farrow">→</span>
+      <span class="fbox">reply</span>
+    </div>`;
+}
+const groundingContent = `<p>Only games the search actually returned may appear here. A pitched game must
+  be in the retrieved set — an invented id is <strong>dropped, and its sales pitch goes with it</strong>;
+  the final message is assembled in code from the survivors. The failure mode “text and cards naming
+  different games” is structurally impossible, not patched after the fact
+  (<a href="${REPO}docs/adr/0002-grounding-enforced-in-code.md">ADR-0002</a>).</p>`;
+
+function renderTurn(t, idx){
+  const wrap = document.createElement("div");
+  wrap.className = "turn";
+  let h = `<div class="turn-label step">turn ${idx+1}</div>`;
+
+  h += `<div class="u-row step"><div class="bubble"><span class="who">customer</span>${esc(t.user)}
+        <span class="gloss-t">${esc(t.gloss)}</span></div></div>`;
+
+  const chips = t.search.filters.map(([k,op,warn]) =>
+    `<span class="chip${warn?" warn":""}">${k} ${op}${warn?" ⚠":""}</span>`).join("");
+  h += `<div class="machine step">
+      <div class="m-line">
+        <span class="m-tag">🔎 search_catalog</span>
+        ${t.search.forced?'<span class="badge-forced">FORCED</span>':""}
+        <span class="m-q">${esc(t.search.q)}</span>
+      </div>
+      <div class="chips">${chips}<span class="chip hits">→ ${t.search.hits} hits</span></div>
+      <button class="how-btn" aria-expanded="false">how does this search work?</button>
+      <div class="how">${howContent(t.search.forced)}</div>
+    </div>`;
+
+  const cards = t.games.map(g =>
+    `<div class="gcard${g.hot?" hot":""}">${g.hot?`<span class="rankpin">${g.hot}</span>`:""}
+       <div class="gname">${esc(g.n)}</div>
+       <div class="gmeta">${esc(g.m)}${g.coop?' · <span class="coop">coop ✓</span>':""}</div>
+     </div>`).join("");
+  h += `<div class="step"><div class="cards">${cards}</div>
+        <div class="machine" style="margin-top:.15rem">
+          <button class="how-btn" aria-expanded="false">why only these cards?</button>
+          <div class="how">${groundingContent}</div>
+        </div></div>`;
+
+  h += `<div class="s-row step"><div class="bubble"><span class="who">seller</span>${esc(t.reply)}
+        <span class="gloss-t">${esc(t.rgloss)}</span></div></div>`;
+
+  if(t.quick && t.quick.length){
+    h += `<div class="quick step"><span class="quick-cap">quick replies offered — each tap becomes a real search filter</span>` +
+         t.quick.map(q=>`<span class="qr">${esc(q)}</span>`).join("") + `</div>`;
+  }
+
+  for(const n of (t.notes||[])){
+    const tk = n.ticket ? ` <a href="${REPO}${n.ticket[1]}">${esc(n.ticket[0])}</a>` : "";
+    h += `<div class="note ${n.type} step"><span class="n-tag">${n.type==="flaw"?"⚠ ":"✦ "}${esc(n.tag)}</span>${esc(n.text)}${tk}</div>`;
+  }
+
+  wrap.innerHTML = h;
+  wrap.querySelectorAll(".how-btn").forEach(b=>{
+    b.addEventListener("click",()=>{
+      const open = b.getAttribute("aria-expanded")==="true";
+      b.setAttribute("aria-expanded", String(!open));
+      b.nextElementSibling.classList.toggle("open", !open);
+    });
+  });
+  return wrap;
+}
+
+function drawDots(){
+  const s = SESSIONS[cur];
+  dotsEl.innerHTML = s.turns.map((_,i)=>`<span class="dot${i<shown?" done":""}"></span>`).join("");
+  document.getElementById("nextBtn").disabled = shown >= s.turns.length;
+}
+function nextTurn(){
+  const s = SESSIONS[cur];
+  if(shown >= s.turns.length) return false;
+  turnsEl.appendChild(renderTurn(s.turns[shown], shown));
+  shown++;
+  drawDots();
+  if(shown > 1) turnsEl.lastElementChild.scrollIntoView({behavior:"smooth",block:"start"});
+  return true;
+}
+function resetSession(){
+  stopPlay();
+  turnsEl.innerHTML = ""; shown = 0;
+  const s = SESSIONS[cur];
+  document.getElementById("stageSid").textContent = s.id;
+  document.getElementById("stageHook").textContent = s.hook;
+  drawDots();
+  nextTurn();
+}
+function stopPlay(){
+  if(playTimer){clearInterval(playTimer);playTimer=null;}
+  document.getElementById("playBtn").textContent = "▶ Play all";
+}
+function togglePlay(){
+  if(playTimer){stopPlay();return;}
+  document.getElementById("playBtn").textContent = "⏸ Pause";
+  playTimer = setInterval(()=>{ if(!nextTurn()) stopPlay(); }, 3400);
+}
+
+function drawRail(){
+  rail.innerHTML = "";
+  SESSIONS.forEach((s,i)=>{
+    const b = document.createElement("button");
+    b.className = "sess"; b.setAttribute("role","tab");
+    const meta = (s.meta||[]).map(([k,v])=>`<span class="${k==="flag"?"flag":"win"}">${k==="flag"?"⚠":"✦"} ${esc(v)}</span>`).join(" · ");
+    const tease = s.turns[0].user.length > 92 ? s.turns[0].user.slice(0,92).trimEnd()+"…" : s.turns[0].user;
+    b.innerHTML = `<span class="sid">${esc(s.id)}</span>
+      <span class="tease">${esc(tease)}</span>
+      <span class="shook">${esc(s.hook)}</span>
+      <span class="smeta">${meta}<br><span class="watch">▶ watch — ${s.turns.length} turns, one take</span></span>`;
+    b.addEventListener("click",()=>openSession(i));
+    rail.appendChild(b);
+  });
+}
+function openSession(i){
+  cur = i;
+  document.getElementById("picker").hidden = true;
+  document.getElementById("stageWrap").hidden = false;
+  resetSession();
+}
+function backToPicker(){
+  stopPlay();
+  document.getElementById("stageWrap").hidden = true;
+  document.getElementById("picker").hidden = false;
+}
+
+document.getElementById("nextBtn").addEventListener("click",()=>{stopPlay();nextTurn();});
+document.getElementById("playBtn").addEventListener("click",togglePlay);
+document.getElementById("resetBtn").addEventListener("click",resetSession);
+document.getElementById("changeBtn").addEventListener("click",backToPicker);
+document.addEventListener("keydown",e=>{
+  if(document.getElementById("panel-chat").hidden) return;
+  if(document.getElementById("stageWrap").hidden) return;
+  if(e.target.tagName==="INPUT"||e.target.tagName==="BUTTON") return;
+  if(e.key===" "||e.key==="ArrowRight"){e.preventDefault();stopPlay();nextTurn();}
+});
+
+/* ---------------- pipeline story ---------------- */
+const PIPEMAP = [
+  ["source","catalog DTO","messy · incomplete"],
+  ["curator","① Curator","flag the gaps"],
+  ["web","② Web","recover facts"],
+  ["synth","③ Synth","weave prose"],
+  ["compose","④ Compose","assemble text"],
+  ["embed","embed_text","what gets embedded"],
+  ["index","Qdrant","rank on 50 games"]
+];
+const TM_STEPS = [
+{
+  nav:"① a thin record",
+  active:["source"],
+  title:"A thin record arrives",
+  html:`<p class="lede">Meet the patient: <strong>Terraforming Mars with its description stripped</strong> —
+    exactly as the e2e fixture ships it, reproducing the most common real-catalog case. The structured
+    data is intact and trustworthy; the prose a customer's words would match is simply gone.</p>
+  <div class="codeblock">{
+  "name": "Terraforming Mars",
+  "description": <span class="c-warn">""</span>,            <span class="c-dim">// ← the thin-catalog case</span>
+  "players": [1, 2, 3, 4, 5],
+  "duration_min": 120,
+  "complexity": "Medio (3)",
+  "tags": ["Civilizzazione", "Economia", "Fantascienza",
+           "Gestione della Mano", "Piazzamento Tessere", "Spazio"],
+  "autori": "Jacob Fryxelius",
+  "year": 2017
+}</div>
+  <div class="note win"><span class="n-tag">✦ the golden rule</span>Certain data always wins. The structured
+    fields — players, duration, complexity — bypass every LLM step untouched and no model guess can ever
+    override them. The pipeline is only allowed to add what's <em>missing</em>, never to rewrite what's
+    <em>known</em>.</div>`
+},
+{
+  nav:"② the baseline",
+  active:["source","compose","embed","index"],
+  title:"Baseline — a spec sheet, ranked accordingly",
+  html:`<p class="lede">Before any enrichment, the deterministic <strong>Compose</strong> step assembles the
+    record into the text the embedder will see. No LLM, fully reproducible — this is the honest
+    <strong>baseline to beat</strong>, and it's what any RAG stack does when it embeds catalog records
+    as-is. It can only phrase what the record contains:</p>
+  <div class="codeblock">Terraforming Mars
+Si gioca da 1 a 5 giocatori. giocabile in solitario; adatto anche a gruppi numerosi.
+Una partita dura circa 120 minuti (partita medio-lunga).
+Complessità: Medio (3). Difficoltà intermedia.
+Meccaniche e temi: Civilizzazione, Economia, Fantascienza, Gestione della Mano, …
+Categoria: Giochi Gestionali. Autore: Jacob Fryxelius. Anno: 2017.</div>
+  <p class="lede">It reads like a spec sheet. The words a customer actually types — <strong>marte,
+    terraformare, ossigeno, oceani, corporazioni</strong> — appear nowhere, so the semantic centroid lands
+    on “generic management game”. The real retriever, on a frozen 50-game corpus, buries it:</p>
+  <div class="meters" data-rows='[["gioco di fantascienza per terraformare marte",45,null],["gioco gestionale spaziale di strategia",47,null],["gioco di corporazioni che colonizzano lo spazio",47,null]]'></div>
+  <p style="font-size:.8rem;color:#7d8a81">Out of 50 games it's dead last, three queries out of three.
+  A real customer would never see it — and the game did nothing wrong.</p>`
+},
+{
+  nav:"③ recover the facts",
+  active:["curator","web"],
+  title:"Curator flags the gaps → Web recovers the facts, with evidence",
+  html:`<p class="lede">First the <strong>Curator</strong> — an LLM pass with a strict contract — classifies
+    every fact about the game as <em>known</em>, <em>extractable</em>, or <em>missing</em>. It is forbidden
+    to invent: every extraction must be backed by a verbatim quote from the record itself. For this game it
+    finds no setting and no theme — those land in <code>missing_info</code>.</p>
+  <p class="lede">Only then does the <strong>Web step</strong> fire (it's a fallback, not a default): it
+    searches trusted board-game reviews and extracts the missing facts. The discipline is the point —
+    every fact must carry a <strong>verbatim quote, verified to literally exist in the source page</strong>.
+    These are the actual recorded fixtures:</p>
+  <div class="qgrid">
+    <div class="quote-card"><div class="qf">setting = Marte / terraformazione</div>
+      <blockquote>«rendere il pianeta abitabile per il genere umano… la creazione di condizioni ambientali più simili a quelle della Terra»</blockquote>
+      <div class="qs">board-game review #1</div></div>
+    <div class="quote-card"><div class="qf">the three parameters = ossigeno · temperatura · oceani</div>
+      <blockquote>«alzare tre parametri: temperatura, ossigeno, piazzare esagoni oceano su Marte»</blockquote>
+      <div class="qs">board-game review #2</div></div>
+    <div class="quote-card"><div class="qf">theme = corporazioni / fantascienza</div>
+      <blockquote>«i giocatori assumono il ruolo di potenti corporazioni… per innalzare la temperatura, creare un'atmosfera respirabile e generare oceani liquidi»</blockquote>
+      <div class="qs">board-game review #3</div></div>
+  </div>
+  <div class="note win"><span class="n-tag">✦ anti-hallucination, upstream</span>A model guess with no quote is
+    <strong>thrown away, not embedded</strong> — fabrications die here, before they can ever reach the index.
+    The same discipline the chat applies at reply time (grounding), applied at ingestion time.</div>`
+},
+{
+  nav:"④ weave the prose",
+  active:["synth","compose","embed"],
+  title:"Synth — facts woven into search-friendly prose",
+  html:`<p class="lede">Recovered facts sitting in a side field are useless — the embedder consumes
+    <em>running text</em>. The <strong>Synth</strong> step fuses them into one dense, factual description
+    (and strips marketing noise while keeping the theme and mechanic words a query would match). It does
+    <em>not</em> restate players/duration/complexity — the deterministic Compose step owns those.
+    Representative output (an LLM step — wording varies between runs):</p>
+  <div class="codeblock" style="white-space:pre-wrap">Gestionale di fantascienza ambientato su <span class="c-hot">Marte</span>: a capo di una
+<span class="c-hot">corporazione</span> si lavora alla <span class="c-hot">terraformazione</span> del pianeta rosso, alzando
+<span class="c-hot">ossigeno</span> e temperatura e creando <span class="c-hot">oceani</span>. Engine building con carte
+progetto e gestione risorse, in competizione per gli spazi sulla mappa.</div>
+  <p style="font-size:.8rem;color:#7d8a81">Every highlighted word traces back to a verified quote — added
+  signal, never invented.</p>
+  <div class="note flaw"><span class="n-tag">⚠ where it can overreach</span>Synth runs on <em>every</em> game,
+    not only the thin ones — and rewriting an already-rich record is where it can lose signal instead of
+    adding it. The final step keeps that loss on the page.</div>`
+},
+{
+  nav:"⑤ the measured effect",
+  active:["embed","index"],
+  title:"Same game, same embedder, same query",
+  html:`<p class="lede">The measurement protocol: <strong>two indexes, identical except for this one game's
+    text</strong> — same 47 distractors, same embedder, same queries. Whatever moves, moved because of the
+    text. The embedded record finally carries the words people search for:</p>
+  <div class="codeblock" style="white-space:pre-wrap"><span class="c-dim">Terraforming Mars
+Si gioca da 1 a 5 giocatori. … Meccaniche e temi: Civilizzazione, Economia, Fantascienza, Spazio, …</span>
+<span class="c-new">Gestionale di fantascienza ambientato su Marte: a capo di una corporazione si lavora
+alla terraformazione del pianeta rosso, alzando ossigeno e temperatura e creando oceani. …</span></div>
+  <div class="meters" data-rows='[["gioco di fantascienza per terraformare marte",45,1],["gioco gestionale spaziale di strategia",47,26],["gioco di corporazioni che colonizzano lo spazio",47,1]]'></div>
+  <p style="font-size:.82rem;max-width:70ch">From invisible to the top of the first screen — purely by giving the
+  embedder a better text to embed. No change of model, no change of query. This is
+  <strong>representation engineering</strong>, measured.</p>
+  <div class="honest"><span class="n-tag">⚠ and where it lost — kept visible</span>
+    The same pipeline made <strong>Viticulture</strong> — an already-rich record — <em>worse</em>: Synth compressed
+    ~2300 → ~1200 chars and dropped <em>vino / toscana</em> signal, so a common query slipped #4 → #23.
+    The regression is documented and pinned by an <code style="font-family:var(--mono);font-size:.85em">xfail</code>
+    test that turns green only when fixed. A showcase that only shows wins is a sales brochure.
+    <a href="${REPO}docs/showcase/viticulture.md">The write-up →</a></div>`
+}
+];
+
+const ONI_STEPS = [
+{
+  nav:"① a decent record",
+  active:["source"],
+  title:"A decent record — with a blind spot",
+  html:`<p class="lede">Onitama's record is <em>not</em> thin: a full marketing description, good tags.
+    But the prose sells <strong>atmosphere</strong> — <em>santuari</em>, <em>viaggi nel cuore delle arti
+    marziali</em> — and never says plainly <strong>what kind of game it is</strong>.</p>
+  <div class="codeblock">{
+  "name": "Onitama - Gioco Strategico di Arti Marziali…",
+  "tags": ["Astratto", "Gestione della Mano", "Oriente"],
+  "players": [2], "duration_min": 10, "complexity": "Medio-Leggero (2)",
+  "description": <span class="c-warn">"Scopri la Magia di Onitama … un viaggio nel cuore
+                  delle arti marziali giapponesi … Preparati a
+                  dominare il santuario di Onitama …"</span>
+}</div>
+  <div class="note win"><span class="n-tag">✦ the gap</span>The one slot the Curator can't confirm from this
+    text is the <strong>genre</strong> — it lands in <code>missing_info</code> and the Web step fires.
+    (On a genuinely rich record, like Viticulture's, it correctly doesn't: the Web step is a fallback,
+    not a default.)</div>`
+},
+{
+  nav:"② the marketing centroid",
+  active:["source","compose","embed"],
+  title:"Baseline — atmosphere, not identity",
+  html:`<p class="lede">The baseline <code>embed_text</code> is long (2271 chars) — and length isn't the
+    problem. The dominant signal is <em>“epic martial-arts adventure”</em> marketing, while the concrete
+    identity — a <strong>perfect-information abstract</strong>, a <strong>duel of two dojos</strong> decided
+    by move-cards that pass to your opponent — is nearly absent.</p>
+  <p class="lede">A customer searching <em>«gioco da tavolo astratto per due giocatori»</em> is relying on
+    the single tag word <code>Astratto</code> surviving a wall of prose about <em>santuari</em> and
+    <em>brividi della vittoria</em>. The centroid lands on the atmosphere, not the game.</p>`
+},
+{
+  nav:"③ facts with a paper trail",
+  active:["curator","web"],
+  title:"The gap filled — with citations",
+  html:`<p class="lede">The Web step pulls the identity from real reviews. Every fact below was accepted
+    only after its quote was <strong>verified to literally exist in the source page</strong> — these are the
+    actual recorded fixtures:</p>
+  <div class="qgrid">
+    <div class="quote-card"><div class="qf">genre = astratto per due</div>
+      <blockquote>«È un gioco da tavolo astratto per due giocatori, della durata di 15-20 minuti, vagamente ambientato in oriente»</blockquote>
+      <div class="qs">board-game review #1</div></div>
+    <div class="quote-card"><div class="qf">theme = duello tra due dojo</div>
+      <blockquote>«Onitama è una lotta tra due dojo di arti marziali»</blockquote>
+      <div class="qs">board-game review #1</div></div>
+    <div class="quote-card"><div class="qf">mechanic = le mosse passano all'avversario</div>
+      <blockquote>«Ogni mossa che utilizzerete arriverà quindi a disposizione dell'avversario con un turno di ritardo»</blockquote>
+      <div class="qs">board-game review #2</div></div>
+  </div>`
+},
+{
+  nav:"④ the fact that didn't make it",
+  active:["web"],
+  title:"The claim that was dropped",
+  html:`<p class="lede">The discipline is the point. Consider the kind of claim a small LLM is tempted to
+    make about a light two-player game:</p>
+  <div class="flow" style="margin:.5rem 0">
+    <span class="fbox">claim: astratto per due<small>quote found ✓</small></span><span class="farrow">→</span>
+    <span class="fbox">KEPT</span>
+  </div>
+  <div class="flow" style="margin:.5rem 0">
+    <span class="fbox">claim: duello di dojo<small>quote found ✓</small></span><span class="farrow">→</span>
+    <span class="fbox">KEPT</span>
+  </div>
+  <div class="flow" style="margin:.5rem 0 1.1rem">
+    <span class="fbox dead">claim: "adatto alle famiglie"<small>plausible — but no source states it</small></span><span class="farrow">→</span>
+    <span class="fbox dead">DISCARDED</span>
+  </div>
+  <div class="note win"><span class="n-tag">✦ precision over recall</span>A wrong fact is worse than a gap:
+    the slot stays honest instead of being filled with a guess. It's the same rule the Curator applies to
+    the record's own text, applied again to the open web — the noisiest source of all.</div>`
+},
+{
+  nav:"⑤ what the text finally says",
+  active:["synth","compose","embed"],
+  title:"Now the text says what the game is",
+  html:`<p class="lede">Synth weaves the <em>verified</em> facts into the description; Compose assembles it.
+    Representative output (an LLM step — wording varies between runs):</p>
+  <div class="codeblock" style="white-space:pre-wrap"><span class="c-hot">Astratto</span> a informazione perfetta <span class="c-hot">per due giocatori</span>, ambientato in oriente: una sfida
+tra due <span class="c-hot">dojo di arti marziali</span> su una scacchiera 5×5. Le mosse sono dettate da carte che,
+dopo l'uso, <span class="c-hot">passano all'avversario</span> — un duello elegante e tattico.</div>
+  <p class="lede">The embedded text finally says, in plain words, what the game <em>is</em> — the exact
+    tokens of the queries this game should win: <em>«gioco da tavolo astratto per due giocatori»</em>,
+    <em>«gioco di arti marziali per due»</em>.</p>
+  <div class="note win"><span class="n-tag">✦ why this game is in the showcase</span>Onitama starts from a
+    decent record, so its retrieval gain is real but undramatic — and that's the honest framing. Its job
+    isn't a big number: it's the <strong>guarantee behind every number elsewhere</strong>. When Terraforming
+    Mars jumps #45 → #1, this is how you know nothing was invented along the way.</div>`
+}
+];
+
+const VIT_STEPS = [
+{
+  nav:"① a rich record",
+  active:["source"],
+  title:"A rich record — nothing to recover",
+  html:`<p class="lede">Viticulture arrives already full of the right signal — <strong>toscana, vigneto,
+    uve, vino</strong> are all in the description:</p>
+  <div class="codeblock">{
+  "name": "Viticulture Essential Edition - Gioco Strategico di Piazzamento Lavoratori…",
+  "tags": ["Aste", "Coltivazione", "Economia", "Piazzamento lavoratori"],
+  "description": "… Immagina di essere immerso nella dolcezza della
+                  campagna <span class="c-hot">toscana</span> … trasformare un semplice <span class="c-hot">vigneto</span> …
+                  raccogliere <span class="c-hot">uve</span> pregiate e trasformarle in <span class="c-hot">vini</span> …"
+}</div>
+  <p class="lede">The Curator confirms the setting <strong>from the description itself</strong> → no gap →
+    the Web step correctly does not fire. There's nothing to recover.</p>
+  <div class="note flaw"><span class="n-tag">⚠ the setup</span>So what could enrichment possibly add here?
+    On this game the problem isn't what the pipeline <em>adds</em> — it's what it <em>removes</em>.</div>`
+},
+{
+  nav:"② baseline — already strong",
+  active:["source","compose","embed","index"],
+  title:"Baseline — already strong",
+  html:`<p class="lede">The deterministic baseline (~2300 chars, Compose over the raw record) ranks
+    Viticulture near the top: the rich description carries the theme words straight into the embedding.</p>
+  <div class="meters" data-rows='[["vendemmia / stagioni / vigna",4,null],["tenuta vinicola in Toscana",1,null]]'></div>
+  <p style="font-size:.8rem;color:#7d8a81">This is the bar the full pipeline has to clear — and on this game,
+  the baseline is genuinely hard to beat.</p>`
+},
+{
+  nav:"③ synth compresses",
+  active:["synth"],
+  title:"Where it goes wrong — Synth compresses instead of rewriting",
+  html:`<p class="lede">Here's the catch: the Web step is idle, but <strong>Synth still runs — it always
+    does</strong>. It isn't gated on <code>missing_info</code>: its second job is stripping marketing noise,
+    so it rewrites <em>every</em> game's description. And its output cap (~700 chars) means that on a game
+    whose richness <em>was</em> the signal, it <strong>compresses away</strong> theme words the baseline had:</p>
+  <div class="codeblock">baseline  embed_text ≈ 2300 chars · vino <span class="c-hot">✓</span> · toscana <span class="c-hot">✓</span> · vigneto <span class="c-hot">✓</span>
+pipeline  embed_text ≈ 1200 chars · vino <span class="c-warn">✗</span> · toscana <span class="c-warn">✗</span></div>
+  <div class="note flaw"><span class="n-tag">⚠ a known risk, hit for real</span>This is the exact risk written
+    into the Synth design doc — <em>“rewrite, don't compress”</em>: verbose prose carries reinforcing theme
+    words, and blindly cutting it loses recall. Synth's first version still falls into that trap on
+    already-rich games.</div>`
+},
+{
+  nav:"④ the measured regression",
+  active:["embed","index"],
+  title:"The measured regression",
+  html:`<p class="lede">Same protocol as every other number on this page: two indexes, identical except for
+    this one game's text. The game <strong>slips out of the first screen</strong> on a perfectly common query:</p>
+  <div class="meters" data-rows='[["vendemmia / stagioni / vigna",4,23],["tenuta vinicola in Toscana",1,3]]'></div>
+  <p class="lede">On a thin catalog this trade is invisible — there's no rich text to lose. On a rich record
+    it's a real regression, and <em>toscana / vino</em> are exactly the queries a real customer types.</p>`
+},
+{
+  nav:"⑤ how we treat a loss",
+  active:[],
+  title:"What happens to a finding like this",
+  html:`<p class="lede">The failure isn't a footnote — it's wired into the engineering loop:</p>
+  <div class="note win"><span class="n-tag">1 · pinned by a red test</span>A test asserts the <em>fixed</em>
+    behaviour and is marked <code>xfail</code> — red today, green only when Synth stops compressing. A real
+    fix is provable, and the regression can't quietly come back.</div>
+  <div class="note win"><span class="n-tag">2 · cause written down</span>The mechanism and the measured
+    numbers are documented in the e2e findings, next to the wins.</div>
+  <div class="note win"><span class="n-tag">3 · fix scoped</span>Calibrate Synth's budget to the embedder's
+    real useful capacity — <em>rewrite, don't compress</em> — and never drop below the baseline's thematic
+    signal.</div>
+  <div class="honest"><span class="n-tag">⚠ why this game is in the showcase</span>
+    A showcase that only shows wins is a sales brochure. This loss is the reason to trust the Terraforming
+    Mars number: the same measuring rig catches the regressions too — this failure is what justifies the
+    whole end-to-end harness. <a href="${REPO}docs/showcase/viticulture.md">The full write-up →</a></div>`
+}
+];
+
+const STORIES = [
+  {id:"terraforming-mars", icon:"🚀", game:"Terraforming Mars", demo:"here we demonstrate: the recovery",
+   hook:"Shape the embedded text and a buried game becomes findable — a thin record goes from invisible to #1, same embedder, same query.",
+   headline:"rank #45 → #1 of 50", kind:"win", steps:TM_STEPS,
+   end:`Full walkthrough, exact fixtures and measurement protocol: <a href="${REPO}docs/showcase/terraforming-mars.md">docs/showcase/terraforming-mars.md</a>`},
+  {id:"onitama", icon:"🔬", game:"Onitama", demo:"here we demonstrate: the guarantee",
+   hook:"Why you can trust the recovery: every added fact carries a verbatim quote verified in its source page — a plausible guess with no quote is dropped, not embedded.",
+   headline:"fabrication → discarded", kind:"win", steps:ONI_STEPS,
+   end:`Full walkthrough with the recorded fixtures: <a href="${REPO}docs/showcase/onitama.md">docs/showcase/onitama.md</a>`},
+  {id:"viticulture", icon:"⚖️", game:"Viticulture", demo:"here we demonstrate: the honest loss",
+   hook:"What we do when the pipeline loses: an already-rich record ranks worse after enrichment — measured, written down, pinned by a red test.",
+   headline:"rank #4 → #23 — kept visible", kind:"flag", steps:VIT_STEPS,
+   end:`The regression, the cause and the xfail pin: <a href="${REPO}docs/showcase/viticulture.md">docs/showcase/viticulture.md</a>`}
+];
+
+function meterRow(q, before, after){
+  const pos = r => ((r-1)/49*100).toFixed(1)+"%";
+  const showAfter = after !== null && after !== undefined;
+  const worse = showAfter && after > before;
+  return `<div class="meter">
+    <div class="mq"><em>«${esc(q)}»</em></div>
+    <div class="track"><div class="zone"></div>
+      <span class="pin before${showAfter?"":" solid"}" style="left:${pos(before)}"></span>
+      ${showAfter?`<span class="pin after" data-to="${pos(after)}" style="left:${pos(before)}"></span>`:""}
+    </div>
+    <div class="mlabels"><span>#1 · first screen</span><span>#50 · invisible</span></div>
+    <div class="mres">${showAfter?`<span class="rb">#${before}</span> → <span class="ra">#${after}</span>${worse?' <span class="rb">🔻 worse</span>':""}`:`<span class="rb">rank #${before} of 50</span>`}</div>
+  </div>`;
+}
+
+let story = null, sCur = 0;
+const snav = document.getElementById("snav");
+const pipemapEl = document.getElementById("pipemap");
+
+function drawPipeRail(){
+  const r = document.getElementById("pipeRail");
+  r.innerHTML = "";
+  STORIES.forEach((s,i)=>{
+    const b = document.createElement("button");
+    b.className = "sess"; b.setAttribute("role","tab");
+    b.innerHTML = `<span class="sid">${s.icon} ${esc(s.game)}</span>
+      <span class="demotag">${esc(s.demo)}</span>
+      <span class="shook">${esc(s.hook)}</span>
+      <span class="smeta"><span class="${s.kind==="flag"?"flag":"win"}">${s.kind==="flag"?"⚠":"✦"} ${esc(s.headline)}</span><br>
+      <span class="watch">▶ follow — ${s.steps.length} steps</span></span>`;
+    b.addEventListener("click",()=>openStory(i));
+    r.appendChild(b);
+  });
+}
+function openStory(i){
+  story = STORIES[i]; sCur = 0;
+  snav.innerHTML = "";
+  story.steps.forEach((s,j)=>{
+    const b=document.createElement("button");
+    b.className="snav";b.setAttribute("role","tab");b.textContent=s.nav;
+    b.addEventListener("click",()=>{sCur=j;drawStep();});
+    snav.appendChild(b);
+  });
+  document.getElementById("storyEndNote").innerHTML = story.end;
+  document.getElementById("pipePicker").hidden = true;
+  document.getElementById("storyWrap").hidden = false;
+  drawStep();
+}
+document.getElementById("changeGameBtn").addEventListener("click",()=>{
+  document.getElementById("storyWrap").hidden = true;
+  document.getElementById("pipePicker").hidden = false;
+});
+function drawPipemap(active){
+  pipemapEl.innerHTML = PIPEMAP.map(([k,l,d])=>
+    `<span class="pm${active.includes(k)?" on":""}">${l}<small>${d}</small></span>`
+  ).join(`<span class="pa">→</span>`);
+}
+function drawStep(){
+  const steps = story.steps, st = steps[sCur];
+  drawPipemap(st.active || []);
+  const body = document.getElementById("stepBody");
+  body.innerHTML = `<h2><span class="stepno">${story.icon} ${esc(story.game).toUpperCase()} · STEP ${sCur+1} / ${steps.length}</span>${st.title}</h2>` + st.html;
+  body.querySelectorAll(".meters").forEach(el=>{
+    const rows = JSON.parse(el.dataset.rows);
+    el.innerHTML = rows.map(r=>meterRow(r[0], r[1], r[2])).join("");
+    if(rows.some(r=>r[2]!==null && r[2]!==undefined)){
+      requestAnimationFrame(()=>requestAnimationFrame(()=>{
+        el.querySelectorAll(".pin.after").forEach(p=>{p.style.left = p.dataset.to;});
+      }));
+    }
+  });
+  snav.querySelectorAll(".snav").forEach((b,i)=>b.setAttribute("aria-selected",String(i===sCur)));
+  document.getElementById("sPrev").disabled = sCur===0;
+  document.getElementById("sNext").disabled = sCur===steps.length-1;
+  document.getElementById("sCount").textContent = `step ${sCur+1} of ${steps.length}`;
+}
+document.getElementById("sPrev").addEventListener("click",()=>{if(sCur>0){sCur--;drawStep();}});
+document.getElementById("sNext").addEventListener("click",()=>{if(sCur<story.steps.length-1){sCur++;drawStep();}});
+
+/* ---------------- tabs & gloss ---------------- */
+const tabChat=document.getElementById("tab-chat"), tabPipe=document.getElementById("tab-pipe");
+const panelChat=document.getElementById("panel-chat"), panelPipe=document.getElementById("panel-pipe");
+function selectTab(which){
+  const chat = which==="chat";
+  tabChat.setAttribute("aria-selected",String(chat));
+  tabPipe.setAttribute("aria-selected",String(!chat));
+  panelChat.hidden=!chat; panelPipe.hidden=chat;
+}
+tabChat.addEventListener("click",()=>selectTab("chat"));
+tabPipe.addEventListener("click",()=>selectTab("pipe"));
+document.getElementById("glossToggle").addEventListener("change",e=>{
+  document.body.classList.toggle("gloss", e.target.checked);
+});
+
+/* boot — EN subtitles default on */
+document.getElementById("glossToggle").checked = true;
+document.body.classList.add("gloss");
+drawRail(); drawPipeRail();
+</script>
+</body>
+</html>

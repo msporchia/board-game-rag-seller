@@ -4,7 +4,8 @@ Purpose: lock the loop's contract with the model faked:
   - the model drives search_catalog; the hits it retrieves are grounded by ChatAdvisor.pitch
     (a featured game must have been retrieved — same invariant as every engine);
   - hits from multiple tool calls are UNIONed (deduped by id) before grounding;
-  - a turn with NO usable tool call degrades to the honest no-match (no invented games);
+  - a turn with NO usable tool call triggers the forced-search floor (SEL-147) — the honest
+    no-match must be earned by an empty search, never by the model's silence;
   - active policies wrap the generation step (prompt block, forced expertise).
 """
 
@@ -46,18 +47,23 @@ class TestReply:
 
         assert [g.id_product for g in res.games] == [3]  # id 3 came from the 2nd search
 
-    def test_no_tool_call_degrades_to_honest_no_match(self):
+    def test_no_tool_call_triggers_the_forced_search_floor(self):
+        """SEL-147 changed this contract: a turn with no model-driven tool call no longer
+        collapses straight to the no-match — the code searches once with the customer's own
+        words first (see test_forced_search.py). The no-match must be EARNED by an empty
+        forced search, never by the model's silence."""
         from app.chat.advisor import _NO_MATCH
 
         engine, retriever, pitch = make_engine(
             scripted=[AIMessage(content="non cerco nulla")],
-            hits_batches=[[make_hit(1, "A")]],
+            hits_batches=[[]],  # the forced search finds nothing → the no-match is earned
             reply=ChatReply(intro="unused"))
 
         res = engine.reply("ciao", session_id="s1")
 
         assert res.message == _NO_MATCH
-        assert retriever.calls == [] and pitch.calls == []  # nothing searched, nothing pitched
+        assert len(retriever.calls) == 1  # the floor DID search before giving up
+        assert pitch.calls == []          # nothing to pitch over
 
     def test_tool_failure_does_not_kill_the_turn(self):
         class RaisingRetriever:

@@ -124,6 +124,28 @@ class AgenticChat:
                 messages.append(ToolMessage(content=f"{len(found)} giochi: {names}",
                                             tool_call_id=call.get("id", "")))
 
+        if not searches:
+            # SEL-147: on later turns the local model sometimes stops emitting tool calls
+            # altogether, which used to collapse the turn into a FALSE honest no-match (the
+            # catalog did stock what was asked — nobody searched). Enforced floor, same spirit
+            # as the grounding split: the model drives the search when it drives; when it
+            # doesn't, the CODE runs one plain search with the customer's own words before the
+            # turn is allowed to give up. The record is flagged `forced` so eval/showcase can
+            # tell model-driven searches from the safety net.
+            try:
+                found = tool.run(query=message)
+            except Exception:  # noqa: BLE001 — the floor must never kill the turn
+                log.warning("agent_forced_search_failed", exc_info=True)
+                found = []
+            else:
+                intent = tool.calls[-1]
+                searches.append({"query": intent.query, "filters": intent.to_filters_spec(),
+                                 "n_hits": len(found),
+                                 "hit_ids": [h.id_product for h in found], "forced": True})
+                log.info("agent_search_forced", n_hits=len(found))
+            for hit in found:
+                hits_by_id.setdefault(hit.id_product, hit)
+
         hits = list(hits_by_id.values())
         self.last_turn_searches = searches
         log.info("agent_turn_done", rounds=rounds, searches=len(searches),

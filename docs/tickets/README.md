@@ -10,7 +10,6 @@ engineering tickets. Most items are distilled from `docs/idee.md`, `docs/note.md
 
 | ID | Title | Area | Type | Priority | Status |
 |----|-------|------|------|----------|--------|
-| [SEL-147](SEL-147-agent-false-nomatch-coop-two.md) | Agent arm: false honest-no-match on «cooperativo per due» in the recorded live session | chat/agent | Bug | High | Open |
 | [SEL-146](SEL-146-cooperative-verdict-revisit.md) | Revisit the cooperative verdict — the SEL-145 policy is a stopgap (recall lost on untagged co-ops) | enricher + rag | Research | High | Open |
 | [SEL-143](SEL-143-cooperative-fabricated-from-unknown-reference.md) | Intent fabricates a hard `cooperative` verdict for an unknown reference game | chat / retrieval | Bug | High | Open |
 | [SEL-101](SEL-101-langfuse-tracing.md) | Wire Langfuse tracing into the running stack | observability | Tech-debt | High | Open |
@@ -44,6 +43,7 @@ Closed tickets live in [`resolved/`](resolved/).
 | [SEL-107](resolved/SEL-107-multilingual-embedder.md) | Evaluate a multilingual embedder (bge-m3 / e5) — **adopted bge-m3** | rag/retrieval | Feature | 2026-07-03 |
 | [SEL-144](resolved/SEL-144-synth-recalibration-bge.md) | Synth recalibrated as the representation normalizer (v2: budget 1600 + concept-checklist prompt) | enricher + rag | Recalibration | 2026-07-03 |
 | [SEL-145](resolved/SEL-145-coop-infer-low-precision.md) | COOP_INFER precision 0.33-0.50 → asymmetric trust: the inference may never assert True | enricher + rag | Bug | 2026-07-03 |
+| [SEL-147](resolved/SEL-147-agent-false-nomatch-coop-two.md) | Agent false no-match: the model stopped searching on later turns → forced-search floor | chat/agent | Bug | 2026-07-03 |
 
 ## Conventions
 

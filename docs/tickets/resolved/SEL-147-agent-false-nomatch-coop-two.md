@@ -6,7 +6,7 @@
 | **Area** | chat/agent (search assembly) |
 | **Priority** | High |
 | **Reported** | 2026-07-03 |
-| **Status** | Open |
+| **Status** | Resolved (2026-07-03) — forced-search floor; the no-match must be earned |
 
 ## What happens
 
@@ -36,6 +36,27 @@ The honest no-match is the seller's trust guarantee; a *false* no-match spends t
 search bug. Same family as the June finding («honest framing can only be trusted once retrieval
 surfaces the right candidate») — retrieval now works, the remaining risk moved into the agent's
 search-assembly step.
+
+## Resolution (2026-07-03)
+
+**The suspects above were wrong — the recorder found the real cause.** Recording sessions
+in-process (`tests/record_live_session.py`, which captures `last_turn_searches` per turn)
+showed the pattern is systematic and simpler than a malformed argument: **on later turns the
+model stops emitting tool calls altogether** (`searches: []` on 4 dead turns across the 4
+recorded sessions — always after 2-3 turns of history). Nobody searched; the engine's "no
+usable tool call → honest no-match" rule then answered *«non ho in catalogo»* about games we
+stock. The malformed-args theory didn't survive contact with the data.
+
+**Fix — the forced-search floor** (`app/chat/agentic.py`): when a turn ends with zero
+model-driven searches, the code runs ONE plain search with the customer's own words (recorded
+with `forced: true`) before the turn may give up. Same philosophy as the grounding split: the
+model drives when it drives; the honest no-match must be **earned by an empty search, never by
+the model's silence**. Spec'd by `tests/unit/AgenticChat/test_forced_search.py`; the old
+"silence → no-match" contract test was rewritten to the new rule.
+
+**Residual, tracked elsewhere:** *why* the local model stops driving tools as history grows is
+a model-quality question → SEL-113 / the strong-model simulation harness. The observability
+gap (tool-call args not traced) also stands → SEL-114.
 
 **Source:** live demo session 2026-07-03 (`data/demo-chat-20260703.json`, gitignored) ·
 **Related:** SEL-113, SEL-114, SEL-143 · **Touches:** `app/chat/agentic.py`,

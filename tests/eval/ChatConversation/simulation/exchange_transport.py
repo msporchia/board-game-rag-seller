@@ -13,7 +13,6 @@ analogue of `LLMUsageTracker.llm_calls` (tests/eval/ChatConversation/usage.py) f
 real LLM in the loop.
 """
 
-import json
 from pathlib import Path
 from typing import Callable
 

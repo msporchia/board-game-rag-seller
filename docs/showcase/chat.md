@@ -10,8 +10,11 @@
 
 These transcripts come off a **frozen 50-game corpus** on a **local 7-8B model** (`llama3.1` for
 the pipeline arm, `qwen2.5:7b` for the agent arm) — small models, on purpose. The stance is *if it
-works on the 8B it flies on a stronger one*; the point of measuring it on the weak one is to see
-where it breaks, not to flatter it. Numbers are session-stamped and regenerate with every run —
+works on the 8B it flies on a stronger one* — and it is now **measured, not asserted**: the same
+15 cases with Claude Sonnet 5 answering every LLM role (via the file-exchange responder harness,
+same engine and oracle) score **15/15** vs the 8B's 0.733
+([`experiments.md`](../experiments.md) row 14). The point of measuring on the weak model is to
+see where it breaks, not to flatter it. Numbers are session-stamped and regenerate with every run —
 the latest live in [`tests/eval/RESULTS.md`](../../tests/eval/RESULTS.md) and the full agent bundle
 in [`REVIEW.md`](../../tests/eval/ChatConversation/REVIEW.md).
 

@@ -78,8 +78,13 @@ What we learned:
 - ❌ **`quick_replies` come back empty** despite being requested.
 
 These are expected weaknesses of an 8B on structured output (`idee.md §A`) and the reason the
-project's stance is *"if it works on the 8B it flies on a stronger model"*. They are logged below,
-not papered over.
+project's stance is *"if it works on the 8B it flies on a stronger model"*. As of 2026-07-03 that
+stance is **measured, no longer an article of faith**: with Claude Sonnet 5 answering every LLM
+role through the [file-exchange responder harness](../tests/eval/ChatConversation/simulation/) —
+same engine, same retrieval, same oracle; the harness exists so any stronger model can be
+benchmarked before being wired into production — the agent arm goes **0.733 → 15/15 (1.000)**,
+above the baseline's whole variance band ([`experiments.md`](experiments.md) row 14). The
+weaknesses are logged below, not papered over.
 
 ## Coherence by construction (implemented)
 

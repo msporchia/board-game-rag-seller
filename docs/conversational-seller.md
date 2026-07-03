@@ -161,9 +161,14 @@ Honest status — every open edge has a ticket or a red eval pinning it, none is
 
 - **Pitch quality on the local 7-8B is the open bottleneck.** The *mechanics* hold end-to-end
   (grounding, memory, fallback, traces — no 500s), but the small model's sales copy is thin. The
-  stance *"if it works on the 8B, it flies on a stronger model"* is measurable, not rhetorical:
-  the [simulation harness](../tests/eval/ChatConversation/simulation/) replays the same cases
-  with an external stronger responder under the same oracle.
+  stance *"if it works on the 8B, it flies on a stronger model"* is measured, not rhetorical:
+  the [file-exchange responder harness](../tests/eval/ChatConversation/simulation/) replays the
+  same cases with a stronger model answering every LLM role under the same engine, retrieval
+  and oracle — built so any stronger model can be benchmarked *before* being wired into
+  production (the API integration is SEL-110). With **Claude Sonnet 5** as the responder, the
+  agent arm goes **0.733 → 15/15** (all three non-convergences and the `min_games` miss
+  disappear; zero turns without a tool call; details in [experiments.md](experiments.md),
+  row 14).
 - **A few cases are still red** — e.g. constraint *reversal* across turns, where a corrected
   click should *replace* the old filter, not pile on (click→filter merge isn't wired in the
   agent tier yet). *Why* the 7B stops driving tools with longer history remains a model-quality

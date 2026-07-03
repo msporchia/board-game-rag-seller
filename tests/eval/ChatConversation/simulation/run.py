@@ -1,6 +1,6 @@
 """SimulationRunner — plays one ChatConversation eval run with every LLM role answered by an
 EXTERNAL responder instead of Ollama (the "strong-model simulation" harness: measuring "8B local
-model vs Claude-simulated" on the SAME eval cases with the SAME oracle).
+model vs a stronger external responder" on the SAME eval cases with the SAME oracle).
 
 Builds the SAME engine (pipeline / piloted / agent) over the SAME frozen corpus and the SAME
 `fixtures/conversation_cases.json` cases, scored by the SAME `ConversationDriver` +
@@ -47,7 +47,7 @@ class SimulationRunner:
         builder = SimEngineBuilder(exchange, timeout=args.timeout)
         report = ConversationReport(
             RUNS, engine=args.engine,
-            model_label=f"EXTERNAL RESPONDER (simulated) · engine={args.engine}")
+            model_label=f"EXTERNAL RESPONDER (file exchange) · engine={args.engine}")
 
         print(f"[sim] engine={args.engine}  exchange dir={exchange.root}  "
              f"cases={len(cases)}  timeout={args.timeout:.0f}s")

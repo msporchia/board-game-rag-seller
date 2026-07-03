@@ -135,7 +135,10 @@ documented limit the
   game found first out of 501.
 - **Kept honest:** a named title missed (② T1), an invented filter caught *by the search log
   itself* (② T2), pitch wording slips on the 7B — each mapped to its ticket or backlog lever,
-  none edited out.
+  none edited out. All three are **model-bound, and that is now measured, not claimed**: on the
+  eval bench, the same engine with Claude Sonnet 5 answering every LLM role (via the responder
+  harness, same oracle) scores **15/15** with zero invented filters and zero silent turns
+  ([ledger](../experiments.md) row 14).
 
 *Regenerate the raw sessions anytime:
 `docker compose exec seller-api python -m tests.record_live_session --all`

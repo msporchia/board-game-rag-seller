@@ -134,6 +134,17 @@ flowchart LR
 | pipeline | deterministic code | 0.667 | re-baselined 2026-07-03 |
 | piloted | code loop, model reformulates | 0.80 · −18% tok | June bench |
 | agent · `qwen2.5:7b` | the model itself, via a tool | **0.733** | both cooperative cases pass |
+| agent · **Claude Sonnet 5** | same engine, same bench, via responder harness | **1.000** (15/15) | the engine's measured ceiling |
+
+The last row is the project's stance — *"if it works on the 8B, it flies on a stronger model"* —
+turned into a measurement: every LLM role answered by **Claude Sonnet 5** through the
+[file-exchange responder harness](tests/eval/ChatConversation/simulation/) — real model, real
+engine, real retrieval, real oracle; the transport is a file exchange rather than an API call
+(the API integration is a separate step, SEL-110). The harness exists so any stronger model can
+be benchmarked on the same oracle *before* it is wired into production. All three
+non-convergences disappear, zero turns without a tool call, fallback rate 0
+([ledger](docs/experiments.md) row 14, caveats included: single run, a ceiling — not a local
+config). **The local 7B is the bottleneck, not the engine.**
 
 *(Single runs are samples, not verdicts — the same 15 cases scored 0.60/0.80/0.87 on identical
 inputs; the noise is measured too.)*

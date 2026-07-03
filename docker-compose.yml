@@ -50,6 +50,9 @@ services:
       OLLAMA_URL: http://seller-ollama:11434
       EMBEDDING_MODEL: ${EMBEDDING_MODEL:-bge-m3}
       LLM_MODEL: ${LLM_MODEL:-llama3.1}
+      # Strong-model slot (chat escalation + the tool-driving agent tier). qwen2.5:7b is the
+      # smallest local model measured to drive tools reliably (docs/chat.md, ADR-0003).
+      LLM_MODEL_STRONG: ${LLM_MODEL_STRONG:-qwen2.5:7b}
       # Data source for ingest. Default = the bundled mock; point at a real PrestaShop
       # "seller" endpoint to ingest a live catalog (see .env.example).
       PRESTASHOP_BASE_URL: ${PRESTASHOP_BASE_URL:-http://mock-prestashop:8001}

@@ -11,13 +11,21 @@ offline-runnable, provider-swappable). It is the AI brain of a three-repo storef
 a [Node + TypeScript commerce BFF](https://github.com/msporchia/board-game-shop-api) and a
 [React storefront](https://github.com/msporchia/board-game-shop-web).
 
+> **Intentionally an applied R&D bench — not a single polished chatbot demo.** The goal is to
+> compare RAG and agentic approaches on the same real, messy, commercial catalog and make the
+> trade-offs visible: observable retrieval traces, reproducible eval runs, code-enforced
+> grounding, documented regressions, preserved failure cases. The interesting part is not that
+> one version "works" — it's what each approach costs, where it breaks, and how the damage is
+> contained.
+
 [![A real recorded session, replayed in the interactive demo](docs/demo/preview.gif)](https://msporchia.github.io/board-game-rag-seller/demo/)
 
 **[▶ Explore the interactive demo](https://msporchia.github.io/board-game-rag-seller/demo/)** —
-**watch it sell** (four unedited sessions on the live 501-game index, with every search the agent
-ran on the page) or **follow a real game through the enrichment pipeline** (two measured wins and
-the loss we kept). Nothing in it is hand-crafted: sessions are recorded in-process and the demo
-regenerates from them.
+replayable **real agent sessions over the live 501-game catalog**, not a handcrafted transcript:
+each turn exposes the query the agent composed, the games it retrieved, the grounded
+recommendation, the fallbacks — and the documented failures. Plus a real game's journey through
+the enrichment pipeline, step by step. Sessions are recorded in-process; the demo regenerates
+from them.
 
 ## The proof, in three numbers
 
@@ -186,11 +194,17 @@ Qdrant → http://localhost:6333/dashboard · Ollama → http://localhost:11434
 
 ## Tests & eval
 
+**What CI covers, precisely:** the badge above runs ruff and the deterministic offline unit
+suite — the *contracts* ("certain data wins", grounding, fallback). The LLM evals and e2e runs
+need local models (Ollama) and live services, so they stay out of CI **by design** and are
+reproducible locally with the commands below; their latest measured output is committed in
+[`tests/eval/RESULTS.md`](tests/eval/RESULTS.md) and the [ledger](docs/experiments.md).
+
 ```bash
-docker compose exec seller-api python -m pytest tests/unit -q                          # deterministic, offline
-docker compose exec seller-api python -m pytest tests/eval/ChatPitch -q                 # per-step quality, real LLM
-docker compose exec -e PYTHONPATH=/app seller-api python tests/eval.py --suite core --k 5 --pipeline synth  # retrieval scorecard
-docker exec seller-api python -m pytest tests/e2e/enrichment -v                         # real end-to-end (LLM + web replay)
+docker compose exec seller-api python -m pytest tests/unit -q                # what CI runs: deterministic, offline
+docker compose exec seller-api python -m pytest tests/eval/ChatPitch -q      # per-step quality, real LLM
+docker compose exec seller-api python -m tests.eval_suite --suite core --k 5 --pipeline synth  # retrieval scorecard
+docker exec seller-api python -m pytest tests/e2e/enrichment -v              # real end-to-end (LLM + web replay)
 ```
 
 Observability (structlog + swappable LLM tracing) and what we're still blind to:

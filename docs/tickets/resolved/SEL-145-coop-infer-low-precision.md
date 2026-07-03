@@ -6,7 +6,7 @@
 | **Area** | ingestion/enricher (curator, COOP_INFER) + rag/retrieval |
 | **Priority** | High |
 | **Reported** | 2026-07-03 |
-| **Status** | Resolved (2026-07-03) — the inference may no longer assert True |
+| **Status** | Resolved (2026-07-03) — **as an accepted stopgap**: revisit tracked in SEL-146 |
 
 ## What happens
 
@@ -82,6 +82,13 @@ false Trues is itself informative:
 Applied to data: live store + Qdrant payloads and the frozen eval corpus realigned to the
 shipped policy (tag-True kept; all other verdicts recomputed with v3, True capped). Live smoke:
 the family-coop query with `cooperative=true` returns 5/5 genuinely cooperative games.
+
+**Framing, on purpose: this is a stopgap, not the destination.** It was accepted because it
+never lies (the property the hard filter needs) and it unblocked testing the prompts and the
+rest of the pipeline on honest data — at the price of recall on untagged co-op games. The
+revisit is a first-class ticket, [SEL-146](../SEL-146-cooperative-verdict-revisit.md), with the
+measured leads already collected (independent oracle re-verification, stronger-model
+classification, the name signal, reviews as a truth source).
 
 **Source:** live backfill spot-check · **Related:** SEL-142 (resolved), SEL-143, SEL-120,
 SEL-109 · **Touches:** `app/ingestion/enricher/prompts.py` (COOP_INFER),

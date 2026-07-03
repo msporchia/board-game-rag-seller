@@ -3,6 +3,9 @@
 > The [enrichment pipeline](../enrichment/README.md) explains *how* each step works.
 > This folder shows *what it does to a real game* — the same record **before** and **after**
 > the pipeline, with the measured effect on retrieval.
+>
+> ⚡ Prefer to click through it? The same journeys (and the live chat sessions) are replayable
+> step by step in the [**interactive demo**](https://msporchia.github.io/board-game-rag-seller/demo/).
 
 The whole project rests on one principle and the claim that makes it enforceable:
 

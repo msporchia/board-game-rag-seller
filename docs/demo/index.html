@@ -38,19 +38,6 @@
   .bar{max-width:1060px;margin:0 auto;padding:.65rem 1rem;display:flex;align-items:center;gap:1rem;flex-wrap:wrap}
   .wordmark{font-family:var(--sans);font-weight:700;color:var(--ink);font-size:1.1rem;text-decoration:none;white-space:nowrap}
   .wordmark b{color:var(--ink);font-weight:700}
-  .gloss-toggle{
-    display:flex;align-items:center;gap:.45rem;font-size:.78rem;color:var(--mut);
-    cursor:pointer;user-select:none;white-space:nowrap;
-  }
-  .gloss-toggle .pill{
-    width:34px;height:19px;border-radius:999px;background:var(--line);border:1px solid var(--line2);position:relative;transition:background .2s;
-  }
-  .gloss-toggle .pill::after{
-    content:"";position:absolute;top:2px;left:2px;width:13px;height:13px;border-radius:50%;
-    background:#fff;box-shadow:0 1px 2px rgba(15,23,42,.25);transition:transform .2s;
-  }
-  body.gloss .gloss-toggle .pill{background:var(--grn-bright);border-color:var(--grn-bright)}
-  body.gloss .gloss-toggle .pill::after{transform:translateX(15px)}
 
   /* ---------- hero ---------- */
   .hero{max-width:1060px;margin:0 auto;padding:2.4rem 1rem 1.2rem}
@@ -145,10 +132,9 @@
   .who{display:block;font-family:var(--mono);font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;margin-bottom:.25rem}
   .u-row .who{color:var(--faint)}
   .s-row .who{color:var(--mut)}
-  .gloss-t{display:none;margin-top:.45rem;padding-top:.4rem;font-style:italic;font-size:.84rem}
+  .gloss-t{display:block;margin-top:.45rem;padding-top:.4rem;font-style:italic;font-size:.84rem}
   .u-row .gloss-t{border-top:1px dashed rgba(248,250,252,.25);color:#cbd5e1}
   .s-row .gloss-t{border-top:1px dashed rgba(15,23,42,.15);color:var(--mut)}
-  body.gloss .gloss-t{display:block}
 
   /* machine strip — the receipt under the glass (stays dark on purpose) */
   .machine{
@@ -166,6 +152,7 @@
   }
   .chip.warn{border-color:var(--amb-line);color:var(--amb-line)}
   .chip.hits{border-color:#334155;color:var(--faint)}
+  .chip.muted{border-color:#334155;color:var(--faint);font-style:italic}
   .badge-forced{
     background:#fbbf24;color:var(--dark);border-radius:4px;padding:.05rem .45rem;
     font-size:.68rem;font-weight:700;letter-spacing:.05em;
@@ -200,9 +187,21 @@
   .cards{display:flex;gap:.55rem;flex-wrap:wrap;margin:.6rem 0}
   .gcard{
     background:var(--panel);color:var(--ink);border-radius:12px;padding:.55rem .75rem .6rem;
-    min-width:150px;flex:0 1 auto;border:1px solid var(--line);
+    min-width:170px;flex:0 1 auto;border:1px solid var(--line);
     box-shadow:0 1px 2px rgba(15,23,42,.06);position:relative;
+    display:flex;gap:.65rem;align-items:flex-start;
   }
+  .gcard .gthumb{
+    position:relative;width:68px;height:68px;flex:0 0 auto;border-radius:8px;overflow:hidden;
+    background:var(--raised);border:1px solid var(--line);
+  }
+  .gcard .gthumb img{width:100%;height:100%;object-fit:cover;display:block}
+  .gcard .gthumb .ginit{
+    display:none;position:absolute;inset:0;align-items:center;justify-content:center;
+    font-family:var(--sans);font-weight:700;font-size:.9rem;color:var(--mut);letter-spacing:.02em;
+  }
+  .gcard .gthumb.fallback .ginit{display:flex}
+  .gcard .gbody{min-width:0}
   .gcard .gname{font-weight:700;font-size:.85rem;line-height:1.25}
   .gcard .gmeta{font-family:var(--mono);font-size:.64rem;color:var(--mut);margin-top:.3rem}
   .gcard .coop{color:var(--grn);font-weight:700}
@@ -336,11 +335,6 @@
 <header>
   <div class="bar">
     <a class="wordmark" href="https://github.com/msporchia/board-game-rag-seller">🎲 <b>Seller</b> · demo replay</a>
-    <label class="gloss-toggle" style="margin-left:auto" title="Show English translations under the Italian text">
-      <input type="checkbox" id="glossToggle" hidden>
-      <span class="pill" aria-hidden="true"></span>
-      EN subtitles
-    </label>
   </div>
 </header>
 
@@ -350,7 +344,7 @@
     A grounded AI board-game seller and the retrieval engine underneath, shown through real recorded
     sessions and measured walkthroughs.
     <span class="it-note">The data is Italian by design — real catalog, real language.
-    <strong>EN subtitles</strong> are on; toggle them in the header.</span>
+    <strong>EN subtitles</strong> are included under every line.</span>
   </p>
 
   <p class="modes-q">What do you want to explore?</p>
@@ -381,8 +375,8 @@
       <code style="font-family:var(--mono)">search_catalog</code>. The ⚠ flags mark the takes where a model
       slips — kept on purpose, each with its ticket.</p>
       <div class="stepper-nav" id="tierNav" role="tablist" aria-label="Model tier">
-        <button class="snav" id="tier-local" role="tab" aria-selected="true">local · qwen2.5:7b</button>
-        <button class="snav" id="tier-frontier" role="tab" aria-selected="false">frontier · Claude Sonnet 5</button>
+        <button class="snav" id="tier-local" role="tab" aria-selected="false">local · qwen2.5:7b</button>
+        <button class="snav" id="tier-frontier" role="tab" aria-selected="true">frontier · Claude Sonnet 5</button>
       </div>
       <p class="picker-sub" id="tierBlurb" style="margin-top:.5rem"></p>
       <div class="rail" id="rail" role="tablist" aria-label="Recorded sessions"></div>
@@ -394,7 +388,12 @@
           <button class="btn" id="changeBtn" style="font-size:.75rem;padding:.3rem .7rem">⟵ change conversation</button>
           <span class="sid" id="stageSid"></span>
           <span id="stageHook" style="font-size:.82rem"></span>
-          <span class="env" id="stageEnv"></span>
+          <span class="stage-tier" style="display:flex;align-items:center;gap:.3rem;margin-left:auto" role="tablist" aria-label="Model tier — live swap">
+            <span class="kbd-hint" style="text-transform:uppercase;letter-spacing:.08em">model:</span>
+            <button class="snav" id="stage-tier-local" role="tab" aria-selected="false" style="font-size:.64rem;padding:.2rem .6rem">local</button>
+            <button class="snav" id="stage-tier-frontier" role="tab" aria-selected="true" style="font-size:.64rem;padding:.2rem .6rem">frontier</button>
+          </span>
+          <span class="env" id="stageEnv" style="margin-left:0"></span>
         </div>
         <div class="turns" id="turns"></div>
         <div class="controls">
@@ -463,331 +462,1210 @@
 "use strict";
 const REPO = "https://github.com/msporchia/board-game-rag-seller/blob/main/";
 
-/* ------- data: real recorded sessions, two model tiers (recorded output, display-formatted:
-   public short titles + EN glosses added; messages and searches as recorded).
-   local tier = qwen2.5:7b, live agent loop. frontier tier = same engine, same scripts, same
-   501-game index — every LLM role answered by Claude Sonnet 5 through the file-exchange
-   responder harness instead. ------- */
-const LOCAL_SESSIONS = [
-{
-  id:"coppia-serale",
-  tier:"local", agent:"qwen2.5:7b", env:"engine=agent · qwen2.5:7b · bge-m3 · 501 games",
-  hook:"A vague gift request becomes real filters — and survives the model going silent.",
-  meta:[["win","constraint → filter"],["win","SEL-147 floor at work"]],
-  turns:[
+/* ==BEGIN GENERATED SESSIONS — do not hand-edit; regenerate with `python data/build-demo.py`== */
+const SESSIONS = {
+  "local": [
     {
-      user:"ciao! cerco un gioco da regalare a una coppia di amici: giocano spesso in due la sera dopo cena",
-      gloss:"hi! looking for a gift for a couple of friends: they often play in two, evenings after dinner",
-      search:{q:"gioco da tavolo per due persone, giochi serali, non troppo complessi", filters:[["players","= 2",false]], hits:5, forced:false},
-      games:[{n:"Patchwork",m:"2 · 25 min"},{n:"Obscurio",m:"2-8 · 40 min",coop:true}],
-      reply:"Ciao! Sono felice di aiutarti a trovare un gioco da tavolo perfetto per la tua coppia di amici. Patchwork è un gioco strategico creativo e veloce che richiede astuzia e pianificazione per costruire il tessuto più grande. È perfetto per due giocatori che amano sfidarsi e risolvere puzzle. Obscurio è un gioco cooperativo di mistero che richiede deduzione e strategia per risolvere enigmi e scoprire la verità.",
-      rgloss:"Hi! I'm happy to help you find the perfect board game for your couple of friends. Patchwork is a creative, fast strategy game that takes cunning and planning to build the largest quilt. It's perfect for two players who love challenging each other and solving puzzles. Obscurio is a cooperative mystery game that takes deduction and strategy to solve riddles and uncover the truth.",
-      quick:["Vorresti un gioco con tempi di gioco più lunghi?","Hai preferenza per giochi di fantasia o realistici?"],
-      notes:[]
+      "id": "coppia-serale",
+      "tier": "local",
+      "agent": "qwen2.5:7b",
+      "env": "engine=agent · qwen2.5:7b · bge-m3 · 501 games",
+      "hook": "A vague gift request becomes real filters — and survives the model going silent.",
+      "meta": [
+        [
+          "win",
+          "constraint → filter"
+        ],
+        [
+          "win",
+          "SEL-147 floor at work"
+        ]
+      ],
+      "turns": [
+        {
+          "user": "ciao! cerco un gioco da regalare a una coppia di amici: giocano spesso in due la sera dopo cena",
+          "gloss": "hi! looking for a gift for a couple of friends: they often play in two, evenings after dinner",
+          "search": {
+            "q": "gioco da tavolo per due persone, giochi serali, non troppo complessi",
+            "filters": [
+              [
+                "players",
+                "= 2",
+                false
+              ]
+            ],
+            "hits": 5,
+            "forced": false
+          },
+          "games": [
+            {
+              "n": "Patchwork",
+              "img": "img/patchwork.jpg",
+              "m": "2 · 25 min"
+            },
+            {
+              "n": "Obscurio",
+              "img": "img/obscurio.jpg",
+              "m": "2-8 · 40 min",
+              "coop": true
+            }
+          ],
+          "reply": "Ciao! Sono felice di aiutarti a trovare un gioco da tavolo perfetto per la tua coppia di amici. Patchwork è un gioco strategico creativo e veloce che richiede astuzia e pianificazione per costruire il tessuto più grande. È perfetto per due giocatori che amano sfidarsi e risolvere puzzle. Obscurio è un gioco cooperativo di mistero che richiede deduzione e strategia per risolvere enigmi e scoprire la verità.",
+          "rgloss": "Hi! I'm happy to help you find the perfect board game for your couple of friends. Patchwork is a creative, fast strategy game that takes cunning and planning to build the largest quilt. It's perfect for two players who love challenging each other and solving puzzles. Obscurio is a cooperative mystery game that takes deduction and strategy to solve riddles and uncover the truth.",
+          "quick": [
+            "Vorresti un gioco con tempi di gioco più lunghi?",
+            "Hai preferenza per giochi di fantasia o realistici?"
+          ],
+          "notes": []
+        },
+        {
+          "user": "sì, gli piace la strategia ma niente partite infinite, direi massimo un'ora",
+          "gloss": "they like strategy but no endless games — an hour tops",
+          "search": {
+            "q": "gioco strategico per 2 persone",
+            "filters": [
+              [
+                "players",
+                "= 2",
+                false
+              ],
+              [
+                "duration",
+                "≤ 60",
+                false
+              ]
+            ],
+            "hits": 5,
+            "forced": false
+          },
+          "games": [
+            {
+              "n": "Patchwork",
+              "img": "img/patchwork.jpg",
+              "m": "2 · 25 min"
+            },
+            {
+              "n": "Offboard",
+              "img": "img/offboard.jpg",
+              "m": "2 · 20 min"
+            },
+            {
+              "n": "Onitama",
+              "img": "img/onitama.jpg",
+              "m": "2 · 10 min"
+            }
+          ],
+          "reply": "Patchwork è un gioco creativo e veloce che richiede astuzia e pianificazione. Offboard offre una libertà di movimento unica e richiede strategia per vincere — una sfida veloce e dinamica. Onitama è un gioco di arti marziali strategico ed elegante, ideale per due giocatori che amano la competizione.",
+          "rgloss": "Patchwork is a creative, fast game that takes cunning and planning. Offboard offers a unique freedom of movement and takes strategy to win — a fast, dynamic challenge. Onitama is a strategic, elegant martial-arts game, ideal for two players who love competition.",
+          "quick": [
+            "Vorresti un gioco cooperativo?",
+            "Cerchi qualcosa con tematiche più avvincenti?",
+            "Sorprendimi!"
+          ],
+          "notes": [
+            {
+              "type": "win",
+              "tag": "constraint → filter",
+              "text": "«massimo un'ora» became a structured filter (duration ≤ 60) — not just words dropped into the query."
+            }
+          ]
+        },
+        {
+          "user": "ah, dimenticavo: adorano i giochi cooperativi, dove si vince o si perde insieme. c'è qualcosa di cooperativo che funzioni bene in due?",
+          "gloss": "oh, I forgot: they love co-op games, where you win or lose together. anything cooperative that works well in two?",
+          "search": {
+            "q": "ah, dimenticavo: adorano i giochi cooperativi, dove si vince o si perde insieme. c'è qualcosa di cooperativo che funzioni bene in due?",
+            "filters": [],
+            "hits": 5,
+            "forced": true
+          },
+          "games": [
+            {
+              "n": "Nome in Codice: Duetto",
+              "img": "img/nome-in-codice-duetto.jpg",
+              "m": "2 · 25 min",
+              "coop": true
+            },
+            {
+              "n": "Pandemic: Reazione Rapida",
+              "img": "img/pandemic-reazione-rapida.jpg",
+              "m": "2-4 · 20 min",
+              "coop": true
+            }
+          ],
+          "reply": "Ho capito! Ti servono giochi cooperativi per due giocatori. Nome in Codice - Duetto è un gioco di deduzione cooperativa dove dovete lavorare insieme per risolvere enigmi. Pandemic - Reazione Rapida è un gioco cooperativo di avventura dove dovete lavorare insieme per salvare il mondo.",
+          "rgloss": "Got it! You need cooperative games for two players. Codenames: Duet is a cooperative deduction game where you have to work together to solve riddles. Pandemic: Rapid Response is a cooperative adventure game where you have to work together to save the world.",
+          "quick": [
+            "Vuoi giochi con temi fantasy?",
+            "Sorprendimi!",
+            "Cerchi giochi più lunghi di 30 minuti?"
+          ],
+          "notes": [
+            {
+              "type": "flaw",
+              "tag": "kept honest — then floored",
+              "text": "The model went silent this turn (no tool call) — the very failure that once produced a false “not in catalog”. The safety net searched with the customer's own words and returned the catalog's two best co-op-for-two answers. An honest no-match must now be earned by an empty search, never granted to silence.",
+              "ticket": [
+                "SEL-147",
+                "docs/tickets/resolved/SEL-147-agent-false-nomatch-coop-two.md"
+              ]
+            }
+          ]
+        },
+        {
+          "user": "perfetto! e se invece volessi qualcosa di cooperativo per quando invitano altri amici, tipo in cinque?",
+          "gloss": "perfect! and something cooperative for when they invite friends over — five of them, say?",
+          "search": {
+            "q": "perfetto! e se invece volessi qualcosa di cooperativo per quando invitano altri amici, tipo in cinque?",
+            "filters": [],
+            "hits": 5,
+            "forced": true
+          },
+          "games": [
+            {
+              "n": "Unlock! Timeless Adventures",
+              "img": "img/unlock-timeless-adventures.jpg",
+              "m": "1-6 · 75 min",
+              "coop": true
+            },
+            {
+              "n": "Dungeon Time",
+              "img": "img/dungeon-time.jpg",
+              "m": "1-5 · 45 min",
+              "coop": true
+            }
+          ],
+          "reply": "Fantastico! Ecco alcuni giochi cooperativi perfetti per 5 giocatori. Unlock! - Timeless Adventures è un'avventura coinvolgente in cui dovete lavorare insieme per risolvere enigmi. Dungeon Time è un gioco di carte cooperativo in tempo reale con avventure da completare in 5 minuti!",
+          "rgloss": "Fantastic! Here are some cooperative games perfect for 5 players. Unlock! Timeless Adventures is an engaging adventure where you have to work together to solve puzzles. Dungeon Time is a real-time cooperative card game with adventures to complete in 5 minutes!",
+          "quick": [
+            "Vorresti giochi con tempi di gioco più lunghi?",
+            "Sei interessato a giochi con espansioni disponibili?"
+          ],
+          "notes": []
+        }
+      ]
     },
     {
-      user:"sì, gli piace la strategia ma niente partite infinite, direi massimo un'ora",
-      gloss:"they like strategy but no endless games — an hour tops",
-      search:{q:"gioco strategico per 2 persone", filters:[["players","= 2",false],["duration","≤ 60",false]], hits:5, forced:false},
-      games:[{n:"Patchwork",m:"2 · 25 min"},{n:"Offboard",m:"2 · 20 min"},{n:"Onitama",m:"2 · 10 min"}],
-      reply:"Patchwork è un gioco creativo e veloce che richiede astuzia e pianificazione. Offboard offre una libertà di movimento unica e richiede strategia per vincere — una sfida veloce e dinamica. Onitama è un gioco di arti marziali strategico ed elegante, ideale per due giocatori che amano la competizione.",
-      rgloss:"Patchwork is a creative, fast game that takes cunning and planning. Offboard offers a unique freedom of movement and takes strategy to win — a fast, dynamic challenge. Onitama is a strategic, elegant martial-arts game, ideal for two players who love competition.",
-      quick:["Vorresti un gioco cooperativo?","Cerchi qualcosa con tematiche più avvincenti?","Sorprendimi!"],
-      notes:[{type:"win",tag:"constraint → filter",text:"«massimo un'ora» became a structured filter (duration ≤ 60) — not just words dropped into the query."}]
+      "id": "cliente-deciso",
+      "tier": "local",
+      "agent": "qwen2.5:7b",
+      "env": "engine=agent · qwen2.5:7b · bge-m3 · 501 games",
+      "hook": "The weak take, kept on purpose: a named title missed, an invented filter caught by the log itself.",
+      "meta": [
+        [
+          "flag",
+          "2 flaws annotated"
+        ]
+      ],
+      "turns": [
+        {
+          "user": "buongiorno, avete Carcassonne? vorrei regalarlo a mia sorella, mi serve per stasera",
+          "gloss": "good morning, do you have Carcassonne? I'd like it as a gift for my sister, I need it tonight",
+          "search": {
+            "q": "gioco da tavolo per 2-5 persone, meccanica di tessera, tema paesaggio",
+            "filters": [
+              [
+                "players",
+                "= 2",
+                false
+              ]
+            ],
+            "hits": 5,
+            "forced": false
+          },
+          "games": [
+            {
+              "n": "Terra Mystica",
+              "img": "img/terra-mystica.jpg",
+              "m": "2-5 · 120 min"
+            },
+            {
+              "n": "Descent: Viaggi nelle Tenebre",
+              "img": "img/descent-viaggi-nelle-tenebre.jpg",
+              "m": "2-5 · 120 min"
+            }
+          ],
+          "reply": "Ciao! Terra Mystica è un gioco strategico di avventura fantastica in cui dovrai esplorare il territorio e controllarlo per vincere. Descent: Viaggi nelle Tenebre è un gioco di avventura sotterranea con combattimenti epici!",
+          "rgloss": "Hi! Terra Mystica is a strategic fantasy-adventure game where you'll have to explore the territory and control it to win. Descent: Journeys in the Dark is an underground adventure game with epic battles!",
+          "quick": [
+            "Per 2 giocatori",
+            "Sorprendimi"
+          ],
+          "notes": [
+            {
+              "type": "flaw",
+              "tag": "kept honest",
+              "text": "The customer named a title; the model searched a paraphrase — and Carcassonne is in stock. Exact-title lookup is a retrieval axis semantic search doesn't guarantee: a known lever for the agent tier.",
+              "ticket": [
+                "SEL-113",
+                "docs/tickets/SEL-113-complete-agentic-chat.md"
+              ]
+            }
+          ]
+        },
+        {
+          "user": "perfetto! e c'è qualcosa di simile da affiancare al regalo, sempre di piazzamento tessere ma un po' più moderno?",
+          "gloss": "and something similar to go with the gift — still tile placement, a bit more modern?",
+          "search": {
+            "q": "gioco piazza tessere cooperativo",
+            "filters": [
+              [
+                "players",
+                "= 2",
+                false
+              ],
+              [
+                "cooperative",
+                "= true",
+                true
+              ]
+            ],
+            "hits": 5,
+            "forced": false
+          },
+          "games": [
+            {
+              "n": "Magic Maze",
+              "img": "img/magic-maze.jpg",
+              "m": "1-8 · 15 min",
+              "coop": true
+            },
+            {
+              "n": "TIME Stories: La Confraternita della Costa",
+              "img": "img/time-stories-la-confraternita-della-costa.jpg",
+              "m": "2-4 · 150 min",
+              "coop": true
+            },
+            {
+              "n": "TIME Stories: Estrella Drive",
+              "img": "img/time-stories-estrella-drive.jpg",
+              "m": "2-4 · 90 min",
+              "coop": true
+            }
+          ],
+          "reply": "Ho alcune proposte, sempre con piazzamento tessere e un po' più moderne. Magic Maze è un gioco cooperativo in cui dovete esplorare un labirinto lavorando insieme — richiede comunicazione e strategia! TIME Stories: La Confraternita della Costa è un'avventura cooperativa nei Caraibi con una storia avvincente.",
+          "rgloss": "I have a few suggestions, still tile placement and a bit more modern. Magic Maze is a cooperative game where you explore a maze working together — it takes communication and strategy! TIME Stories: The Brotherhood of the Coast is a cooperative adventure in the Caribbean with a gripping story.",
+          "quick": [
+            "Per 2 giocatori",
+            "Senza espansioni"
+          ],
+          "notes": [
+            {
+              "type": "flaw",
+              "tag": "kept honest — invented filter",
+              "text": "Nobody asked for cooperative — the model fabricated cooperative = true. The search log makes the fabrication visible, which is exactly why the searches are on the page. Anti-invented-filters is an open backlog lever.",
+              "ticket": [
+                "SEL-143",
+                "docs/tickets/SEL-143-cooperative-fabricated-from-unknown-reference.md"
+              ]
+            }
+          ]
+        }
+      ]
     },
     {
-      user:"ah, dimenticavo: adorano i giochi cooperativi, dove si vince o si perde insieme. c'è qualcosa di cooperativo che funzioni bene in due?",
-      gloss:"oh, I forgot: they love co-op games, where you win or lose together. anything cooperative that works well in two?",
-      search:{q:"ah, dimenticavo: adorano i giochi cooperativi, dove si vince o si perde insieme…", filters:[], hits:5, forced:true},
-      games:[{n:"Nome in Codice: Duetto",m:"2 · 25 min",coop:true},{n:"Pandemic: Reazione Rapida",m:"2-4 · 20 min",coop:true}],
-      reply:"Ho capito! Ti servono giochi cooperativi per due giocatori. Nome in Codice - Duetto è un gioco di deduzione cooperativa dove dovete lavorare insieme per risolvere enigmi. Pandemic - Reazione Rapida è un gioco cooperativo di avventura dove dovete lavorare insieme per salvare il mondo.",
-      rgloss:"Got it! You need cooperative games for two players. Codenames: Duet is a cooperative deduction game where you have to work together to solve riddles. Pandemic: Rapid Response is a cooperative adventure game where you have to work together to save the world.",
-      quick:["Vuoi giochi con temi fantasy?","Sorprendimi!","Cerchi giochi più lunghi di 30 minuti?"],
-      notes:[{type:"flaw",tag:"kept honest — then floored",text:"The model went silent this turn (no tool call) — the very failure that once produced a false “not in catalog”. The safety net searched with the customer's own words and returned the catalog's two best co-op-for-two answers. An honest no-match must now be earned by an empty search, never granted to silence.",ticket:["SEL-147","docs/tickets/resolved/SEL-147-agent-false-nomatch-coop-two.md"]}]
+      "id": "regalo-bambino",
+      "tier": "local",
+      "agent": "qwen2.5:7b",
+      "env": "engine=agent · qwen2.5:7b · bge-m3 · 501 games",
+      "hook": "Constraints accumulate turn over turn; the safety net carries the tail semantically.",
+      "meta": [
+        [
+          "win",
+          "semantic tail"
+        ]
+      ],
+      "turns": [
+        {
+          "user": "cerco un regalo per il compleanno di mio figlio, compie 8 anni",
+          "gloss": "a birthday gift for my son, he's turning 8",
+          "search": {
+            "q": "gioco per bambini, età minima 8 anni",
+            "filters": [
+              [
+                "age",
+                "≤ 8",
+                false
+              ]
+            ],
+            "hits": 5,
+            "forced": false
+          },
+          "games": [
+            {
+              "n": "Fairy Tile",
+              "img": "img/fairy-tile.jpg",
+              "m": "2-4 · 30 min"
+            },
+            {
+              "n": "NasconDino",
+              "img": "img/nascondino.jpg",
+              "m": "2-6 · 20 min"
+            }
+          ],
+          "reply": "Ciao! Fairy Tile è un gioco di avventura fantastica in cui i giocatori costruiscono un mondo incantato con tessere magiche — perfetto per bambini che amano la fantasia! NasconDino è un gioco di carte educativo che aiuta a sviluppare memoria e velocità.",
+          "rgloss": "Hi! Fairy Tile is a fantasy-adventure game where players build an enchanted world out of magic tiles — perfect for kids who love imagination! NasconDino is an educational card game that helps develop memory and speed.",
+          "quick": [
+            "Vorresti un gioco di strategia?",
+            "Hai bisogno di consigli per giocatori più piccoli?"
+          ],
+          "notes": []
+        },
+        {
+          "user": "bello! gioca spesso con la sorella più piccola, meglio qualcosa che possano fare insieme senza litigare",
+          "gloss": "he often plays with his younger sister — better something they can do together without fighting",
+          "search": {
+            "q": "bello! gioca spesso con la sorella più piccola, meglio qualcosa che possano fare insieme senza litigare",
+            "filters": [],
+            "hits": 5,
+            "forced": true
+          },
+          "games": [
+            {
+              "n": "Unlock! Secret Adventures",
+              "img": "img/unlock-secret-adventures.jpg",
+              "m": "1-6 · 60 min",
+              "coop": true
+            },
+            {
+              "n": "CuBirds",
+              "img": "img/cubirds.jpg",
+              "m": "2-5 · 20 min"
+            },
+            {
+              "n": "Coloretto",
+              "img": "img/coloretto.jpg",
+              "m": "2-5 · 30 min"
+            }
+          ],
+          "reply": "Unlock! - Secret Adventures è un'esperienza da escape room in cui i giocatori risolvono enigmi insieme. CuBirds è un gioco di carte divertente con regole semplici e partite da 20 minuti. Coloretto è facile e veloce — ideale per una famiglia!",
+          "rgloss": "Unlock! Secret Adventures is an escape-room experience where players solve puzzles together. CuBirds is a fun card game with simple rules and 20-minute games. Coloretto is easy and fast — ideal for a family!",
+          "quick": [
+            "Vuoi un gioco cooperativo?",
+            "Preferisci qualcosa che duri meno di 30 minuti?",
+            "Sorprendimi!"
+          ],
+          "notes": []
+        },
+        {
+          "user": "l'ideale sarebbe una cosa da mezz'oretta, non di più",
+          "gloss": "ideally about half an hour, no longer",
+          "search": {
+            "q": "l'ideale sarebbe una cosa da mezz'oretta, non di più",
+            "filters": [],
+            "hits": 5,
+            "forced": true
+          },
+          "games": [
+            {
+              "n": "Otto Minuti per un Impero",
+              "img": "img/otto-minuti-per-un-impero.jpg",
+              "m": "2-5 · 15 min"
+            },
+            {
+              "n": "Fantascatti: 5 Minuti a Mezzanotte",
+              "img": "img/fantascatti-5-minuti-a-mezzanotte.jpg",
+              "m": "2-8 · 20 min"
+            }
+          ],
+          "reply": "Otto Minuti per un Impero è un gioco strategico veloce e divertente per due-cinque giocatori. Fantascatti - 5 Minuti a Mezzanotte è un gioco di società rapido, perfetto per passare del tempo insieme!",
+          "rgloss": "Eight-Minute Empire is a fast, fun strategy game for two to five players. Fantascatti: 5 Minutes to Midnight is a quick party game, perfect for spending time together!",
+          "quick": [
+            "Sorprendimi",
+            "per 2-4 giocatori",
+            "max 30 minuti"
+          ],
+          "notes": [
+            {
+              "type": "win",
+              "tag": "the semantic tail",
+              "text": "Even through the safety net, the semantic layer carried the constraint: «mezz'oretta» surfaced 15–20 minute games with no structured duration filter at all."
+            }
+          ]
+        }
+      ]
     },
     {
-      user:"perfetto! e se invece volessi qualcosa di cooperativo per quando invitano altri amici, tipo in cinque?",
-      gloss:"perfect! and something cooperative for when they invite friends over — five of them, say?",
-      search:{q:"perfetto! e se invece volessi qualcosa di cooperativo per quando invitano altri amici…", filters:[], hits:5, forced:true},
-      games:[{n:"Unlock! Timeless Adventures",m:"1-6 · 75 min",coop:true},{n:"Dungeon Time",m:"1-5 · 45 min",coop:true}],
-      reply:"Fantastico! Ecco alcuni giochi cooperativi perfetti per 5 giocatori. Unlock! - Timeless Adventures è un'avventura coinvolgente in cui dovete lavorare insieme per risolvere enigmi. Dungeon Time è un gioco di carte cooperativo in tempo reale con avventure da completare in 5 minuti!",
-      rgloss:"Fantastic! Here are some cooperative games perfect for 5 players. Unlock! Timeless Adventures is an engaging adventure where you have to work together to solve puzzles. Dungeon Time is a real-time cooperative card game with adventures to complete in 5 minutes!",
-      quick:["Vorresti giochi con tempi di gioco più lunghi?","Sei interessato a giochi con espansioni disponibili?"],
-      notes:[]
+      "id": "esperti-fantascienza",
+      "tier": "local",
+      "agent": "qwen2.5:7b",
+      "env": "engine=agent · qwen2.5:7b · bge-m3 · 501 games",
+      "hook": "Described, never named: the customer paints Terraforming Mars in three turns — found #1 of 501.",
+      "meta": [
+        [
+          "win",
+          "#1 / 501"
+        ],
+        [
+          "flag",
+          "one pitch slip kept"
+        ]
+      ],
+      "turns": [
+        {
+          "user": "siamo un gruppo di giocatori esperti e cerchiamo un titolo impegnativo per le nostre serate",
+          "gloss": "we're a group of expert players looking for a demanding title for our game nights",
+          "search": {
+            "q": "gioco da tavolo impegnativo per giocatori esperti",
+            "filters": [
+              [
+                "players",
+                "= 4",
+                false
+              ],
+              [
+                "cooperative",
+                "= false",
+                false
+              ]
+            ],
+            "hits": 5,
+            "forced": false
+          },
+          "games": [
+            {
+              "n": "Disney Villainous",
+              "img": "img/disney-villainous.jpg",
+              "m": "2-6 · 90 min"
+            },
+            {
+              "n": "Talisman: Il Cataclisma",
+              "img": "img/talisman-il-cataclisma.jpg",
+              "m": "2-6 · 90 min"
+            },
+            {
+              "n": "Jamaica",
+              "img": "img/jamaica.jpg",
+              "m": "2-6 · 45 min"
+            }
+          ],
+          "reply": "Disney Villainous è un gioco strategico dove potrete interpretare i cattivi più famosi della Disney. Talisman: Il Cataclisma vi porterà in un mondo fantastico di avventure e magia. Jamaica vi farà navigare le acque dei Caraibi alla ricerca del tesoro!",
+          "rgloss": "Disney Villainous is a strategy game where you get to play Disney's most famous villains. Talisman: The Cataclysm will take you into a fantasy world of adventure and magic. Jamaica will have you sailing Caribbean waters in search of treasure!",
+          "quick": [
+            "Vorreste giocare con 2-4 giocatori?",
+            "Siete disposti a giocare fino a 90 minuti?"
+          ],
+          "notes": []
+        },
+        {
+          "user": "il tema che ci attira di più è la fantascienza, meglio se gestionale",
+          "gloss": "the theme we like most is sci-fi, ideally a management game",
+          "search": {
+            "q": "gioco fantascienza gestione",
+            "filters": [],
+            "hits": 5,
+            "forced": false
+          },
+          "games": [
+            {
+              "n": "Magnastorm",
+              "img": "img/magnastorm.jpg",
+              "m": "2-4 · 80 min"
+            },
+            {
+              "n": "Terraforming Mars: Turmoil",
+              "img": "img/terraforming-mars-turmoil.jpg",
+              "m": "1-5 · 150 min"
+            }
+          ],
+          "reply": "Fantascienza e gestionale! Magnastorm è un gioco di esplorazione e strategia in un mondo di fantascienza, dove gestite le risorse per costruire una base spaziale. Terraforming Mars: Turmoil è un gioco di gestione delle risorse su un pianeta alieno.",
+          "rgloss": "Sci-fi and management! Magnastorm is an exploration and strategy game in a science-fiction world, where you manage resources to build a space base. Terraforming Mars: Turmoil is a resource-management game on an alien planet.",
+          "quick": [
+            "Per 2-4 giocatori",
+            "Max 150 minuti"
+          ],
+          "notes": [
+            {
+              "type": "win",
+              "tag": "closing in",
+              "text": "The expansion surfaces — close, not there yet. The customer still hasn't said the name."
+            }
+          ]
+        },
+        {
+          "user": "ci piacciono i giochi dove costruisci un motore di carte e risorse, tipo rendere abitabile un pianeta",
+          "gloss": "we like games where you build an engine of cards and resources — like making a planet habitable",
+          "search": {
+            "q": "ci piacciono i giochi dove costruisci un motore di carte e risorse, tipo rendere abitabile un pianeta",
+            "filters": [],
+            "hits": 5,
+            "forced": true
+          },
+          "games": [
+            {
+              "n": "Terraforming Mars",
+              "img": "img/terraforming-mars.jpg",
+              "m": "1-5 · 120 min",
+              "hot": "#1 / 501"
+            },
+            {
+              "n": "Smash Up",
+              "img": "img/smash-up.jpg",
+              "m": "2-4 · 45 min"
+            }
+          ],
+          "reply": "Fantascienza, gestione e costruzione! Terraforming Mars è un gioco strategico dove dovete lavorare insieme per trasformare il pianeta Marte in un nuovo mondo abitabile. Svilupperete tecnologie e risorse per renderlo un posto incredibile.",
+          "rgloss": "Sci-fi, management and building! Terraforming Mars is a strategy game where you have to work together to transform planet Mars into a habitable new world. You'll develop technologies and resources to make it an incredible place.",
+          "quick": [
+            "Vorreste giocare a un titolo con più giocatori?",
+            "Siete disposti ad investire 2 ore in ogni partita?"
+          ],
+          "notes": [
+            {
+              "type": "win",
+              "tag": "described, never named",
+              "text": "The customer never says the name; the third message describes the game — and the search, the customer's own words verbatim, puts the right box first out of 501."
+            },
+            {
+              "type": "flaw",
+              "tag": "kept honest — pitch slip",
+              "text": "«dovete lavorare insieme» — Terraforming Mars is competitive, not cooperative. Sales wording on the local 7B is the documented limit; the simulation harness exists to measure how much a stronger model recovers.",
+              "ticket": [
+                "docs/chat.md",
+                "docs/chat.md"
+              ]
+            }
+          ]
+        }
+      ]
     }
-  ]
-},
-{
-  id:"cliente-deciso",
-  tier:"local", agent:"qwen2.5:7b", env:"engine=agent · qwen2.5:7b · bge-m3 · 501 games",
-  hook:"The weak take, kept on purpose: a named title missed, an invented filter caught by the log itself.",
-  meta:[["flag","2 flaws annotated"]],
-  turns:[
+  ],
+  "frontier": [
     {
-      user:"buongiorno, avete Carcassonne? vorrei regalarlo a mia sorella, mi serve per stasera",
-      gloss:"good morning, do you have Carcassonne? I'd like it as a gift for my sister, I need it tonight",
-      search:{q:"gioco da tavolo per 2-5 persone, meccanica di tessera, tema paesaggio", filters:[["players","= 2",false]], hits:5, forced:false},
-      games:[{n:"Terra Mystica",m:"2-5 · 120 min"},{n:"Descent: Viaggi nelle Tenebre",m:"2-5 · 120 min"}],
-      reply:"Ciao! Terra Mystica è un gioco strategico di avventura fantastica in cui dovrai esplorare il territorio e controllarlo per vincere. Descent: Viaggi nelle Tenebre è un gioco di avventura sotterranea con combattimenti epici!",
-      rgloss:"Hi! Terra Mystica is a strategic fantasy-adventure game where you'll have to explore the territory and control it to win. Descent: Journeys in the Dark is an underground adventure game with epic battles!",
-      quick:["Per 2 giocatori","Sorprendimi"],
-      notes:[{type:"flaw",tag:"kept honest",text:"The customer named a title; the model searched a paraphrase — and Carcassonne is in stock. Exact-title lookup is a retrieval axis semantic search doesn't guarantee: a known lever for the agent tier.",ticket:["SEL-113","docs/tickets/SEL-113-complete-agentic-chat.md"]}]
+      "id": "coppia-serale-frontier",
+      "tier": "frontier",
+      "agent": "Claude Sonnet 5",
+      "env": "engine=agent · Claude Sonnet 5 (responder harness) · bge-m3 · 501 games",
+      "hook": "The same gift request — but the model stacks players, duration and cooperative into one query, unprompted.",
+      "meta": [
+        [
+          "win",
+          "full constraint stack, unprompted"
+        ]
+      ],
+      "turns": [
+        {
+          "user": "ciao! cerco un gioco da regalare a una coppia di amici: giocano spesso in due la sera dopo cena",
+          "gloss": "hi! looking for a gift for a couple of friends: they often play in two, evenings after dinner",
+          "search": {
+            "q": "gioco da tavolo per due, esperienza strategica e coinvolgente adatta a serate ripetute in coppia dopo cena, buona rigiocabilità",
+            "filters": [
+              [
+                "players",
+                "= 2",
+                false
+              ]
+            ],
+            "hits": 5,
+            "forced": false
+          },
+          "games": [
+            {
+              "n": "Patchwork",
+              "img": "img/patchwork.jpg",
+              "m": "2 · 25 min"
+            },
+            {
+              "n": "7 Wonders Duel",
+              "img": "img/7-wonders-duel.jpg",
+              "m": "2 · 30 min"
+            },
+            {
+              "n": "InBetween",
+              "img": "img/inbetween.jpg",
+              "m": "2 · 30 min"
+            }
+          ],
+          "reply": "Che bel regalo: per due amici che giocano spesso dopo cena servono titoli agili, belli da rigiocare tante volte! Patchwork è perfetto per chiudere la serata: in 25 minuti si intrecciano tessere di stoffa in un puzzle elegante e tattico. 7 Wonders Duel porta il duello di civiltà in appena 30 minuti, carta su carta, con un ritmo serrato per chi ama pensare le mosse in anticipo. Se cercano qualcosa di più insolito, InBetween mescola horror e inganno in un'avventura per due che dura circa 40 minuti…",
+          "rgloss": "What a nice gift: two friends who often play after dinner need agile titles that are fun to replay. Patchwork wraps up the evening in 25 minutes with an elegant, tactical fabric-tile puzzle. 7 Wonders Duel brings the civilization duel in just 30 minutes, card against card, a brisk pace for planners. If they want something more unusual, InBetween mixes horror and bluffing in a two-player adventure lasting about 40 minutes…",
+          "quick": [
+            "max 30 minuti",
+            "qualcosa di più leggero",
+            "Sorprendimi"
+          ],
+          "notes": []
+        },
+        {
+          "user": "sì, gli piace la strategia ma niente partite infinite, direi massimo un'ora",
+          "gloss": "they like strategy but no endless games — an hour tops",
+          "search": {
+            "q": "gioco strategico per due giocatori, scelte tattiche profonde ma partita compatta e veloce da chiudere in serata",
+            "filters": [
+              [
+                "players",
+                "= 2",
+                false
+              ],
+              [
+                "duration",
+                "≤ 60",
+                false
+              ]
+            ],
+            "hits": 5,
+            "forced": false
+          },
+          "games": [
+            {
+              "n": "Onitama",
+              "img": "img/onitama.jpg",
+              "m": "2 · 10 min"
+            },
+            {
+              "n": "Hadara",
+              "img": "img/hadara.jpg",
+              "m": "2-5 · 60 min"
+            },
+            {
+              "n": "InBetween",
+              "img": "img/inbetween.jpg",
+              "m": "2 · 30 min"
+            }
+          ],
+          "reply": "Perfetto, restiamo su titoli strategici ma via dalle maratone: ecco tre proposte che si chiudono entro l'ora! Onitama è pura strategia in appena 10 minuti: ogni mossa dipende dalle carte in mano, con un design elegante che nasconde profondità sorprendente. Hadara costruisce una civiltà in esattamente 60 minuti, azioni simultanee e tensione strategica senza tempi morti. InBetween resta un'ottima scelta se vogliono anche un pizzico di atmosfera: 40 minuti di gestione della mano e inganno in un duello horror per due…",
+          "rgloss": "Perfect, let's stay strategic but away from marathons: three picks that close within the hour! Onitama is pure strategy in just 10 minutes — every move depends on the cards in hand, elegant design hiding real depth. Hadara builds a civilization in exactly 60 minutes, simultaneous actions and strategic tension with no dead time. InBetween is still a great pick for a touch of atmosphere: 40 minutes of hand management and bluffing in a two-player horror duel…",
+          "quick": [
+            "max 30 minuti",
+            "niente horror",
+            "Sorprendimi"
+          ],
+          "notes": []
+        },
+        {
+          "user": "ah, dimenticavo: adorano i giochi cooperativi, dove si vince o si perde insieme. c'è qualcosa di cooperativo che funzioni bene in due?",
+          "gloss": "oh, I forgot: they love co-op games, where you win or lose together. anything cooperative that works well in two?",
+          "search": {
+            "q": "gioco cooperativo, si vince o si perde tutti insieme contro il gioco, avventura o missione da affrontare in squadra",
+            "filters": [
+              [
+                "players",
+                "= 2",
+                false
+              ],
+              [
+                "duration",
+                "≤ 60",
+                false
+              ],
+              [
+                "cooperative",
+                "= true",
+                false
+              ]
+            ],
+            "hits": 5,
+            "forced": false
+          },
+          "games": [
+            {
+              "n": "Pandemic: La Caduta di Roma",
+              "img": "img/pandemic-la-caduta-di-roma.jpg",
+              "m": "1-5 · 60 min",
+              "coop": true
+            },
+            {
+              "n": "Unlock! Heroic Adventures",
+              "img": "img/unlock-heroic-adventures.jpg",
+              "m": "1-6 · 60 min",
+              "coop": true
+            },
+            {
+              "n": "Yokai",
+              "img": "img/yokai.jpg",
+              "m": "2-4 · 20 min",
+              "coop": true
+            }
+          ],
+          "reply": "Ottima notizia: il cooperativo funziona benissimo anche in due, ed ecco tre titoli che restano nell'ora giusta! Pandemic: La Caduta di Roma li mette fianco a fianco a difendere l'impero, con vere scelte strategiche da coordinare insieme in circa 60 minuti. Unlock! Heroic Adventures li fa collaborare su enigmi e indizi come in una escape room da tavolo, puntando tutto sulla comunicazione. Yokai è più breve e leggero, circa 20 minuti, ma richiede memoria e strategia condivisa per intrappolare gli spiriti dispettosi…",
+          "rgloss": "Great news: co-op works beautifully for two, and here are three titles that stay within the hour! Pandemic: A Fall of Rome puts them side by side defending the empire, with real strategic choices to coordinate together in about 60 minutes. Unlock! Heroic Adventures has them collaborating on puzzles and clues like a tabletop escape room, all about communication. Yokai is shorter and lighter, about 20 minutes, but needs shared memory and strategy to trap mischievous spirits…",
+          "quick": [
+            "max 30 minuti",
+            "qualcosa di più leggero",
+            "Sorprendimi"
+          ],
+          "notes": [
+            {
+              "type": "win",
+              "tag": "unprompted constraint stack",
+              "text": "No safety net needed: Claude Sonnet 5 composed players = 2, duration ≤ 60 and cooperative = true in one query, unprompted — exactly the turn where the local qwen2.5:7b model went silent and needed the SEL-147 floor just to answer at all.",
+              "ticket": [
+                "SEL-147",
+                "docs/tickets/resolved/SEL-147-agent-false-nomatch-coop-two.md"
+              ]
+            },
+            {
+              "type": "flaw",
+              "tag": "kept honest — even here",
+              "text": "The customer asked for nothing too long («massimo un'ora»). The hard filter held — every pick is ≤ 60 minutes — but two of the three land exactly at the 60-minute ceiling; a co-op «not too long» arguably wants the shorter end, and the 20-minute pick (Yokai) is present but not led with. A filter is a hard cut; picking WELL inside it is a selection-quality nuance the pitch layer doesn't weight yet. Better than the local tier, not flawless."
+            }
+          ]
+        },
+        {
+          "user": "perfetto! e se invece volessi qualcosa di cooperativo per quando invitano altri amici, tipo in cinque?",
+          "gloss": "perfect! and something cooperative for when they invite friends over — five of them, say?",
+          "search": {
+            "q": "gioco cooperativo per gruppo numeroso, si vince o si perde tutti insieme contro il gioco, avventura o missione da affrontare in squadra con amici",
+            "filters": [
+              [
+                "players",
+                "= 5",
+                false
+              ],
+              [
+                "cooperative",
+                "= true",
+                false
+              ]
+            ],
+            "hits": 5,
+            "forced": false
+          },
+          "games": [
+            {
+              "n": "Magic Maze",
+              "img": "img/magic-maze.jpg",
+              "m": "1-8 · 15 min",
+              "coop": true
+            },
+            {
+              "n": "Massive Darkness",
+              "img": "img/massive-darkness.jpg",
+              "m": "1-6 · 120 min",
+              "coop": true
+            },
+            {
+              "n": "Pandemic: La Caduta di Roma",
+              "img": "img/pandemic-la-caduta-di-roma.jpg",
+              "m": "1-5 · 60 min",
+              "coop": true
+            }
+          ],
+          "reply": "Per una serata con il gruppo allargato ci sono cooperativi che reggono benissimo in cinque, con gusti diversi tra loro! Magic Maze esplora un centro commerciale in tempo reale muovendo tutti gli eroi insieme, senza parlare tra voi, in appena 15 minuti di caos organizzato. Massive Darkness porta il gruppo dentro un dungeon fantasy con miniature vere: una serata più lunga, circa 120 minuti, ma immersiva e spettacolare. Pandemic: La Caduta di Roma torna utile anche qui: fino a cinque legionari possono unire le forze per salvare l'impero in circa 60 minuti…",
+          "rgloss": "For a night with the wider group there are co-ops that hold up beautifully at five, each with a different flavor! Magic Maze explores a shopping mall in real time, moving all the heroes together without talking, in just 15 minutes of organized chaos. Massive Darkness brings the group into a fantasy dungeon with real miniatures — a longer night, about 120 minutes, but immersive and spectacular. Pandemic: A Fall of Rome comes in handy here too: up to five legionaries can join forces to save the empire in about 60 minutes…",
+          "quick": [
+            "max 60 minuti",
+            "qualcosa di più leggero",
+            "Sorprendimi"
+          ],
+          "notes": []
+        }
+      ]
     },
     {
-      user:"perfetto! e c'è qualcosa di simile da affiancare al regalo, sempre di piazzamento tessere ma un po' più moderno?",
-      gloss:"and something similar to go with the gift — still tile placement, a bit more modern?",
-      search:{q:"gioco piazza tessere cooperativo", filters:[["players","= 2",false],["cooperative","= true",true]], hits:5, forced:false},
-      games:[{n:"Magic Maze",m:"1-8 · 15 min",coop:true},{n:"TIME Stories: La Confraternita della Costa",m:"2-4 · 150 min",coop:true},{n:"TIME Stories: Estrella Drive",m:"2-4 · 90 min",coop:true}],
-      reply:"Ho alcune proposte, sempre con piazzamento tessere e un po' più moderne. Magic Maze è un gioco cooperativo in cui dovete esplorare un labirinto lavorando insieme — richiede comunicazione e strategia! TIME Stories: La Confraternita della Costa è un'avventura cooperativa nei Caraibi con una storia avvincente.",
-      rgloss:"I have a few suggestions, still tile placement and a bit more modern. Magic Maze is a cooperative game where you explore a maze working together — it takes communication and strategy! TIME Stories: The Brotherhood of the Coast is a cooperative adventure in the Caribbean with a gripping story.",
-      quick:["Per 2 giocatori","Senza espansioni"],
-      notes:[{type:"flaw",tag:"kept honest — invented filter",text:"Nobody asked for cooperative — the model fabricated cooperative = true. The search log makes the fabrication visible, which is exactly why the searches are on the page. Anti-invented-filters is an open backlog lever.",ticket:["SEL-143","docs/tickets/SEL-143-cooperative-fabricated-from-unknown-reference.md"]}]
-    }
-  ]
-},
-{
-  id:"regalo-bambino",
-  tier:"local", agent:"qwen2.5:7b", env:"engine=agent · qwen2.5:7b · bge-m3 · 501 games",
-  hook:"Constraints accumulate turn over turn; the safety net carries the tail semantically.",
-  meta:[["win","semantic tail"]],
-  turns:[
-    {
-      user:"cerco un regalo per il compleanno di mio figlio, compie 8 anni",
-      gloss:"a birthday gift for my son, he's turning 8",
-      search:{q:"gioco per bambini, età minima 8 anni", filters:[["age","≤ 8",false]], hits:5, forced:false},
-      games:[{n:"Fairy Tile",m:"2-4 · 30 min"},{n:"NasconDino",m:"2-6 · 20 min"}],
-      reply:"Ciao! Fairy Tile è un gioco di avventura fantastica in cui i giocatori costruiscono un mondo incantato con tessere magiche — perfetto per bambini che amano la fantasia! NasconDino è un gioco di carte educativo che aiuta a sviluppare memoria e velocità.",
-      rgloss:"Hi! Fairy Tile is a fantasy-adventure game where players build an enchanted world out of magic tiles — perfect for kids who love imagination! NasconDino is an educational card game that helps develop memory and speed.",
-      quick:["Vorresti un gioco di strategia?","Hai bisogno di consigli per giocatori più piccoli?"],
-      notes:[]
+      "id": "cliente-deciso-frontier",
+      "tier": "frontier",
+      "agent": "Claude Sonnet 5",
+      "env": "engine=agent · Claude Sonnet 5 (responder harness) · bge-m3 · 501 games",
+      "hook": "The weak local take, rerun: the named title lands #1 verbatim, and no filter gets invented this time.",
+      "meta": [
+        [
+          "win",
+          "named title, verbatim"
+        ],
+        [
+          "win",
+          "no invented filters"
+        ]
+      ],
+      "turns": [
+        {
+          "user": "buongiorno, avete Carcassonne? vorrei regalarlo a mia sorella, mi serve per stasera",
+          "gloss": "good morning, do you have Carcassonne? I'd like it as a gift for my sister, I need it tonight",
+          "search": {
+            "q": "Carcassonne",
+            "filters": [],
+            "hits": 5,
+            "forced": false
+          },
+          "games": [
+            {
+              "n": "Carcassonne",
+              "img": "img/carcassonne.jpg",
+              "m": "2-5 · 45 min"
+            },
+            {
+              "n": "Carcassonne: La Torre",
+              "img": "img/carcassonne-la-torre.jpg",
+              "m": "2-6 · 60 min"
+            }
+          ],
+          "reply": "Ottima scelta per un regalo dell'ultimo minuto, ce l'abbiamo pronto in negozio! Carcassonne nella sua Nuova Edizione è esattamente quello che cercava: si piazzano tessere per costruire città, strade e campi medievali, regole semplici da spiegare in cinque minuti e partite da 45 minuti che appassionano da 2 a 5 giocatori. Se vuole arricchire il regalo, Carcassonne: La Torre è l'espansione ideale da abbinare, per dare a sua sorella qualcosa in più da scoprire partita dopo partita.",
+          "rgloss": "Great choice for a last-minute gift, we have it ready in store! Carcassonne's New Edition is exactly what you were looking for: you place tiles to build cities, roads and medieval fields, rules simple enough to explain in five minutes, and 45-minute games that hook 2 to 5 players. If you'd like to round out the gift, Carcassonne: The Tower is the ideal expansion to pair with it, giving your sister something more to discover game after game.",
+          "quick": [
+            "solo il gioco base",
+            "senza espansioni",
+            "per 2 giocatori"
+          ],
+          "notes": [
+            {
+              "type": "win",
+              "tag": "named title, verbatim",
+              "text": "The customer named the title; the query is «Carcassonne», verbatim — it lands #1, followed by the natural expansion upsell. The local take searched a paraphrase instead and missed the exact match entirely.",
+              "ticket": [
+                "SEL-113",
+                "docs/tickets/SEL-113-complete-agentic-chat.md"
+              ]
+            }
+          ]
+        },
+        {
+          "user": "perfetto! e c'è qualcosa di simile da affiancare al regalo, sempre di piazzamento tessere ma un po' più moderno?",
+          "gloss": "and something similar to go with the gift — still tile placement, a bit more modern?",
+          "search": {
+            "q": "gioco moderno di piazzamento tessere, costruzione di territorio o paesaggio, design fresco e attuale, per famiglia e amici",
+            "filters": [],
+            "hits": 5,
+            "forced": false
+          },
+          "games": [
+            {
+              "n": "Azul: Summer Pavilion",
+              "img": "img/azul-summer-pavilion.jpg",
+              "m": "2-4 · 45 min"
+            },
+            {
+              "n": "Bärenpark",
+              "img": "img/barenpark.jpg",
+              "m": "2-4 · 45 min"
+            },
+            {
+              "n": "Fairy Tile",
+              "img": "img/fairy-tile.jpg",
+              "m": "2-4 · 30 min"
+            }
+          ],
+          "reply": "Certo, per affiancare Carcassonne ci sono ottime alternative più recenti che parlano ancora la lingua del piazzamento tessere! Azul: Summer Pavilion è oggi il volto più moderno del genere: mosaici colorati e scelte tattiche sottili in 45 minuti. Bärenpark trasforma il piazzamento tessere in un puzzle di costruzione, incastrando recinti e attrazioni in partite da 45 minuti sempre diverse. Fairy Tile mantiene l'atmosfera fantasy-medievale che ama in Carcassonne, ma con un tono più leggero e narrativo…",
+          "rgloss": "Sure, to go alongside Carcassonne there are great, more recent alternatives that still speak the language of tile placement! Azul: Summer Pavilion is today's most modern face of the genre: colorful mosaics and subtle tactical choices in 45 minutes. Bärenpark turns tile placement into a building puzzle, fitting enclosures and attractions into ever-different 45-minute games. Fairy Tile keeps the fantasy-medieval mood you love in Carcassonne, but with a lighter, more narrative tone…",
+          "quick": [
+            "per 2 giocatori",
+            "max 30 minuti",
+            "Sorprendimi"
+          ],
+          "notes": [
+            {
+              "type": "win",
+              "tag": "no invented filters",
+              "text": "Local tier, this exact turn: it searched `cooperative = true` — a constraint nobody asked for, which then wrongly excluded competitive games. Frontier tier: no filters at all, because none applied. The empty filter row here is the point — the fabrication is gone. Suppressing invented filters is tracked as SEL-143.",
+              "ticket": [
+                "SEL-143",
+                "docs/tickets/SEL-143-cooperative-fabricated-from-unknown-reference.md"
+              ]
+            }
+          ]
+        }
+      ]
     },
     {
-      user:"bello! gioca spesso con la sorella più piccola, meglio qualcosa che possano fare insieme senza litigare",
-      gloss:"he often plays with his younger sister — better something they can do together without fighting",
-      search:{q:"bello! gioca spesso con la sorella più piccola, meglio qualcosa che possano fare insieme…", filters:[], hits:5, forced:true},
-      games:[{n:"Unlock! Secret Adventures",m:"1-6 · 60 min",coop:true},{n:"CuBirds",m:"2-5 · 20 min"},{n:"Coloretto",m:"2-5 · 30 min"}],
-      reply:"Unlock! - Secret Adventures è un'esperienza da escape room in cui i giocatori risolvono enigmi insieme. CuBirds è un gioco di carte divertente con regole semplici e partite da 20 minuti. Coloretto è facile e veloce — ideale per una famiglia!",
-      rgloss:"Unlock! Secret Adventures is an escape-room experience where players solve puzzles together. CuBirds is a fun card game with simple rules and 20-minute games. Coloretto is easy and fast — ideal for a family!",
-      quick:["Vuoi un gioco cooperativo?","Preferisci qualcosa che duri meno di 30 minuti?","Sorprendimi!"],
-      notes:[]
+      "id": "regalo-bambino-frontier",
+      "tier": "frontier",
+      "agent": "Claude Sonnet 5",
+      "env": "engine=agent · Claude Sonnet 5 (responder harness) · bge-m3 · 501 games",
+      "hook": "Same birthday brief — the filter stack survives turn over turn instead of dropping to semantic-only.",
+      "meta": [
+        [
+          "win",
+          "constraints stack correctly"
+        ]
+      ],
+      "turns": [
+        {
+          "user": "cerco un regalo per il compleanno di mio figlio, compie 8 anni",
+          "gloss": "a birthday gift for my son, he's turning 8",
+          "search": {
+            "q": "gioco da tavolo per bambini, adatto a un compleanno, regola semplice e divertente, ottimo come primo regalo di scatola",
+            "filters": [
+              [
+                "age",
+                "≤ 8",
+                false
+              ]
+            ],
+            "hits": 5,
+            "forced": false
+          },
+          "games": [
+            {
+              "n": "Coloretto",
+              "img": "img/coloretto.jpg",
+              "m": "2-5 · 30 min"
+            },
+            {
+              "n": "Ticket to Ride: Primo Viaggio",
+              "img": "img/ticket-to-ride-primo-viaggio.jpg",
+              "m": "2-4 · 25 min"
+            },
+            {
+              "n": "Exploding Kittens",
+              "img": "img/exploding-kittens.jpg",
+              "m": "2-5 · 15 min"
+            }
+          ],
+          "reply": "Per un compleanno di 8 anni ho qualche idea perfetta, magari anche da giocare insieme ai fratellini! Coloretto è pensato proprio da 8 anni in su: regole immediate, partite da 30 minuti e un pizzico di fortuna che lo rende divertente per tutta la famiglia. Ticket to Ride: Primo Viaggio è la versione junior di un grande classico — costruire percorsi di treni è intuitivo e appagante. Exploding Kittens è puro divertimento in scatola: partite fulminee di 15 minuti e tantissime risate…",
+          "rgloss": "For an 8th birthday I have a few perfect ideas, maybe even to play together with younger siblings! Coloretto is aimed right at age 8+: instant rules, 30-minute games, and a pinch of luck that makes it fun for the whole family. Ticket to Ride: First Journey is the junior version of a big classic — building train routes feels intuitive and rewarding. Exploding Kittens is pure boxed fun: lightning-fast 15-minute games and tons of laughs…",
+          "quick": [
+            "per 2 giocatori",
+            "dai 6 anni",
+            "Sorprendimi"
+          ],
+          "notes": []
+        },
+        {
+          "user": "bello! gioca spesso con la sorella più piccola, meglio qualcosa che possano fare insieme senza litigare",
+          "gloss": "he often plays with his younger sister — better something they can do together without fighting",
+          "search": {
+            "q": "gioco cooperativo per famiglie e bambini, si vince e si perde tutti insieme, adatto anche a fratelli con differenza d'età, niente eliminazione né scontro diretto",
+            "filters": [
+              [
+                "age",
+                "≤ 8",
+                false
+              ],
+              [
+                "cooperative",
+                "= true",
+                false
+              ]
+            ],
+            "hits": 5,
+            "forced": false
+          },
+          "games": [
+            {
+              "n": "SOS Dino",
+              "img": "img/sos-dino.jpg",
+              "m": "1-4 · 25 min",
+              "coop": true
+            },
+            {
+              "n": "Yokai",
+              "img": "img/yokai.jpg",
+              "m": "2-4 · 20 min",
+              "coop": true
+            },
+            {
+              "n": "Magic Maze",
+              "img": "img/magic-maze.jpg",
+              "m": "1-8 · 15 min",
+              "coop": true
+            }
+          ],
+          "reply": "Perfetto, allora puntiamo su giochi cooperativi: si vince o si perde tutti insieme, quindi zero litigi tra fratelli! SOS Dino è pensato apposta per famiglie con bambini di età diverse: fratello e sorella lavorano fianco a fianco per salvare i dinosauri, niente sfida diretta, partite brevi di 25 minuti. Yokai unisce memoria e cooperazione in un'avventura giapponese incantevole, un formato che mette tutti sullo stesso piano. Magic Maze è un'esplosione di adrenalina cooperativa in soli 15 minuti, non uno contro l'altro…",
+          "rgloss": "Perfect, let's go cooperative then: you win or lose all together, so zero fighting between siblings! SOS Dino is designed exactly for families with kids of different ages: brother and sister work side by side to save the dinosaurs, no direct competition, short 25-minute games. Yokai blends memory and cooperation into a charming Japanese adventure, a format that puts everyone on equal footing. Magic Maze is a burst of cooperative adrenaline in just 15 minutes, never one against the other…",
+          "quick": [
+            "max 20 minuti",
+            "dai 6 anni",
+            "per 2 giocatori"
+          ],
+          "notes": [
+            {
+              "type": "win",
+              "tag": "constraints stack, filters kept",
+              "text": "age ≤ 8 from turn 1 carries forward and cooperative = true is added exactly on cue — SOS Dino, the strongest match for both, surfaces immediately. The local take went filterless here (forced, semantic-only)."
+            }
+          ]
+        },
+        {
+          "user": "l'ideale sarebbe una cosa da mezz'oretta, non di più",
+          "gloss": "ideally about half an hour, no longer",
+          "search": {
+            "q": "gioco cooperativo per famiglie e bambini, si vince e si perde tutti insieme, partita breve e scorrevole",
+            "filters": [
+              [
+                "age",
+                "≤ 8",
+                false
+              ],
+              [
+                "cooperative",
+                "= true",
+                false
+              ],
+              [
+                "duration",
+                "≤ 30",
+                false
+              ]
+            ],
+            "hits": 5,
+            "forced": false
+          },
+          "games": [
+            {
+              "n": "SOS Dino",
+              "img": "img/sos-dino.jpg",
+              "m": "1-4 · 25 min",
+              "coop": true
+            },
+            {
+              "n": "The Mind",
+              "img": "img/the-mind.jpg",
+              "m": "2-4 · 20 min",
+              "coop": true
+            },
+            {
+              "n": "Yokai",
+              "img": "img/yokai.jpg",
+              "m": "2-4 · 20 min",
+              "coop": true
+            }
+          ],
+          "reply": "Detto fatto: ecco tre giochi cooperativi che stanno comodamente dentro la mezz'oretta. SOS Dino si gioca in appena 25 minuti ed è tarato apposta per bambini dai 7 anni in su. The Mind è un'idea geniale in 15-20 minuti: niente parole, solo intesa e sincronia tra i giocatori. Yokai regala 20 minuti di avventura giapponese fatta di memoria e collaborazione…",
+          "rgloss": "Done: here are three cooperative games that comfortably fit within half an hour. SOS Dino plays in just 25 minutes and is tuned for kids age 7 and up. The Mind is a brilliant idea in 15-20 minutes: no words, just intuition and sync between players. Yokai offers 20 minutes of Japanese adventure built on memory and collaboration…",
+          "quick": [
+            "per 2 giocatori",
+            "Sorprendimi",
+            "senza espansioni"
+          ],
+          "notes": [
+            {
+              "type": "win",
+              "tag": "the stack holds, turn 3",
+              "text": "age ≤ 8 → + cooperative → + duration ≤ 30, stacked in that exact order across three turns instead of dropping to a bare semantic search — and SOS Dino answers all three."
+            }
+          ]
+        }
+      ]
     },
     {
-      user:"l'ideale sarebbe una cosa da mezz'oretta, non di più",
-      gloss:"ideally about half an hour, no longer",
-      search:{q:"l'ideale sarebbe una cosa da mezz'oretta, non di più", filters:[], hits:5, forced:true},
-      games:[{n:"Otto Minuti per un Impero",m:"2-5 · 15 min"},{n:"Fantascatti: 5 Minuti a Mezzanotte",m:"2-8 · 20 min"}],
-      reply:"Otto Minuti per un Impero è un gioco strategico veloce e divertente per due-cinque giocatori. Fantascatti - 5 Minuti a Mezzanotte è un gioco di società rapido, perfetto per passare del tempo insieme!",
-      rgloss:"Eight-Minute Empire is a fast, fun strategy game for two to five players. Fantascatti: 5 Minutes to Midnight is a quick party game, perfect for spending time together!",
-      quick:["Sorprendimi","per 2-4 giocatori","max 30 minuti"],
-      notes:[{type:"win",tag:"the semantic tail",text:"Even through the safety net, the semantic layer carried the constraint: «mezz'oretta» surfaced 15–20 minute games with no structured duration filter at all."}]
-    }
-  ]
-},
-{
-  id:"esperti-fantascienza",
-  tier:"local", agent:"qwen2.5:7b", env:"engine=agent · qwen2.5:7b · bge-m3 · 501 games",
-  hook:"Described, never named: the customer paints Terraforming Mars in three turns — found #1 of 501.",
-  meta:[["win","#1 / 501"],["flag","one pitch slip kept"]],
-  turns:[
-    {
-      user:"siamo un gruppo di giocatori esperti e cerchiamo un titolo impegnativo per le nostre serate",
-      gloss:"we're a group of expert players looking for a demanding title for our game nights",
-      search:{q:"gioco da tavolo impegnativo per giocatori esperti", filters:[["players","= 4",false],["cooperative","= false",false]], hits:5, forced:false},
-      games:[{n:"Disney Villainous",m:"2-6 · 90 min"},{n:"Talisman: Il Cataclisma",m:"2-6 · 90 min"},{n:"Jamaica",m:"2-6 · 45 min"}],
-      reply:"Disney Villainous è un gioco strategico dove potrete interpretare i cattivi più famosi della Disney. Talisman: Il Cataclisma vi porterà in un mondo fantastico di avventure e magia. Jamaica vi farà navigare le acque dei Caraibi alla ricerca del tesoro!",
-      rgloss:"Disney Villainous is a strategy game where you get to play Disney's most famous villains. Talisman: The Cataclysm will take you into a fantasy world of adventure and magic. Jamaica will have you sailing Caribbean waters in search of treasure!",
-      quick:["Vorreste giocare con 2-4 giocatori?","Siete disposti a giocare fino a 90 minuti?"],
-      notes:[]
-    },
-    {
-      user:"il tema che ci attira di più è la fantascienza, meglio se gestionale",
-      gloss:"the theme we like most is sci-fi, ideally a management game",
-      search:{q:"gioco fantascienza gestione", filters:[], hits:5, forced:false},
-      games:[{n:"Magnastorm",m:"2-4 · 80 min"},{n:"Terraforming Mars: Turmoil",m:"1-5 · 150 min"}],
-      reply:"Fantascienza e gestionale! Magnastorm è un gioco di esplorazione e strategia in un mondo di fantascienza, dove gestite le risorse per costruire una base spaziale. Terraforming Mars: Turmoil è un gioco di gestione delle risorse su un pianeta alieno.",
-      rgloss:"Sci-fi and management! Magnastorm is an exploration and strategy game in a science-fiction world, where you manage resources to build a space base. Terraforming Mars: Turmoil is a resource-management game on an alien planet.",
-      quick:["Per 2-4 giocatori","Max 150 minuti"],
-      notes:[{type:"win",tag:"closing in",text:"The expansion surfaces — close, not there yet. The customer still hasn't said the name."}]
-    },
-    {
-      user:"ci piacciono i giochi dove costruisci un motore di carte e risorse, tipo rendere abitabile un pianeta",
-      gloss:"we like games where you build an engine of cards and resources — like making a planet habitable",
-      search:{q:"ci piacciono i giochi dove costruisci un motore di carte e risorse, tipo rendere abitabile un pianeta", filters:[], hits:5, forced:true},
-      games:[{n:"Terraforming Mars",m:"1-5 · 120 min",hot:"#1 / 501"},{n:"Smash Up",m:"2-4 · 45 min"}],
-      reply:"Fantascienza, gestione e costruzione! Terraforming Mars è un gioco strategico dove dovete lavorare insieme per trasformare il pianeta Marte in un nuovo mondo abitabile. Svilupperete tecnologie e risorse per renderlo un posto incredibile.",
-      rgloss:"Sci-fi, management and building! Terraforming Mars is a strategy game where you have to work together to transform planet Mars into a habitable new world. You'll develop technologies and resources to make it an incredible place.",
-      quick:["Vorreste giocare a un titolo con più giocatori?","Siete disposti ad investire 2 ore in ogni partita?"],
-      notes:[
-        {type:"win",tag:"described, never named",text:"The customer never says the name; the third message describes the game — and the search, the customer's own words verbatim, puts the right box first out of 501."},
-        {type:"flaw",tag:"kept honest — pitch slip",text:"«dovete lavorare insieme» — Terraforming Mars is competitive, not cooperative. Sales wording on the local 7B is the documented limit; the simulation harness exists to measure how much a stronger model recovers.",ticket:["docs/chat.md","docs/chat.md"]}
+      "id": "esperti-fantascienza-frontier",
+      "tier": "frontier",
+      "agent": "Claude Sonnet 5",
+      "env": "engine=agent · Claude Sonnet 5 (responder harness) · bge-m3 · 501 games",
+      "hook": "Same sci-fi description — Terraforming Mars surfaces one full turn earlier, no floor needed.",
+      "meta": [
+        [
+          "win",
+          "found turn 2, not 3"
+        ],
+        [
+          "win",
+          "TM + expansions, turn 3"
+        ]
+      ],
+      "turns": [
+        {
+          "user": "siamo un gruppo di giocatori esperti e cerchiamo un titolo impegnativo per le nostre serate",
+          "gloss": "we're a group of expert players looking for a demanding title for our game nights",
+          "search": {
+            "q": "gioco da tavolo complesso e strategico per giocatori esperti, gestione risorse e costruzione motore economico, alta rigiocabilità, curva di apprendimento ripida, serata impegnativa tra appassionati",
+            "filters": [],
+            "hits": 5,
+            "forced": false
+          },
+          "games": [
+            {
+              "n": "Through the Ages",
+              "img": "img/through-the-ages.jpg",
+              "m": "2-4 · 120 min"
+            },
+            {
+              "n": "Feudum",
+              "img": "img/feudum.jpg",
+              "m": "2-5 · 120 min"
+            },
+            {
+              "n": "Puerto Rico",
+              "img": "img/puerto-rico.jpg",
+              "m": "2-5 · 90 min"
+            }
+          ],
+          "reply": "Per un gruppo di giocatori esperti ho tre pesi massimi che non deludono mai una serata impegnativa. Through the Ages è il capolavoro di Vlaada Chvátil: si guida un'intera civiltà attraverso i secoli, bilanciando economia, scienza e militari in un motore di scelte che si incastrano fino all'ultima carta. Feudum è per chi vuole davvero mettersi alla prova: azioni simultanee e una gestione delle risorse intricatissima, tra i più pesanti sul mercato. Puerto Rico resta un pilastro dei giochi gestionali: coltivazione, produzione e commercio in un sistema di ruoli elegante e spietato, 90 minuti di tensione strategica pura…",
+          "rgloss": "For a group of expert players I have three heavyweights that never disappoint on a demanding game night. Through the Ages is Vlaada Chvátil's masterpiece: you steer an entire civilization through the ages, balancing economy, science and military in an engine of choices that interlock down to the last card. Feudum is for those who really want to be tested: simultaneous actions and intricate resource management, among the heaviest on the market. Puerto Rico remains a pillar of management games: farming, production and trade interweave in an elegant, ruthless role system, 90 minutes of pure strategic tension…",
+          "quick": [
+            "per 4 giocatori",
+            "max 90 minuti",
+            "Sorprendimi"
+          ],
+          "notes": []
+        },
+        {
+          "user": "il tema che ci attira di più è la fantascienza, meglio se gestionale",
+          "gloss": "the theme we like most is sci-fi, ideally a management game",
+          "search": {
+            "q": "gioco gestionale di fantascienza per esperti, costruzione motore economico, gestione risorse, colonizzazione spaziale o civiltà futuristica, strategia profonda e complessa",
+            "filters": [],
+            "hits": 5,
+            "forced": false
+          },
+          "games": [
+            {
+              "n": "Terraforming Mars",
+              "img": "img/terraforming-mars.jpg",
+              "m": "1-5 · 120 min"
+            },
+            {
+              "n": "Progetto Gaia",
+              "img": "img/progetto-gaia.jpg",
+              "m": "1-4 · 120 min"
+            }
+          ],
+          "reply": "Fantascienza e gestionale puro: perfetto, ho esattamente quello che cercate. Terraforming Mars è IL gestionale di fantascienza per eccellenza: si guidano corporazioni che terraformano il pianeta rosso intrecciando gestione della mano, piazzamento tessere ed economia in un motore che si costruisce partita dopo partita, con altissima rigiocabilità. Progetto Gaia, ispirato a Terra Mystica, alza ulteriormente l'asticella: espansione spaziale e un peso Medio-Pesante che regala partite dense, su misura per un tavolo di esperti…",
+          "rgloss": "Sci-fi and pure management: perfect, I have exactly what you're looking for. Terraforming Mars is THE sci-fi management game par excellence: you steer corporations terraforming the red planet, weaving together hand management, tile placement and economy in an engine that builds itself game after game, with very high replayability. Progetto Gaia, inspired by Terra Mystica, raises the bar further: space expansion and a Medium-Heavy weight delivering dense games, tailor-made for a table of experts…",
+          "quick": [
+            "per 4 giocatori",
+            "senza espansioni",
+            "Sorprendimi"
+          ],
+          "notes": [
+            {
+              "type": "win",
+              "tag": "found turn 2, not 3",
+              "text": "Terraforming Mars surfaces already at turn 2 — a full turn earlier than the local take, which needed turn 3 and the SEL-147 safety floor to get there. The customer still hasn't said the name.",
+              "ticket": [
+                "SEL-147",
+                "docs/tickets/resolved/SEL-147-agent-false-nomatch-coop-two.md"
+              ]
+            }
+          ]
+        },
+        {
+          "user": "ci piacciono i giochi dove costruisci un motore di carte e risorse, tipo rendere abitabile un pianeta",
+          "gloss": "we like games where you build an engine of cards and resources — like making a planet habitable",
+          "search": {
+            "q": "gioco di costruzione motore con carte e risorse, tema fantascienza, terraformazione di un pianeta, gestione della mano e piazzamento tessere, per giocatori esperti",
+            "filters": [],
+            "hits": 5,
+            "forced": false
+          },
+          "games": [
+            {
+              "n": "Terraforming Mars",
+              "img": "img/terraforming-mars.jpg",
+              "m": "1-5 · 120 min"
+            },
+            {
+              "n": "Terraforming Mars: Colonies",
+              "img": "img/terraforming-mars-colonies.jpg",
+              "m": "1-5 · 120 min"
+            },
+            {
+              "n": "Terraforming Mars: Turmoil",
+              "img": "img/terraforming-mars-turmoil.jpg",
+              "m": "1-5 · 150 min"
+            }
+          ],
+          "reply": "Avete appena descritto perfettamente il cuore pulsante di Terraforming Mars: eccolo con le espansioni che lo portano ancora più in profondità. Ogni carta gioca aumenta produzione, temperatura, ossigeno e oceani, e le sinergie tra progetti lo rendono uno dei gestionali più profondi in circolazione. Terraforming Mars: Colonies espande il motore con il piazzamento lavoratori e la costruzione di colonie orbitanti. Terraforming Mars: Turmoil introduce un layer politico con partiti e maggioranze che influenzano il vostro motore economico…",
+          "rgloss": "You've just perfectly described the beating heart of Terraforming Mars: here it is, with the expansions that take it even deeper. Every card played raises production, temperature, oxygen and oceans, and the synergies between projects make it one of the deepest management games around. Terraforming Mars: Colonies expands the engine with worker placement and orbital colony building. Terraforming Mars: Turmoil adds a political layer of parties and majorities that sway your economic engine…",
+          "quick": [
+            "senza espansioni",
+            "per 5 giocatori",
+            "max 120 minuti"
+          ],
+          "notes": [
+            {
+              "type": "win",
+              "tag": "TM + its own expansions land together",
+              "text": "The customer's description, verbatim, deepens the same match rather than just repeating it: Terraforming Mars plus its own expansions (Colonies, Turmoil) land together in one search."
+            }
+          ]
+        }
       ]
     }
   ]
-}
-];
-
-/* ------- data: the frontier tier — same four scripts, same live 501-game index, same
-   engine; every LLM role answered by Claude Sonnet 5 through the file-exchange responder
-   harness (never "simulated" — an honest transport swap, not a stand-in). Recorded and
-   transcribed the same way as the local tier: messages and searches as recorded. ------- */
-const FRONTIER_SESSIONS = [
-{
-  id:"coppia-serale-frontier",
-  tier:"frontier", agent:"Claude Sonnet 5",
-  env:"engine=agent · Claude Sonnet 5 (responder harness) · bge-m3 · 501 games",
-  hook:"The same gift request — but the model stacks players, duration and cooperative into one query, unprompted.",
-  meta:[["win","full constraint stack, unprompted"]],
-  turns:[
-    {
-      user:"ciao! cerco un gioco da regalare a una coppia di amici: giocano spesso in due la sera dopo cena",
-      gloss:"hi! looking for a gift for a couple of friends: they often play in two, evenings after dinner",
-      search:{q:"gioco da tavolo per due, esperienza strategica e coinvolgente adatta a serate ripetute in coppia dopo cena, buona rigiocabilità", filters:[["players","= 2",false]], hits:5, forced:false},
-      games:[{n:"Patchwork",m:"2 · 25 min"},{n:"7 Wonders Duel",m:"2 · 30 min"},{n:"InBetween",m:"2 · 30 min"}],
-      reply:"Che bel regalo: per due amici che giocano spesso dopo cena servono titoli agili, belli da rigiocare tante volte! Patchwork è perfetto per chiudere la serata: in 25 minuti si intrecciano tessere di stoffa in un puzzle elegante e tattico. 7 Wonders Duel porta il duello di civiltà in appena 30 minuti, carta su carta, con un ritmo serrato per chi ama pensare le mosse in anticipo. Se cercano qualcosa di più insolito, InBetween mescola horror e inganno in un'avventura per due che dura circa 40 minuti…",
-      rgloss:"What a nice gift: two friends who often play after dinner need agile titles that are fun to replay. Patchwork wraps up the evening in 25 minutes with an elegant, tactical fabric-tile puzzle. 7 Wonders Duel brings the civilization duel in just 30 minutes, card against card, a brisk pace for planners. If they want something more unusual, InBetween mixes horror and bluffing in a two-player adventure lasting about 40 minutes…",
-      quick:["max 30 minuti","qualcosa di più leggero","Sorprendimi"],
-      notes:[]
-    },
-    {
-      user:"sì, gli piace la strategia ma niente partite infinite, direi massimo un'ora",
-      gloss:"they like strategy but no endless games — an hour tops",
-      search:{q:"gioco strategico per due giocatori, scelte tattiche profonde ma partita compatta e veloce da chiudere in serata", filters:[["players","= 2",false],["duration","≤ 60",false]], hits:5, forced:false},
-      games:[{n:"Onitama",m:"2 · 10 min"},{n:"Hadara",m:"2-5 · 60 min"},{n:"InBetween",m:"2 · 30 min"}],
-      reply:"Perfetto, restiamo su titoli strategici ma via dalle maratone: ecco tre proposte che si chiudono entro l'ora! Onitama è pura strategia in appena 10 minuti: ogni mossa dipende dalle carte in mano, con un design elegante che nasconde profondità sorprendente. Hadara costruisce una civiltà in esattamente 60 minuti, azioni simultanee e tensione strategica senza tempi morti. InBetween resta un'ottima scelta se vogliono anche un pizzico di atmosfera: 40 minuti di gestione della mano e inganno in un duello horror per due…",
-      rgloss:"Perfect, let's stay strategic but away from marathons: three picks that close within the hour! Onitama is pure strategy in just 10 minutes — every move depends on the cards in hand, elegant design hiding real depth. Hadara builds a civilization in exactly 60 minutes, simultaneous actions and strategic tension with no dead time. InBetween is still a great pick for a touch of atmosphere: 40 minutes of hand management and bluffing in a two-player horror duel…",
-      quick:["max 30 minuti","niente horror","Sorprendimi"],
-      notes:[]
-    },
-    {
-      user:"ah, dimenticavo: adorano i giochi cooperativi, dove si vince o si perde insieme. c'è qualcosa di cooperativo che funzioni bene in due?",
-      gloss:"oh, I forgot: they love co-op games, where you win or lose together. anything cooperative that works well in two?",
-      search:{q:"gioco cooperativo, si vince o si perde tutti insieme contro il gioco, avventura o missione da affrontare in squadra", filters:[["players","= 2",false],["duration","≤ 60",false],["cooperative","= true",false]], hits:5, forced:false},
-      games:[{n:"Pandemic: La Caduta di Roma",m:"1-5 · 60 min",coop:true},{n:"Unlock! Heroic Adventures",m:"1-6 · 60 min",coop:true},{n:"Yokai",m:"2-4 · 20 min",coop:true}],
-      reply:"Ottima notizia: il cooperativo funziona benissimo anche in due, ed ecco tre titoli che restano nell'ora giusta! Pandemic: La Caduta di Roma li mette fianco a fianco a difendere l'impero, con vere scelte strategiche da coordinare insieme in circa 60 minuti. Unlock! Heroic Adventures li fa collaborare su enigmi e indizi come in una escape room da tavolo, puntando tutto sulla comunicazione. Yokai è più breve e leggero, circa 20 minuti, ma richiede memoria e strategia condivisa per intrappolare gli spiriti dispettosi…",
-      rgloss:"Great news: co-op works beautifully for two, and here are three titles that stay within the hour! Pandemic: A Fall of Rome puts them side by side defending the empire, with real strategic choices to coordinate together in about 60 minutes. Unlock! Heroic Adventures has them collaborating on puzzles and clues like a tabletop escape room, all about communication. Yokai is shorter and lighter, about 20 minutes, but needs shared memory and strategy to trap mischievous spirits…",
-      quick:["max 30 minuti","qualcosa di più leggero","Sorprendimi"],
-      notes:[{type:"win",tag:"unprompted constraint stack",text:"No safety net needed: Claude Sonnet 5 composed players = 2, duration ≤ 60 and cooperative = true in one query, unprompted — exactly the turn where the local qwen2.5:7b model went silent and needed the SEL-147 floor just to answer at all.",ticket:["SEL-147","docs/tickets/resolved/SEL-147-agent-false-nomatch-coop-two.md"]}]
-    },
-    {
-      user:"perfetto! e se invece volessi qualcosa di cooperativo per quando invitano altri amici, tipo in cinque?",
-      gloss:"perfect! and something cooperative for when they invite friends over — five of them, say?",
-      search:{q:"gioco cooperativo per gruppo numeroso, si vince o si perde tutti insieme contro il gioco, avventura o missione da affrontare in squadra con amici", filters:[["players","= 5",false],["cooperative","= true",false]], hits:5, forced:false},
-      games:[{n:"Magic Maze",m:"1-8 · 15 min",coop:true},{n:"Massive Darkness",m:"1-6 · 120 min",coop:true},{n:"Pandemic: La Caduta di Roma",m:"1-5 · 60 min",coop:true}],
-      reply:"Per una serata con il gruppo allargato ci sono cooperativi che reggono benissimo in cinque, con gusti diversi tra loro! Magic Maze esplora un centro commerciale in tempo reale muovendo tutti gli eroi insieme, senza parlare tra voi, in appena 15 minuti di caos organizzato. Massive Darkness porta il gruppo dentro un dungeon fantasy con miniature vere: una serata più lunga, circa 120 minuti, ma immersiva e spettacolare. Pandemic: La Caduta di Roma torna utile anche qui: fino a cinque legionari possono unire le forze per salvare l'impero in circa 60 minuti…",
-      rgloss:"For a night with the wider group there are co-ops that hold up beautifully at five, each with a different flavor! Magic Maze explores a shopping mall in real time, moving all the heroes together without talking, in just 15 minutes of organized chaos. Massive Darkness brings the group into a fantasy dungeon with real miniatures — a longer night, about 120 minutes, but immersive and spectacular. Pandemic: A Fall of Rome comes in handy here too: up to five legionaries can join forces to save the empire in about 60 minutes…",
-      quick:["max 60 minuti","qualcosa di più leggero","Sorprendimi"],
-      notes:[]
-    }
-  ]
-},
-{
-  id:"cliente-deciso-frontier",
-  tier:"frontier", agent:"Claude Sonnet 5",
-  env:"engine=agent · Claude Sonnet 5 (responder harness) · bge-m3 · 501 games",
-  hook:"The weak local take, rerun: the named title lands #1 verbatim, and no filter gets invented this time.",
-  meta:[["win","named title, verbatim"],["win","no invented filters"]],
-  turns:[
-    {
-      user:"buongiorno, avete Carcassonne? vorrei regalarlo a mia sorella, mi serve per stasera",
-      gloss:"good morning, do you have Carcassonne? I'd like it as a gift for my sister, I need it tonight",
-      search:{q:"Carcassonne", filters:[], hits:5, forced:false},
-      games:[{n:"Carcassonne",m:"2-5 · 45 min"},{n:"Carcassonne: La Torre",m:"2-6 · 60 min"}],
-      reply:"Ottima scelta per un regalo dell'ultimo minuto, ce l'abbiamo pronto in negozio! Carcassonne nella sua Nuova Edizione è esattamente quello che cercava: si piazzano tessere per costruire città, strade e campi medievali, regole semplici da spiegare in cinque minuti e partite da 45 minuti che appassionano da 2 a 5 giocatori. Se vuole arricchire il regalo, Carcassonne: La Torre è l'espansione ideale da abbinare, per dare a sua sorella qualcosa in più da scoprire partita dopo partita.",
-      rgloss:"Great choice for a last-minute gift, we have it ready in store! Carcassonne's New Edition is exactly what you were looking for: you place tiles to build cities, roads and medieval fields, rules simple enough to explain in five minutes, and 45-minute games that hook 2 to 5 players. If you'd like to round out the gift, Carcassonne: The Tower is the ideal expansion to pair with it, giving your sister something more to discover game after game.",
-      quick:["solo il gioco base","senza espansioni","per 2 giocatori"],
-      notes:[{type:"win",tag:"named title, verbatim",text:"The customer named the title; the query is «Carcassonne», verbatim — it lands #1, followed by the natural expansion upsell. The local take searched a paraphrase instead and missed the exact match entirely.",ticket:["SEL-113","docs/tickets/SEL-113-complete-agentic-chat.md"]}]
-    },
-    {
-      user:"perfetto! e c'è qualcosa di simile da affiancare al regalo, sempre di piazzamento tessere ma un po' più moderno?",
-      gloss:"and something similar to go with the gift — still tile placement, a bit more modern?",
-      search:{q:"gioco moderno di piazzamento tessere, costruzione di territorio o paesaggio, design fresco e attuale, per famiglia e amici", filters:[], hits:5, forced:false},
-      games:[{n:"Azul: Summer Pavilion",m:"2-4 · 45 min"},{n:"Bärenpark",m:"2-4 · 45 min"},{n:"Fairy Tile",m:"2-4 · 30 min"}],
-      reply:"Certo, per affiancare Carcassonne ci sono ottime alternative più recenti che parlano ancora la lingua del piazzamento tessere! Azul: Summer Pavilion è oggi il volto più moderno del genere: mosaici colorati e scelte tattiche sottili in 45 minuti. Bärenpark trasforma il piazzamento tessere in un puzzle di costruzione, incastrando recinti e attrazioni in partite da 45 minuti sempre diverse. Fairy Tile mantiene l'atmosfera fantasy-medievale che ama in Carcassonne, ma con un tono più leggero e narrativo…",
-      rgloss:"Sure, to go alongside Carcassonne there are great, more recent alternatives that still speak the language of tile placement! Azul: Summer Pavilion is today's most modern face of the genre: colorful mosaics and subtle tactical choices in 45 minutes. Bärenpark turns tile placement into a building puzzle, fitting enclosures and attractions into ever-different 45-minute games. Fairy Tile keeps the fantasy-medieval mood you love in Carcassonne, but with a lighter, more narrative tone…",
-      quick:["per 2 giocatori","max 30 minuti","Sorprendimi"],
-      notes:[{type:"win",tag:"no invented filters",text:"Nobody asked for cooperative, and none was added — filters stayed empty because none applied. The local take fabricated cooperative = true on this exact turn.",ticket:["SEL-143","docs/tickets/SEL-143-cooperative-fabricated-from-unknown-reference.md"]}]
-    }
-  ]
-},
-{
-  id:"regalo-bambino-frontier",
-  tier:"frontier", agent:"Claude Sonnet 5",
-  env:"engine=agent · Claude Sonnet 5 (responder harness) · bge-m3 · 501 games",
-  hook:"Same birthday brief — the filter stack survives turn over turn instead of dropping to semantic-only.",
-  meta:[["win","constraints stack correctly"]],
-  turns:[
-    {
-      user:"cerco un regalo per il compleanno di mio figlio, compie 8 anni",
-      gloss:"a birthday gift for my son, he's turning 8",
-      search:{q:"gioco da tavolo per bambini, adatto a un compleanno, regola semplice e divertente, ottimo come primo regalo di scatola", filters:[["age","≤ 8",false]], hits:5, forced:false},
-      games:[{n:"Coloretto",m:"2-5 · 30 min"},{n:"Ticket to Ride: Primo Viaggio",m:"2-4 · 25 min"},{n:"Exploding Kittens",m:"2-5 · 15 min"}],
-      reply:"Per un compleanno di 8 anni ho qualche idea perfetta, magari anche da giocare insieme ai fratellini! Coloretto è pensato proprio da 8 anni in su: regole immediate, partite da 30 minuti e un pizzico di fortuna che lo rende divertente per tutta la famiglia. Ticket to Ride: Primo Viaggio è la versione junior di un grande classico — costruire percorsi di treni è intuitivo e appagante. Exploding Kittens è puro divertimento in scatola: partite fulminee di 15 minuti e tantissime risate…",
-      rgloss:"For an 8th birthday I have a few perfect ideas, maybe even to play together with younger siblings! Coloretto is aimed right at age 8+: instant rules, 30-minute games, and a pinch of luck that makes it fun for the whole family. Ticket to Ride: First Journey is the junior version of a big classic — building train routes feels intuitive and rewarding. Exploding Kittens is pure boxed fun: lightning-fast 15-minute games and tons of laughs…",
-      quick:["per 2 giocatori","dai 6 anni","Sorprendimi"],
-      notes:[]
-    },
-    {
-      user:"bello! gioca spesso con la sorella più piccola, meglio qualcosa che possano fare insieme senza litigare",
-      gloss:"he often plays with his younger sister — better something they can do together without fighting",
-      search:{q:"gioco cooperativo per famiglie e bambini, si vince e si perde tutti insieme, adatto anche a fratelli con differenza d'età, niente eliminazione né scontro diretto", filters:[["age","≤ 8",false],["cooperative","= true",false]], hits:5, forced:false},
-      games:[{n:"SOS Dino",m:"1-4 · 25 min",coop:true},{n:"Yokai",m:"2-4 · 20 min",coop:true},{n:"Magic Maze",m:"1-8 · 15 min",coop:true}],
-      reply:"Perfetto, allora puntiamo su giochi cooperativi: si vince o si perde tutti insieme, quindi zero litigi tra fratelli! SOS Dino è pensato apposta per famiglie con bambini di età diverse: fratello e sorella lavorano fianco a fianco per salvare i dinosauri, niente sfida diretta, partite brevi di 25 minuti. Yokai unisce memoria e cooperazione in un'avventura giapponese incantevole, un formato che mette tutti sullo stesso piano. Magic Maze è un'esplosione di adrenalina cooperativa in soli 15 minuti, non uno contro l'altro…",
-      rgloss:"Perfect, let's go cooperative then: you win or lose all together, so zero fighting between siblings! SOS Dino is designed exactly for families with kids of different ages: brother and sister work side by side to save the dinosaurs, no direct competition, short 25-minute games. Yokai blends memory and cooperation into a charming Japanese adventure, a format that puts everyone on equal footing. Magic Maze is a burst of cooperative adrenaline in just 15 minutes, never one against the other…",
-      quick:["max 20 minuti","dai 6 anni","per 2 giocatori"],
-      notes:[{type:"win",tag:"constraints stack, filters kept",text:"age ≤ 8 from turn 1 carries forward and cooperative = true is added exactly on cue — SOS Dino, the strongest match for both, surfaces immediately. The local take went filterless here (forced, semantic-only)."}]
-    },
-    {
-      user:"l'ideale sarebbe una cosa da mezz'oretta, non di più",
-      gloss:"ideally about half an hour, no longer",
-      search:{q:"gioco cooperativo per famiglie e bambini, si vince e si perde tutti insieme, partita breve e scorrevole", filters:[["age","≤ 8",false],["cooperative","= true",false],["duration","≤ 30",false]], hits:5, forced:false},
-      games:[{n:"SOS Dino",m:"1-4 · 25 min",coop:true},{n:"The Mind",m:"2-4 · 20 min",coop:true},{n:"Yokai",m:"2-4 · 20 min",coop:true}],
-      reply:"Detto fatto: ecco tre giochi cooperativi che stanno comodamente dentro la mezz'oretta. SOS Dino si gioca in appena 25 minuti ed è tarato apposta per bambini dai 7 anni in su. The Mind è un'idea geniale in 15-20 minuti: niente parole, solo intesa e sincronia tra i giocatori. Yokai regala 20 minuti di avventura giapponese fatta di memoria e collaborazione…",
-      rgloss:"Done: here are three cooperative games that comfortably fit within half an hour. SOS Dino plays in just 25 minutes and is tuned for kids age 7 and up. The Mind is a brilliant idea in 15-20 minutes: no words, just intuition and sync between players. Yokai offers 20 minutes of Japanese adventure built on memory and collaboration…",
-      quick:["per 2 giocatori","Sorprendimi","senza espansioni"],
-      notes:[{type:"win",tag:"the stack holds, turn 3",text:"age ≤ 8 → + cooperative → + duration ≤ 30, stacked in that exact order across three turns instead of dropping to a bare semantic search — and SOS Dino answers all three."}]
-    }
-  ]
-},
-{
-  id:"esperti-fantascienza-frontier",
-  tier:"frontier", agent:"Claude Sonnet 5",
-  env:"engine=agent · Claude Sonnet 5 (responder harness) · bge-m3 · 501 games",
-  hook:"Same sci-fi description — Terraforming Mars surfaces one full turn earlier, no floor needed.",
-  meta:[["win","found turn 2, not 3"],["win","TM + expansions, turn 3"]],
-  turns:[
-    {
-      user:"siamo un gruppo di giocatori esperti e cerchiamo un titolo impegnativo per le nostre serate",
-      gloss:"we're a group of expert players looking for a demanding title for our game nights",
-      search:{q:"gioco da tavolo complesso e strategico per giocatori esperti, gestione risorse e costruzione motore economico, alta rigiocabilità, curva di apprendimento ripida, serata impegnativa tra appassionati", filters:[], hits:5, forced:false},
-      games:[{n:"Through the Ages",m:"2-4 · 120 min"},{n:"Feudum",m:"2-5 · 120 min"},{n:"Puerto Rico",m:"2-5 · 90 min"}],
-      reply:"Per un gruppo di giocatori esperti ho tre pesi massimi che non deludono mai una serata impegnativa. Through the Ages è il capolavoro di Vlaada Chvátil: si guida un'intera civiltà attraverso i secoli, bilanciando economia, scienza e militari in un motore di scelte che si incastrano fino all'ultima carta. Feudum è per chi vuole davvero mettersi alla prova: azioni simultanee e una gestione delle risorse intricatissima, tra i più pesanti sul mercato. Puerto Rico resta un pilastro dei giochi gestionali: coltivazione, produzione e commercio in un sistema di ruoli elegante e spietato, 90 minuti di tensione strategica pura…",
-      rgloss:"For a group of expert players I have three heavyweights that never disappoint on a demanding game night. Through the Ages is Vlaada Chvátil's masterpiece: you steer an entire civilization through the ages, balancing economy, science and military in an engine of choices that interlock down to the last card. Feudum is for those who really want to be tested: simultaneous actions and intricate resource management, among the heaviest on the market. Puerto Rico remains a pillar of management games: farming, production and trade interweave in an elegant, ruthless role system, 90 minutes of pure strategic tension…",
-      quick:["per 4 giocatori","max 90 minuti","Sorprendimi"],
-      notes:[]
-    },
-    {
-      user:"il tema che ci attira di più è la fantascienza, meglio se gestionale",
-      gloss:"the theme we like most is sci-fi, ideally a management game",
-      search:{q:"gioco gestionale di fantascienza per esperti, costruzione motore economico, gestione risorse, colonizzazione spaziale o civiltà futuristica, strategia profonda e complessa", filters:[], hits:5, forced:false},
-      games:[{n:"Terraforming Mars",m:"1-5 · 120 min"},{n:"Progetto Gaia",m:"1-4 · 120 min"}],
-      reply:"Fantascienza e gestionale puro: perfetto, ho esattamente quello che cercate. Terraforming Mars è IL gestionale di fantascienza per eccellenza: si guidano corporazioni che terraformano il pianeta rosso intrecciando gestione della mano, piazzamento tessere ed economia in un motore che si costruisce partita dopo partita, con altissima rigiocabilità. Progetto Gaia, ispirato a Terra Mystica, alza ulteriormente l'asticella: espansione spaziale e un peso Medio-Pesante che regala partite dense, su misura per un tavolo di esperti…",
-      rgloss:"Sci-fi and pure management: perfect, I have exactly what you're looking for. Terraforming Mars is THE sci-fi management game par excellence: you steer corporations terraforming the red planet, weaving together hand management, tile placement and economy in an engine that builds itself game after game, with very high replayability. Progetto Gaia, inspired by Terra Mystica, raises the bar further: space expansion and a Medium-Heavy weight delivering dense games, tailor-made for a table of experts…",
-      quick:["per 4 giocatori","senza espansioni","Sorprendimi"],
-      notes:[{type:"win",tag:"found turn 2, not 3",text:"Terraforming Mars surfaces already at turn 2 — a full turn earlier than the local take, which needed turn 3 and the SEL-147 safety floor to get there. The customer still hasn't said the name.",ticket:["SEL-147","docs/tickets/resolved/SEL-147-agent-false-nomatch-coop-two.md"]}]
-    },
-    {
-      user:"ci piacciono i giochi dove costruisci un motore di carte e risorse, tipo rendere abitabile un pianeta",
-      gloss:"we like games where you build an engine of cards and resources — like making a planet habitable",
-      search:{q:"gioco di costruzione motore con carte e risorse, tema fantascienza, terraformazione di un pianeta, gestione della mano e piazzamento tessere, per giocatori esperti", filters:[], hits:5, forced:false},
-      games:[{n:"Terraforming Mars",m:"1-5 · 120 min"},{n:"Terraforming Mars: Colonies",m:"1-5 · 120 min"},{n:"Terraforming Mars: Turmoil",m:"1-5 · 150 min"}],
-      reply:"Avete appena descritto perfettamente il cuore pulsante di Terraforming Mars: eccolo con le espansioni che lo portano ancora più in profondità. Ogni carta gioca aumenta produzione, temperatura, ossigeno e oceani, e le sinergie tra progetti lo rendono uno dei gestionali più profondi in circolazione. Terraforming Mars: Colonies espande il motore con il piazzamento lavoratori e la costruzione di colonie orbitanti. Terraforming Mars: Turmoil introduce un layer politico con partiti e maggioranze che influenzano il vostro motore economico…",
-      rgloss:"You've just perfectly described the beating heart of Terraforming Mars: here it is, with the expansions that take it even deeper. Every card played raises production, temperature, oxygen and oceans, and the synergies between projects make it one of the deepest management games around. Terraforming Mars: Colonies expands the engine with worker placement and orbital colony building. Terraforming Mars: Turmoil adds a political layer of parties and majorities that sway your economic engine…",
-      quick:["senza espansioni","per 5 giocatori","max 120 minuti"],
-      notes:[{type:"win",tag:"TM + its own expansions land together",text:"The customer's description, verbatim, deepens the same match rather than just repeating it: Terraforming Mars plus its own expansions (Colonies, Turmoil) land together in one search."}]
-    }
-  ]
-}
-];
+};
+/* ==END GENERATED SESSIONS== */
+const LOCAL_SESSIONS = SESSIONS.local;
+const FRONTIER_SESSIONS = SESSIONS.frontier;
 
 const TIER_BLURB = {
   local:`<strong>local · qwen2.5:7b</strong> — free and on-device, and the flaws are real: the ⚠ flags below
@@ -795,10 +1673,16 @@ const TIER_BLURB = {
   frontier:`<strong>frontier · Claude Sonnet 5</strong> — same engine, same tools, same catalog, a frontier
     model at the wheel via a responder harness (file exchange — never “simulated”). This is what the
     provider swap is <em>for</em>: one seam, nothing else in the system changes — and the same swap scores
-    <strong>15/15</strong> on the adversarial bench.`
+    <strong>15/15</strong> on the adversarial bench.
+    <span style="display:block;margin-top:.35rem">This is a <strong>ceiling, not a finished product</strong> —
+    the measured ceiling of this engine, same retrieval, same grounding. Pitch selection, exact-title lookup
+    and invented-filter suppression are open levers, each already tracked
+    (<a href="${REPO}docs/tickets/SEL-113-complete-agentic-chat.md">SEL-113</a>,
+    <a href="${REPO}docs/tickets/SEL-143-cooperative-fabricated-from-unknown-reference.md">SEL-143</a>). The
+    interesting part is where it still breaks and how that's contained.</span>`
 };
-let ACTIVE_TIER = "local";
-let ACTIVE_SESSIONS = LOCAL_SESSIONS;
+let ACTIVE_TIER = "frontier";
+let ACTIVE_SESSIONS = FRONTIER_SESSIONS;
 
 /* ---------------- chat replay player ---------------- */
 const rail = document.getElementById("rail");
@@ -808,7 +1692,7 @@ let cur = 0, shown = 0, playTimer = null;
 
 function esc(s){const d=document.createElement("div");d.textContent=s;return d.innerHTML}
 
-function howContent(forced, agent){
+function howContent(forced, agent, hasFilters){
   agent = agent || "qwen2.5:7b";
   if(forced){
     return `<p>The model made <strong>no tool call</strong> this turn. The code notices and runs the
@@ -820,6 +1704,23 @@ function howContent(forced, agent){
         <span class="fbox code">code floor<small>SEL-147</small></span><span class="farrow">→</span>
         <span class="fbox">search_catalog<small>customer's words, verbatim</small></span><span class="farrow">→</span>
         <span class="fbox">Qdrant · 501 games<small>bge-m3 semantic</small></span><span class="farrow">→</span>
+        <span class="fbox">top 5</span><span class="farrow">→</span>
+        <span class="fbox code">grounding gate<small>only retrieved ids</small></span><span class="farrow">→</span>
+        <span class="fbox">reply</span>
+      </div>`;
+  }
+  if(!hasFilters){
+    return `<p>The model itself decided to search, and with what words: it composed the free-text query —
+      and chose <strong>not</strong> to add any structured filter. Nothing in the conversation so far
+      justified a hard constraint, so this turn relies on <strong>pure semantic matching</strong>: no
+      players/duration/cooperative cut applied. The query is embedded (bge-m3) and matched against the
+      <strong>501-game</strong> index in Qdrant on similarity alone. Every call is recorded —
+      <code>{query, filters, hits}</code> — so tool-use quality is measurable, not vibes.</p>
+      <div class="flow">
+        <span class="fbox">🧑 message<small>+ history</small></span><span class="farrow">→</span>
+        <span class="fbox">${esc(agent)}<small>the agent</small></span><span class="farrow">→</span>
+        <span class="fbox">search_catalog<small>query only, no filters</small></span><span class="farrow">→</span>
+        <span class="fbox">Qdrant · 501 games<small>bge-m3 semantic, unconstrained</small></span><span class="farrow">→</span>
         <span class="fbox">top 5</span><span class="farrow">→</span>
         <span class="fbox code">grounding gate<small>only retrieved ids</small></span><span class="farrow">→</span>
         <span class="fbox">reply</span>
@@ -854,8 +1755,11 @@ function renderTurn(t, idx, session){
   h += `<div class="u-row step"><div class="bubble"><span class="who">customer</span>${esc(t.user)}
         <span class="gloss-t">${esc(t.gloss)}</span></div></div>`;
 
-  const chips = t.search.filters.map(([k,op,warn]) =>
-    `<span class="chip${warn?" warn":""}">${k} ${op}${warn?" ⚠":""}</span>`).join("");
+  const hasFilters = t.search.filters.length > 0;
+  const chips = hasFilters
+    ? t.search.filters.map(([k,op,warn]) =>
+        `<span class="chip${warn?" warn":""}">${k} ${op}${warn?" ⚠":""}</span>`).join("")
+    : `<span class="chip muted">pure semantic · no structured filters</span>`;
   h += `<div class="machine step">
       <div class="m-line">
         <span class="m-tag">🔎 search_catalog</span>
@@ -864,14 +1768,26 @@ function renderTurn(t, idx, session){
       </div>
       <div class="chips">${chips}<span class="chip hits">→ ${t.search.hits} hits</span></div>
       <button class="how-btn" aria-expanded="false">how does this search work?</button>
-      <div class="how">${howContent(t.search.forced, session && session.agent)}</div>
+      <div class="how">${howContent(t.search.forced, session && session.agent, hasFilters)}</div>
     </div>`;
 
-  const cards = t.games.map(g =>
-    `<div class="gcard${g.hot?" hot":""}">${g.hot?`<span class="rankpin">${g.hot}</span>`:""}
-       <div class="gname">${esc(g.n)}</div>
-       <div class="gmeta">${esc(g.m)}${g.coop?' · <span class="coop">coop ✓</span>':""}</div>
-     </div>`).join("");
+  const cards = t.games.map(g => {
+    const initWords = g.n.replace(/[:!]/g,"").trim().split(/\s+/).filter(Boolean);
+    const initials = initWords.length >= 2
+      ? (initWords[0][0]+initWords[1][0]).toUpperCase()
+      : g.n.slice(0,2).toUpperCase();
+    return `<div class="gcard${g.hot?" hot":""}">${g.hot?`<span class="rankpin">${g.hot}</span>`:""}
+       <span class="gthumb">
+         <img src="${esc(g.img)}" alt="" loading="lazy"
+              onerror="this.parentElement.classList.add('fallback');this.remove()">
+         <span class="ginit">${esc(initials)}</span>
+       </span>
+       <div class="gbody">
+         <div class="gname">${esc(g.n)}</div>
+         <div class="gmeta">${esc(g.m)}${g.coop?' · <span class="coop">coop ✓</span>':""}</div>
+       </div>
+     </div>`;
+  }).join("");
   h += `<div class="step"><div class="cards">${cards}</div>
         <div class="machine" style="margin-top:.15rem">
           <button class="how-btn" aria-expanded="false">why only these cards?</button>
@@ -917,14 +1833,22 @@ function nextTurn(){
   return true;
 }
 function resetSession(){
+  loadSessionAt(cur, 1);
+}
+/* draws session `i` of the active tier, revealing up to `targetShown` turns
+   (capped to however many turns that session actually has) — used both for a
+   fresh open (targetShown=1) and for an in-session tier swap that should land
+   back on the same turn index when the paired session has it. */
+function loadSessionAt(i, targetShown){
   stopPlay();
+  cur = i;
   turnsEl.innerHTML = ""; shown = 0;
   const s = ACTIVE_SESSIONS[cur];
   document.getElementById("stageSid").textContent = s.id;
   document.getElementById("stageHook").textContent = s.hook;
   document.getElementById("stageEnv").textContent = s.env;
-  drawDots();
-  nextTurn();
+  const target = Math.min(Math.max(targetShown, 1), s.turns.length);
+  while(shown < target) nextTurn();
 }
 function stopPlay(){
   if(playTimer){clearInterval(playTimer);playTimer=null;}
@@ -951,20 +1875,32 @@ function drawRail(){
     rail.appendChild(b);
   });
 }
-function setTier(tier){
-  if(tier === ACTIVE_TIER) return;
-  ACTIVE_TIER = tier;
-  ACTIVE_SESSIONS = tier === "frontier" ? FRONTIER_SESSIONS : LOCAL_SESSIONS;
+function syncTierUI(tier){
   document.getElementById("tier-local").setAttribute("aria-selected", String(tier === "local"));
   document.getElementById("tier-frontier").setAttribute("aria-selected", String(tier === "frontier"));
+  document.getElementById("stage-tier-local").setAttribute("aria-selected", String(tier === "local"));
+  document.getElementById("stage-tier-frontier").setAttribute("aria-selected", String(tier === "frontier"));
+}
+/* setTier is called from BOTH the picker toggle and the in-session stage switcher.
+   In the picker it just redraws the rail. Mid-session, it's a live model swap: it
+   loads the SAME customer script's other-tier session (sessions are paired 1:1 by
+   position — LOCAL_SESSIONS[i] / FRONTIER_SESSIONS[i] are the same customer) and
+   lands back on the same turn index, or turn 0 if the paired session is shorter. */
+function setTier(tier){
+  if(tier === ACTIVE_TIER) return;
+  const inSession = !document.getElementById("stageWrap").hidden;
+  const keepShown = shown;
+  ACTIVE_TIER = tier;
+  ACTIVE_SESSIONS = tier === "frontier" ? FRONTIER_SESSIONS : LOCAL_SESSIONS;
+  syncTierUI(tier);
   document.getElementById("tierBlurb").innerHTML = TIER_BLURB[tier];
   drawRail();
+  if(inSession) loadSessionAt(cur, keepShown);
 }
 function openSession(i){
-  cur = i;
   document.getElementById("picker").hidden = true;
   document.getElementById("stageWrap").hidden = false;
-  resetSession();
+  loadSessionAt(i, 1);
 }
 function backToPicker(){
   stopPlay();
@@ -978,6 +1914,8 @@ document.getElementById("resetBtn").addEventListener("click",resetSession);
 document.getElementById("changeBtn").addEventListener("click",backToPicker);
 document.getElementById("tier-local").addEventListener("click",()=>setTier("local"));
 document.getElementById("tier-frontier").addEventListener("click",()=>setTier("frontier"));
+document.getElementById("stage-tier-local").addEventListener("click",()=>setTier("local"));
+document.getElementById("stage-tier-frontier").addEventListener("click",()=>setTier("frontier"));
 document.addEventListener("keydown",e=>{
   if(document.getElementById("panel-chat").hidden) return;
   if(document.getElementById("stageWrap").hidden) return;
@@ -1379,7 +2317,7 @@ function drawStep(){
 document.getElementById("sPrev").addEventListener("click",()=>{if(sCur>0){sCur--;drawStep();}});
 document.getElementById("sNext").addEventListener("click",()=>{if(sCur<story.steps.length-1){sCur++;drawStep();}});
 
-/* ---------------- tabs & gloss ---------------- */
+/* ---------------- tabs ---------------- */
 const tabChat=document.getElementById("tab-chat"), tabPipe=document.getElementById("tab-pipe");
 const panelChat=document.getElementById("panel-chat"), panelPipe=document.getElementById("panel-pipe");
 function selectTab(which){
@@ -1390,13 +2328,9 @@ function selectTab(which){
 }
 tabChat.addEventListener("click",()=>selectTab("chat"));
 tabPipe.addEventListener("click",()=>selectTab("pipe"));
-document.getElementById("glossToggle").addEventListener("change",e=>{
-  document.body.classList.toggle("gloss", e.target.checked);
-});
 
-/* boot — EN subtitles default on */
-document.getElementById("glossToggle").checked = true;
-document.body.classList.add("gloss");
+/* boot — EN subtitles always shown, no toggle */
+syncTierUI(ACTIVE_TIER);
 document.getElementById("tierBlurb").innerHTML = TIER_BLURB[ACTIVE_TIER];
 drawRail(); drawPipeRail();
 </script>

@@ -32,12 +32,22 @@ const FILTERS =
   };
 
   await shot(); await shot();                    // landing: what do you want to explore?
-  await page.click('#rail .sess:first-child');   // enter coppia-serale
+  await page.click('#rail .sess:first-child');   // enter coppia-serale (local · qwen2.5:7b)
   await capture(3500);                           // turn 1 reveals (search → cards → reply)
   await page.click('#nextBtn');
   await capture(3500);                           // turn 2 (duration≤60 becomes a filter)
   await page.click('#nextBtn');
   await capture(4200);                           // turn 3 (FORCED badge, coop cards, note)
+
+  await page.click('#changeBtn');                // back to picker
+  await page.click('#tier-frontier');             // switch to the frontier tier
+  await capture(1400);                            // rail redraws with the frontier sessions
+  await page.click('#rail .sess:first-child');   // enter coppia-serale-frontier (Claude Sonnet 5)
+  await capture(3000);                           // turn 1 reveals
+  await page.click('#nextBtn');
+  await capture(3000);                           // turn 2
+  await page.click('#nextBtn');
+  await capture(3800);                           // turn 3 (full constraint stack, unprompted — no floor needed)
   await shot(); await shot(); await shot();      // hold the ending
 
   await browser.close();

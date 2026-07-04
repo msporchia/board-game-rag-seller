@@ -173,8 +173,32 @@ filter of the local T2 is gone too: the follow-up search is exactly what was ask
 («gioco moderno di piazzamento tessere…», no fabricated constraints → Azul: Summer Pavilion,
 Bärenpark, Fairy Tile).
 
-*(The other two archetypes' frontier takes are recorded the same way —
-`python -m tests.record_live_session --exchange … --suffix=-frontier`.)*
+### ③-bis `regalo-bambino` — frontier take (constraints stack cleanly, no safety floor)
+
+**🧑 T2** «…gioca spesso con la sorella più piccola, meglio qualcosa che possano fare insieme senza litigare»
+- 🔎 «gioco cooperativo per famiglie e bambini, si vince e si perde tutti insieme, adatto anche a fratelli con differenza d'età…» · `age≤8, cooperative=True` → 5 hit
+- 🃏 **SOS Dino** (1-4 · 25′ · coop ✅) · **Yokai** (2-4 · 20′ · coop ✅) · **Magic Maze** (1-8 · 15′ · coop ✅)
+- 🤖 «Perfetto, allora puntiamo su giochi cooperativi: si vince o si perde tutti insieme, quindi **zero litigi tra fratelli** […] **SOS Dino** è pensato apposta per famiglie con bambini di età diverse: fratello e sorella lavorano fianco a fianco per salvare i dinosauri, niente sfida diretta…» *(let's go cooperative — win or lose together, so zero sibling fights; SOS Dino is built for mixed-age families, no head-to-head.)*
+
+**🧑 T3** «l'ideale sarebbe una cosa da mezz'oretta, non di più»
+- 🔎 `age≤8, cooperative=True, duration≤30` → 5 hit
+- 🃏 **SOS Dino** (25′) · **The Mind** (20′ · coop ✅) · **Yokai** (20′ · coop ✅)
+
+Where the local tier needed the SEL-147 floor on every later turn, the frontier model builds
+the filter set incrementally and correctly — `age≤8` → `+cooperative` → `+duration≤30` — reading
+"senza litigare" as the *cooperative* mechanic, not just words.
+
+### ④-bis `esperti-fantascienza` — frontier take (converges one turn earlier)
+
+**🧑 T2** «il tema che ci attira di più è la fantascienza, meglio se gestionale»
+- 🔎 «gioco gestionale di fantascienza per esperti, costruzione motore economico… colonizzazione spaziale…» → 5 hit
+- 🃏 **Terraforming Mars** (1-5 · 120′) · **Progetto Gaia**
+- 🤖 «**Terraforming Mars** è *IL* gestionale di fantascienza per eccellenza: si guidano corporazioni che terraformano il pianeta rosso intrecciando gestione della mano, piazzamento tessere ed economia in un motore che si costruisce partita dopo partita…»
+
+The local tier reached Terraforming Mars only at turn 3, and only through the forced-search
+floor. The frontier model lands it at **turn 2**, on the theme alone — then at turn 3, when the
+customer describes the engine-building explicitly, it deepens into the base game **plus its
+expansions** (Colonies, Turmoil): an upsell grounded in the real product line, not a repetition.
 
 ---
 

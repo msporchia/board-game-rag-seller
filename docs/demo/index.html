@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Seller — live demo replay</title>
-<meta name="description" content="Unedited replays of a grounded AI board-game seller on a live 501-game index — every search the agent ran, flaws kept.">
+<meta name="description" content="Unedited replays of a grounded AI board-game seller on a live 501-game index, two model tiers — local qwen2.5:7b and frontier Claude Sonnet 5 — every search the agent ran, flaws kept.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎲</text></svg>">
 <style>
   :root{
@@ -358,8 +358,9 @@
     <button class="mode" id="tab-chat" role="tab" aria-selected="true" aria-controls="panel-chat">
       <span class="m-ico">💬</span>
       <span class="m-body"><span class="m-title">Watch it sell</span>
-      <span class="m-desc">Four unedited chat sessions on the live 501-game index — every search the
-      agent ran, on the page, flaws annotated.</span></span>
+      <span class="m-desc">Eight unedited chat sessions on the live 501-game index, two model tiers —
+      local qwen2.5:7b and frontier Claude Sonnet 5 — every search the agent ran, on the page, flaws
+      annotated.</span></span>
     </button>
     <button class="mode" id="tab-pipe" role="tab" aria-selected="false" aria-controls="panel-pipe">
       <span class="m-ico">🔬</span>
@@ -375,8 +376,15 @@
   <section id="panel-chat" role="tabpanel" aria-labelledby="tab-chat">
     <div id="picker">
       <h2 class="picker-title">Which conversation do you want to watch?</h2>
-      <p class="picker-sub">Four one-take recordings, straight from the live index. The ⚠ flags mark the
-      takes where the model slips — kept on purpose, each with its ticket.</p>
+      <p class="picker-sub">Eight one-take recordings, two tiers — same four customer scripts, same live
+      501-game index, same engine. The only thing that changes is which model answers
+      <code style="font-family:var(--mono)">search_catalog</code>. The ⚠ flags mark the takes where a model
+      slips — kept on purpose, each with its ticket.</p>
+      <div class="stepper-nav" id="tierNav" role="tablist" aria-label="Model tier">
+        <button class="snav" id="tier-local" role="tab" aria-selected="true">local · qwen2.5:7b</button>
+        <button class="snav" id="tier-frontier" role="tab" aria-selected="false">frontier · Claude Sonnet 5</button>
+      </div>
+      <p class="picker-sub" id="tierBlurb" style="margin-top:.5rem"></p>
       <div class="rail" id="rail" role="tablist" aria-label="Recorded sessions"></div>
     </div>
 
@@ -386,7 +394,7 @@
           <button class="btn" id="changeBtn" style="font-size:.75rem;padding:.3rem .7rem">⟵ change conversation</button>
           <span class="sid" id="stageSid"></span>
           <span id="stageHook" style="font-size:.82rem"></span>
-          <span class="env">engine=agent · qwen2.5:7b · bge-m3 · 501 games</span>
+          <span class="env" id="stageEnv"></span>
         </div>
         <div class="turns" id="turns"></div>
         <div class="controls">
@@ -455,11 +463,15 @@
 "use strict";
 const REPO = "https://github.com/msporchia/board-game-rag-seller/blob/main/";
 
-/* ------- data: four real recorded sessions (recorded output, display-formatted:
-   public short titles + EN glosses added; messages and searches as recorded) ------- */
-const SESSIONS = [
+/* ------- data: real recorded sessions, two model tiers (recorded output, display-formatted:
+   public short titles + EN glosses added; messages and searches as recorded).
+   local tier = qwen2.5:7b, live agent loop. frontier tier = same engine, same scripts, same
+   501-game index — every LLM role answered by Claude Sonnet 5 through the file-exchange
+   responder harness instead. ------- */
+const LOCAL_SESSIONS = [
 {
   id:"coppia-serale",
+  tier:"local", agent:"qwen2.5:7b", env:"engine=agent · qwen2.5:7b · bge-m3 · 501 games",
   hook:"A vague gift request becomes real filters — and survives the model going silent.",
   meta:[["win","constraint → filter"],["win","SEL-147 floor at work"]],
   turns:[
@@ -507,6 +519,7 @@ const SESSIONS = [
 },
 {
   id:"cliente-deciso",
+  tier:"local", agent:"qwen2.5:7b", env:"engine=agent · qwen2.5:7b · bge-m3 · 501 games",
   hook:"The weak take, kept on purpose: a named title missed, an invented filter caught by the log itself.",
   meta:[["flag","2 flaws annotated"]],
   turns:[
@@ -534,6 +547,7 @@ const SESSIONS = [
 },
 {
   id:"regalo-bambino",
+  tier:"local", agent:"qwen2.5:7b", env:"engine=agent · qwen2.5:7b · bge-m3 · 501 games",
   hook:"Constraints accumulate turn over turn; the safety net carries the tail semantically.",
   meta:[["win","semantic tail"]],
   turns:[
@@ -571,6 +585,7 @@ const SESSIONS = [
 },
 {
   id:"esperti-fantascienza",
+  tier:"local", agent:"qwen2.5:7b", env:"engine=agent · qwen2.5:7b · bge-m3 · 501 games",
   hook:"Described, never named: the customer paints Terraforming Mars in three turns — found #1 of 501.",
   meta:[["win","#1 / 501"],["flag","one pitch slip kept"]],
   turns:[
@@ -611,6 +626,180 @@ const SESSIONS = [
 }
 ];
 
+/* ------- data: the frontier tier — same four scripts, same live 501-game index, same
+   engine; every LLM role answered by Claude Sonnet 5 through the file-exchange responder
+   harness (never "simulated" — an honest transport swap, not a stand-in). Recorded and
+   transcribed the same way as the local tier: messages and searches as recorded. ------- */
+const FRONTIER_SESSIONS = [
+{
+  id:"coppia-serale-frontier",
+  tier:"frontier", agent:"Claude Sonnet 5",
+  env:"engine=agent · Claude Sonnet 5 (responder harness) · bge-m3 · 501 games",
+  hook:"The same gift request — but the model stacks players, duration and cooperative into one query, unprompted.",
+  meta:[["win","full constraint stack, unprompted"]],
+  turns:[
+    {
+      user:"ciao! cerco un gioco da regalare a una coppia di amici: giocano spesso in due la sera dopo cena",
+      gloss:"hi! looking for a gift for a couple of friends: they often play in two, evenings after dinner",
+      search:{q:"gioco da tavolo per due, esperienza strategica e coinvolgente adatta a serate ripetute in coppia dopo cena, buona rigiocabilità", filters:[["players","= 2",false]], hits:5, forced:false},
+      games:[{n:"Patchwork",m:"2 · 25 min"},{n:"7 Wonders Duel",m:"2 · 30 min"},{n:"InBetween",m:"2 · 30 min"}],
+      reply:"Che bel regalo: per due amici che giocano spesso dopo cena servono titoli agili, belli da rigiocare tante volte! Patchwork è perfetto per chiudere la serata: in 25 minuti si intrecciano tessere di stoffa in un puzzle elegante e tattico. 7 Wonders Duel porta il duello di civiltà in appena 30 minuti, carta su carta, con un ritmo serrato per chi ama pensare le mosse in anticipo. Se cercano qualcosa di più insolito, InBetween mescola horror e inganno in un'avventura per due che dura circa 40 minuti…",
+      rgloss:"What a nice gift: two friends who often play after dinner need agile titles that are fun to replay. Patchwork wraps up the evening in 25 minutes with an elegant, tactical fabric-tile puzzle. 7 Wonders Duel brings the civilization duel in just 30 minutes, card against card, a brisk pace for planners. If they want something more unusual, InBetween mixes horror and bluffing in a two-player adventure lasting about 40 minutes…",
+      quick:["max 30 minuti","qualcosa di più leggero","Sorprendimi"],
+      notes:[]
+    },
+    {
+      user:"sì, gli piace la strategia ma niente partite infinite, direi massimo un'ora",
+      gloss:"they like strategy but no endless games — an hour tops",
+      search:{q:"gioco strategico per due giocatori, scelte tattiche profonde ma partita compatta e veloce da chiudere in serata", filters:[["players","= 2",false],["duration","≤ 60",false]], hits:5, forced:false},
+      games:[{n:"Onitama",m:"2 · 10 min"},{n:"Hadara",m:"2-5 · 60 min"},{n:"InBetween",m:"2 · 30 min"}],
+      reply:"Perfetto, restiamo su titoli strategici ma via dalle maratone: ecco tre proposte che si chiudono entro l'ora! Onitama è pura strategia in appena 10 minuti: ogni mossa dipende dalle carte in mano, con un design elegante che nasconde profondità sorprendente. Hadara costruisce una civiltà in esattamente 60 minuti, azioni simultanee e tensione strategica senza tempi morti. InBetween resta un'ottima scelta se vogliono anche un pizzico di atmosfera: 40 minuti di gestione della mano e inganno in un duello horror per due…",
+      rgloss:"Perfect, let's stay strategic but away from marathons: three picks that close within the hour! Onitama is pure strategy in just 10 minutes — every move depends on the cards in hand, elegant design hiding real depth. Hadara builds a civilization in exactly 60 minutes, simultaneous actions and strategic tension with no dead time. InBetween is still a great pick for a touch of atmosphere: 40 minutes of hand management and bluffing in a two-player horror duel…",
+      quick:["max 30 minuti","niente horror","Sorprendimi"],
+      notes:[]
+    },
+    {
+      user:"ah, dimenticavo: adorano i giochi cooperativi, dove si vince o si perde insieme. c'è qualcosa di cooperativo che funzioni bene in due?",
+      gloss:"oh, I forgot: they love co-op games, where you win or lose together. anything cooperative that works well in two?",
+      search:{q:"gioco cooperativo, si vince o si perde tutti insieme contro il gioco, avventura o missione da affrontare in squadra", filters:[["players","= 2",false],["duration","≤ 60",false],["cooperative","= true",false]], hits:5, forced:false},
+      games:[{n:"Pandemic: La Caduta di Roma",m:"1-5 · 60 min",coop:true},{n:"Unlock! Heroic Adventures",m:"1-6 · 60 min",coop:true},{n:"Yokai",m:"2-4 · 20 min",coop:true}],
+      reply:"Ottima notizia: il cooperativo funziona benissimo anche in due, ed ecco tre titoli che restano nell'ora giusta! Pandemic: La Caduta di Roma li mette fianco a fianco a difendere l'impero, con vere scelte strategiche da coordinare insieme in circa 60 minuti. Unlock! Heroic Adventures li fa collaborare su enigmi e indizi come in una escape room da tavolo, puntando tutto sulla comunicazione. Yokai è più breve e leggero, circa 20 minuti, ma richiede memoria e strategia condivisa per intrappolare gli spiriti dispettosi…",
+      rgloss:"Great news: co-op works beautifully for two, and here are three titles that stay within the hour! Pandemic: A Fall of Rome puts them side by side defending the empire, with real strategic choices to coordinate together in about 60 minutes. Unlock! Heroic Adventures has them collaborating on puzzles and clues like a tabletop escape room, all about communication. Yokai is shorter and lighter, about 20 minutes, but needs shared memory and strategy to trap mischievous spirits…",
+      quick:["max 30 minuti","qualcosa di più leggero","Sorprendimi"],
+      notes:[{type:"win",tag:"unprompted constraint stack",text:"No safety net needed: Claude Sonnet 5 composed players = 2, duration ≤ 60 and cooperative = true in one query, unprompted — exactly the turn where the local qwen2.5:7b model went silent and needed the SEL-147 floor just to answer at all.",ticket:["SEL-147","docs/tickets/resolved/SEL-147-agent-false-nomatch-coop-two.md"]}]
+    },
+    {
+      user:"perfetto! e se invece volessi qualcosa di cooperativo per quando invitano altri amici, tipo in cinque?",
+      gloss:"perfect! and something cooperative for when they invite friends over — five of them, say?",
+      search:{q:"gioco cooperativo per gruppo numeroso, si vince o si perde tutti insieme contro il gioco, avventura o missione da affrontare in squadra con amici", filters:[["players","= 5",false],["cooperative","= true",false]], hits:5, forced:false},
+      games:[{n:"Magic Maze",m:"1-8 · 15 min",coop:true},{n:"Massive Darkness",m:"1-6 · 120 min",coop:true},{n:"Pandemic: La Caduta di Roma",m:"1-5 · 60 min",coop:true}],
+      reply:"Per una serata con il gruppo allargato ci sono cooperativi che reggono benissimo in cinque, con gusti diversi tra loro! Magic Maze esplora un centro commerciale in tempo reale muovendo tutti gli eroi insieme, senza parlare tra voi, in appena 15 minuti di caos organizzato. Massive Darkness porta il gruppo dentro un dungeon fantasy con miniature vere: una serata più lunga, circa 120 minuti, ma immersiva e spettacolare. Pandemic: La Caduta di Roma torna utile anche qui: fino a cinque legionari possono unire le forze per salvare l'impero in circa 60 minuti…",
+      rgloss:"For a night with the wider group there are co-ops that hold up beautifully at five, each with a different flavor! Magic Maze explores a shopping mall in real time, moving all the heroes together without talking, in just 15 minutes of organized chaos. Massive Darkness brings the group into a fantasy dungeon with real miniatures — a longer night, about 120 minutes, but immersive and spectacular. Pandemic: A Fall of Rome comes in handy here too: up to five legionaries can join forces to save the empire in about 60 minutes…",
+      quick:["max 60 minuti","qualcosa di più leggero","Sorprendimi"],
+      notes:[]
+    }
+  ]
+},
+{
+  id:"cliente-deciso-frontier",
+  tier:"frontier", agent:"Claude Sonnet 5",
+  env:"engine=agent · Claude Sonnet 5 (responder harness) · bge-m3 · 501 games",
+  hook:"The weak local take, rerun: the named title lands #1 verbatim, and no filter gets invented this time.",
+  meta:[["win","named title, verbatim"],["win","no invented filters"]],
+  turns:[
+    {
+      user:"buongiorno, avete Carcassonne? vorrei regalarlo a mia sorella, mi serve per stasera",
+      gloss:"good morning, do you have Carcassonne? I'd like it as a gift for my sister, I need it tonight",
+      search:{q:"Carcassonne", filters:[], hits:5, forced:false},
+      games:[{n:"Carcassonne",m:"2-5 · 45 min"},{n:"Carcassonne: La Torre",m:"2-6 · 60 min"}],
+      reply:"Ottima scelta per un regalo dell'ultimo minuto, ce l'abbiamo pronto in negozio! Carcassonne nella sua Nuova Edizione è esattamente quello che cercava: si piazzano tessere per costruire città, strade e campi medievali, regole semplici da spiegare in cinque minuti e partite da 45 minuti che appassionano da 2 a 5 giocatori. Se vuole arricchire il regalo, Carcassonne: La Torre è l'espansione ideale da abbinare, per dare a sua sorella qualcosa in più da scoprire partita dopo partita.",
+      rgloss:"Great choice for a last-minute gift, we have it ready in store! Carcassonne's New Edition is exactly what you were looking for: you place tiles to build cities, roads and medieval fields, rules simple enough to explain in five minutes, and 45-minute games that hook 2 to 5 players. If you'd like to round out the gift, Carcassonne: The Tower is the ideal expansion to pair with it, giving your sister something more to discover game after game.",
+      quick:["solo il gioco base","senza espansioni","per 2 giocatori"],
+      notes:[{type:"win",tag:"named title, verbatim",text:"The customer named the title; the query is «Carcassonne», verbatim — it lands #1, followed by the natural expansion upsell. The local take searched a paraphrase instead and missed the exact match entirely.",ticket:["SEL-113","docs/tickets/SEL-113-complete-agentic-chat.md"]}]
+    },
+    {
+      user:"perfetto! e c'è qualcosa di simile da affiancare al regalo, sempre di piazzamento tessere ma un po' più moderno?",
+      gloss:"and something similar to go with the gift — still tile placement, a bit more modern?",
+      search:{q:"gioco moderno di piazzamento tessere, costruzione di territorio o paesaggio, design fresco e attuale, per famiglia e amici", filters:[], hits:5, forced:false},
+      games:[{n:"Azul: Summer Pavilion",m:"2-4 · 45 min"},{n:"Bärenpark",m:"2-4 · 45 min"},{n:"Fairy Tile",m:"2-4 · 30 min"}],
+      reply:"Certo, per affiancare Carcassonne ci sono ottime alternative più recenti che parlano ancora la lingua del piazzamento tessere! Azul: Summer Pavilion è oggi il volto più moderno del genere: mosaici colorati e scelte tattiche sottili in 45 minuti. Bärenpark trasforma il piazzamento tessere in un puzzle di costruzione, incastrando recinti e attrazioni in partite da 45 minuti sempre diverse. Fairy Tile mantiene l'atmosfera fantasy-medievale che ama in Carcassonne, ma con un tono più leggero e narrativo…",
+      rgloss:"Sure, to go alongside Carcassonne there are great, more recent alternatives that still speak the language of tile placement! Azul: Summer Pavilion is today's most modern face of the genre: colorful mosaics and subtle tactical choices in 45 minutes. Bärenpark turns tile placement into a building puzzle, fitting enclosures and attractions into ever-different 45-minute games. Fairy Tile keeps the fantasy-medieval mood you love in Carcassonne, but with a lighter, more narrative tone…",
+      quick:["per 2 giocatori","max 30 minuti","Sorprendimi"],
+      notes:[{type:"win",tag:"no invented filters",text:"Nobody asked for cooperative, and none was added — filters stayed empty because none applied. The local take fabricated cooperative = true on this exact turn.",ticket:["SEL-143","docs/tickets/SEL-143-cooperative-fabricated-from-unknown-reference.md"]}]
+    }
+  ]
+},
+{
+  id:"regalo-bambino-frontier",
+  tier:"frontier", agent:"Claude Sonnet 5",
+  env:"engine=agent · Claude Sonnet 5 (responder harness) · bge-m3 · 501 games",
+  hook:"Same birthday brief — the filter stack survives turn over turn instead of dropping to semantic-only.",
+  meta:[["win","constraints stack correctly"]],
+  turns:[
+    {
+      user:"cerco un regalo per il compleanno di mio figlio, compie 8 anni",
+      gloss:"a birthday gift for my son, he's turning 8",
+      search:{q:"gioco da tavolo per bambini, adatto a un compleanno, regola semplice e divertente, ottimo come primo regalo di scatola", filters:[["age","≤ 8",false]], hits:5, forced:false},
+      games:[{n:"Coloretto",m:"2-5 · 30 min"},{n:"Ticket to Ride: Primo Viaggio",m:"2-4 · 25 min"},{n:"Exploding Kittens",m:"2-5 · 15 min"}],
+      reply:"Per un compleanno di 8 anni ho qualche idea perfetta, magari anche da giocare insieme ai fratellini! Coloretto è pensato proprio da 8 anni in su: regole immediate, partite da 30 minuti e un pizzico di fortuna che lo rende divertente per tutta la famiglia. Ticket to Ride: Primo Viaggio è la versione junior di un grande classico — costruire percorsi di treni è intuitivo e appagante. Exploding Kittens è puro divertimento in scatola: partite fulminee di 15 minuti e tantissime risate…",
+      rgloss:"For an 8th birthday I have a few perfect ideas, maybe even to play together with younger siblings! Coloretto is aimed right at age 8+: instant rules, 30-minute games, and a pinch of luck that makes it fun for the whole family. Ticket to Ride: First Journey is the junior version of a big classic — building train routes feels intuitive and rewarding. Exploding Kittens is pure boxed fun: lightning-fast 15-minute games and tons of laughs…",
+      quick:["per 2 giocatori","dai 6 anni","Sorprendimi"],
+      notes:[]
+    },
+    {
+      user:"bello! gioca spesso con la sorella più piccola, meglio qualcosa che possano fare insieme senza litigare",
+      gloss:"he often plays with his younger sister — better something they can do together without fighting",
+      search:{q:"gioco cooperativo per famiglie e bambini, si vince e si perde tutti insieme, adatto anche a fratelli con differenza d'età, niente eliminazione né scontro diretto", filters:[["age","≤ 8",false],["cooperative","= true",false]], hits:5, forced:false},
+      games:[{n:"SOS Dino",m:"1-4 · 25 min",coop:true},{n:"Yokai",m:"2-4 · 20 min",coop:true},{n:"Magic Maze",m:"1-8 · 15 min",coop:true}],
+      reply:"Perfetto, allora puntiamo su giochi cooperativi: si vince o si perde tutti insieme, quindi zero litigi tra fratelli! SOS Dino è pensato apposta per famiglie con bambini di età diverse: fratello e sorella lavorano fianco a fianco per salvare i dinosauri, niente sfida diretta, partite brevi di 25 minuti. Yokai unisce memoria e cooperazione in un'avventura giapponese incantevole, un formato che mette tutti sullo stesso piano. Magic Maze è un'esplosione di adrenalina cooperativa in soli 15 minuti, non uno contro l'altro…",
+      rgloss:"Perfect, let's go cooperative then: you win or lose all together, so zero fighting between siblings! SOS Dino is designed exactly for families with kids of different ages: brother and sister work side by side to save the dinosaurs, no direct competition, short 25-minute games. Yokai blends memory and cooperation into a charming Japanese adventure, a format that puts everyone on equal footing. Magic Maze is a burst of cooperative adrenaline in just 15 minutes, never one against the other…",
+      quick:["max 20 minuti","dai 6 anni","per 2 giocatori"],
+      notes:[{type:"win",tag:"constraints stack, filters kept",text:"age ≤ 8 from turn 1 carries forward and cooperative = true is added exactly on cue — SOS Dino, the strongest match for both, surfaces immediately. The local take went filterless here (forced, semantic-only)."}]
+    },
+    {
+      user:"l'ideale sarebbe una cosa da mezz'oretta, non di più",
+      gloss:"ideally about half an hour, no longer",
+      search:{q:"gioco cooperativo per famiglie e bambini, si vince e si perde tutti insieme, partita breve e scorrevole", filters:[["age","≤ 8",false],["cooperative","= true",false],["duration","≤ 30",false]], hits:5, forced:false},
+      games:[{n:"SOS Dino",m:"1-4 · 25 min",coop:true},{n:"The Mind",m:"2-4 · 20 min",coop:true},{n:"Yokai",m:"2-4 · 20 min",coop:true}],
+      reply:"Detto fatto: ecco tre giochi cooperativi che stanno comodamente dentro la mezz'oretta. SOS Dino si gioca in appena 25 minuti ed è tarato apposta per bambini dai 7 anni in su. The Mind è un'idea geniale in 15-20 minuti: niente parole, solo intesa e sincronia tra i giocatori. Yokai regala 20 minuti di avventura giapponese fatta di memoria e collaborazione…",
+      rgloss:"Done: here are three cooperative games that comfortably fit within half an hour. SOS Dino plays in just 25 minutes and is tuned for kids age 7 and up. The Mind is a brilliant idea in 15-20 minutes: no words, just intuition and sync between players. Yokai offers 20 minutes of Japanese adventure built on memory and collaboration…",
+      quick:["per 2 giocatori","Sorprendimi","senza espansioni"],
+      notes:[{type:"win",tag:"the stack holds, turn 3",text:"age ≤ 8 → + cooperative → + duration ≤ 30, stacked in that exact order across three turns instead of dropping to a bare semantic search — and SOS Dino answers all three."}]
+    }
+  ]
+},
+{
+  id:"esperti-fantascienza-frontier",
+  tier:"frontier", agent:"Claude Sonnet 5",
+  env:"engine=agent · Claude Sonnet 5 (responder harness) · bge-m3 · 501 games",
+  hook:"Same sci-fi description — Terraforming Mars surfaces one full turn earlier, no floor needed.",
+  meta:[["win","found turn 2, not 3"],["win","TM + expansions, turn 3"]],
+  turns:[
+    {
+      user:"siamo un gruppo di giocatori esperti e cerchiamo un titolo impegnativo per le nostre serate",
+      gloss:"we're a group of expert players looking for a demanding title for our game nights",
+      search:{q:"gioco da tavolo complesso e strategico per giocatori esperti, gestione risorse e costruzione motore economico, alta rigiocabilità, curva di apprendimento ripida, serata impegnativa tra appassionati", filters:[], hits:5, forced:false},
+      games:[{n:"Through the Ages",m:"2-4 · 120 min"},{n:"Feudum",m:"2-5 · 120 min"},{n:"Puerto Rico",m:"2-5 · 90 min"}],
+      reply:"Per un gruppo di giocatori esperti ho tre pesi massimi che non deludono mai una serata impegnativa. Through the Ages è il capolavoro di Vlaada Chvátil: si guida un'intera civiltà attraverso i secoli, bilanciando economia, scienza e militari in un motore di scelte che si incastrano fino all'ultima carta. Feudum è per chi vuole davvero mettersi alla prova: azioni simultanee e una gestione delle risorse intricatissima, tra i più pesanti sul mercato. Puerto Rico resta un pilastro dei giochi gestionali: coltivazione, produzione e commercio in un sistema di ruoli elegante e spietato, 90 minuti di tensione strategica pura…",
+      rgloss:"For a group of expert players I have three heavyweights that never disappoint on a demanding game night. Through the Ages is Vlaada Chvátil's masterpiece: you steer an entire civilization through the ages, balancing economy, science and military in an engine of choices that interlock down to the last card. Feudum is for those who really want to be tested: simultaneous actions and intricate resource management, among the heaviest on the market. Puerto Rico remains a pillar of management games: farming, production and trade interweave in an elegant, ruthless role system, 90 minutes of pure strategic tension…",
+      quick:["per 4 giocatori","max 90 minuti","Sorprendimi"],
+      notes:[]
+    },
+    {
+      user:"il tema che ci attira di più è la fantascienza, meglio se gestionale",
+      gloss:"the theme we like most is sci-fi, ideally a management game",
+      search:{q:"gioco gestionale di fantascienza per esperti, costruzione motore economico, gestione risorse, colonizzazione spaziale o civiltà futuristica, strategia profonda e complessa", filters:[], hits:5, forced:false},
+      games:[{n:"Terraforming Mars",m:"1-5 · 120 min"},{n:"Progetto Gaia",m:"1-4 · 120 min"}],
+      reply:"Fantascienza e gestionale puro: perfetto, ho esattamente quello che cercate. Terraforming Mars è IL gestionale di fantascienza per eccellenza: si guidano corporazioni che terraformano il pianeta rosso intrecciando gestione della mano, piazzamento tessere ed economia in un motore che si costruisce partita dopo partita, con altissima rigiocabilità. Progetto Gaia, ispirato a Terra Mystica, alza ulteriormente l'asticella: espansione spaziale e un peso Medio-Pesante che regala partite dense, su misura per un tavolo di esperti…",
+      rgloss:"Sci-fi and pure management: perfect, I have exactly what you're looking for. Terraforming Mars is THE sci-fi management game par excellence: you steer corporations terraforming the red planet, weaving together hand management, tile placement and economy in an engine that builds itself game after game, with very high replayability. Progetto Gaia, inspired by Terra Mystica, raises the bar further: space expansion and a Medium-Heavy weight delivering dense games, tailor-made for a table of experts…",
+      quick:["per 4 giocatori","senza espansioni","Sorprendimi"],
+      notes:[{type:"win",tag:"found turn 2, not 3",text:"Terraforming Mars surfaces already at turn 2 — a full turn earlier than the local take, which needed turn 3 and the SEL-147 safety floor to get there. The customer still hasn't said the name.",ticket:["SEL-147","docs/tickets/resolved/SEL-147-agent-false-nomatch-coop-two.md"]}]
+    },
+    {
+      user:"ci piacciono i giochi dove costruisci un motore di carte e risorse, tipo rendere abitabile un pianeta",
+      gloss:"we like games where you build an engine of cards and resources — like making a planet habitable",
+      search:{q:"gioco di costruzione motore con carte e risorse, tema fantascienza, terraformazione di un pianeta, gestione della mano e piazzamento tessere, per giocatori esperti", filters:[], hits:5, forced:false},
+      games:[{n:"Terraforming Mars",m:"1-5 · 120 min"},{n:"Terraforming Mars: Colonies",m:"1-5 · 120 min"},{n:"Terraforming Mars: Turmoil",m:"1-5 · 150 min"}],
+      reply:"Avete appena descritto perfettamente il cuore pulsante di Terraforming Mars: eccolo con le espansioni che lo portano ancora più in profondità. Ogni carta gioca aumenta produzione, temperatura, ossigeno e oceani, e le sinergie tra progetti lo rendono uno dei gestionali più profondi in circolazione. Terraforming Mars: Colonies espande il motore con il piazzamento lavoratori e la costruzione di colonie orbitanti. Terraforming Mars: Turmoil introduce un layer politico con partiti e maggioranze che influenzano il vostro motore economico…",
+      rgloss:"You've just perfectly described the beating heart of Terraforming Mars: here it is, with the expansions that take it even deeper. Every card played raises production, temperature, oxygen and oceans, and the synergies between projects make it one of the deepest management games around. Terraforming Mars: Colonies expands the engine with worker placement and orbital colony building. Terraforming Mars: Turmoil adds a political layer of parties and majorities that sway your economic engine…",
+      quick:["senza espansioni","per 5 giocatori","max 120 minuti"],
+      notes:[{type:"win",tag:"TM + its own expansions land together",text:"The customer's description, verbatim, deepens the same match rather than just repeating it: Terraforming Mars plus its own expansions (Colonies, Turmoil) land together in one search."}]
+    }
+  ]
+}
+];
+
+const TIER_BLURB = {
+  local:`<strong>local · qwen2.5:7b</strong> — free and on-device, and the flaws are real: the ⚠ flags below
+    mark exactly where a 7B model slips, each pinned to its own ticket.`,
+  frontier:`<strong>frontier · Claude Sonnet 5</strong> — same engine, same tools, same catalog, a frontier
+    model at the wheel via a responder harness (file exchange — never “simulated”). This is what the
+    provider swap is <em>for</em>: one seam, nothing else in the system changes — and the same swap scores
+    <strong>15/15</strong> on the adversarial bench.`
+};
+let ACTIVE_TIER = "local";
+let ACTIVE_SESSIONS = LOCAL_SESSIONS;
+
 /* ---------------- chat replay player ---------------- */
 const rail = document.getElementById("rail");
 const turnsEl = document.getElementById("turns");
@@ -619,14 +808,15 @@ let cur = 0, shown = 0, playTimer = null;
 
 function esc(s){const d=document.createElement("div");d.textContent=s;return d.innerHTML}
 
-function howContent(forced){
+function howContent(forced, agent){
+  agent = agent || "qwen2.5:7b";
   if(forced){
     return `<p>The model made <strong>no tool call</strong> this turn. The code notices and runs the
       safety-net search with the customer's own words — so silence can never become a fake “no match”:
       an honest no-match must be <em>earned</em> by a search that returns empty
       (<a href="${REPO}docs/tickets/resolved/SEL-147-agent-false-nomatch-coop-two.md">SEL-147</a>).</p>
       <div class="flow">
-        <span class="fbox dead">qwen2.5:7b<small>went silent</small></span><span class="farrow">→</span>
+        <span class="fbox dead">${esc(agent)}<small>went silent</small></span><span class="farrow">→</span>
         <span class="fbox code">code floor<small>SEL-147</small></span><span class="farrow">→</span>
         <span class="fbox">search_catalog<small>customer's words, verbatim</small></span><span class="farrow">→</span>
         <span class="fbox">Qdrant · 501 games<small>bge-m3 semantic</small></span><span class="farrow">→</span>
@@ -642,7 +832,7 @@ function howContent(forced){
     is measurable, not vibes.</p>
     <div class="flow">
       <span class="fbox">🧑 message<small>+ history</small></span><span class="farrow">→</span>
-      <span class="fbox">qwen2.5:7b<small>the agent</small></span><span class="farrow">→</span>
+      <span class="fbox">${esc(agent)}<small>the agent</small></span><span class="farrow">→</span>
       <span class="fbox">search_catalog<small>query + filters</small></span><span class="farrow">→</span>
       <span class="fbox">Qdrant · 501 games<small>bge-m3 semantic + filters</small></span><span class="farrow">→</span>
       <span class="fbox">top 5</span><span class="farrow">→</span>
@@ -656,7 +846,7 @@ const groundingContent = `<p>Only games the search actually returned may appear 
   different games” is structurally impossible, not patched after the fact
   (<a href="${REPO}docs/adr/0002-grounding-enforced-in-code.md">ADR-0002</a>).</p>`;
 
-function renderTurn(t, idx){
+function renderTurn(t, idx, session){
   const wrap = document.createElement("div");
   wrap.className = "turn";
   let h = `<div class="turn-label step">turn ${idx+1}</div>`;
@@ -674,7 +864,7 @@ function renderTurn(t, idx){
       </div>
       <div class="chips">${chips}<span class="chip hits">→ ${t.search.hits} hits</span></div>
       <button class="how-btn" aria-expanded="false">how does this search work?</button>
-      <div class="how">${howContent(t.search.forced)}</div>
+      <div class="how">${howContent(t.search.forced, session && session.agent)}</div>
     </div>`;
 
   const cards = t.games.map(g =>
@@ -713,14 +903,14 @@ function renderTurn(t, idx){
 }
 
 function drawDots(){
-  const s = SESSIONS[cur];
+  const s = ACTIVE_SESSIONS[cur];
   dotsEl.innerHTML = s.turns.map((_,i)=>`<span class="dot${i<shown?" done":""}"></span>`).join("");
   document.getElementById("nextBtn").disabled = shown >= s.turns.length;
 }
 function nextTurn(){
-  const s = SESSIONS[cur];
+  const s = ACTIVE_SESSIONS[cur];
   if(shown >= s.turns.length) return false;
-  turnsEl.appendChild(renderTurn(s.turns[shown], shown));
+  turnsEl.appendChild(renderTurn(s.turns[shown], shown, s));
   shown++;
   drawDots();
   if(shown > 1) turnsEl.lastElementChild.scrollIntoView({behavior:"smooth",block:"start"});
@@ -729,9 +919,10 @@ function nextTurn(){
 function resetSession(){
   stopPlay();
   turnsEl.innerHTML = ""; shown = 0;
-  const s = SESSIONS[cur];
+  const s = ACTIVE_SESSIONS[cur];
   document.getElementById("stageSid").textContent = s.id;
   document.getElementById("stageHook").textContent = s.hook;
+  document.getElementById("stageEnv").textContent = s.env;
   drawDots();
   nextTurn();
 }
@@ -747,7 +938,7 @@ function togglePlay(){
 
 function drawRail(){
   rail.innerHTML = "";
-  SESSIONS.forEach((s,i)=>{
+  ACTIVE_SESSIONS.forEach((s,i)=>{
     const b = document.createElement("button");
     b.className = "sess"; b.setAttribute("role","tab");
     const meta = (s.meta||[]).map(([k,v])=>`<span class="${k==="flag"?"flag":"win"}">${k==="flag"?"⚠":"✦"} ${esc(v)}</span>`).join(" · ");
@@ -759,6 +950,15 @@ function drawRail(){
     b.addEventListener("click",()=>openSession(i));
     rail.appendChild(b);
   });
+}
+function setTier(tier){
+  if(tier === ACTIVE_TIER) return;
+  ACTIVE_TIER = tier;
+  ACTIVE_SESSIONS = tier === "frontier" ? FRONTIER_SESSIONS : LOCAL_SESSIONS;
+  document.getElementById("tier-local").setAttribute("aria-selected", String(tier === "local"));
+  document.getElementById("tier-frontier").setAttribute("aria-selected", String(tier === "frontier"));
+  document.getElementById("tierBlurb").innerHTML = TIER_BLURB[tier];
+  drawRail();
 }
 function openSession(i){
   cur = i;
@@ -776,6 +976,8 @@ document.getElementById("nextBtn").addEventListener("click",()=>{stopPlay();next
 document.getElementById("playBtn").addEventListener("click",togglePlay);
 document.getElementById("resetBtn").addEventListener("click",resetSession);
 document.getElementById("changeBtn").addEventListener("click",backToPicker);
+document.getElementById("tier-local").addEventListener("click",()=>setTier("local"));
+document.getElementById("tier-frontier").addEventListener("click",()=>setTier("frontier"));
 document.addEventListener("keydown",e=>{
   if(document.getElementById("panel-chat").hidden) return;
   if(document.getElementById("stageWrap").hidden) return;
@@ -899,6 +1101,12 @@ alla terraformazione del pianeta rosso, alzando ossigeno e temperatura e creando
   <p style="font-size:.82rem;max-width:70ch">From invisible to the top of the first screen — purely by giving the
   embedder a better text to embed. No change of model, no change of query. This is
   <strong>representation engineering</strong>, measured.</p>
+  <p class="lede" style="font-size:.82rem;color:var(--mut)"><strong>Re-measured at today's scale</strong> — the
+    #45 → #1 above is the historical protocol: <code style="font-family:var(--mono);font-size:.85em">nomic-embed-text</code>
+    over a 50-game frozen corpus. Recomputed on the current stack (bge-m3, the full <strong>501-game live
+    index</strong>): the stripped record already ranks #2 / #34 / #21 — a strong embedder now saves the
+    name-informative query on its own — the shipped record ranks #1 / #8 / #3, <strong>average #19 → #4 of
+    501</strong>. Same story, ten times the scale.</p>
   <div class="honest"><span class="n-tag">⚠ and where it lost — kept visible</span>
     The same pipeline made <strong>Viticulture</strong> — an already-rich record — <em>worse</em>: Synth compressed
     ~2300 → ~1200 chars and dropped <em>vino / toscana</em> signal, so a common query slipped #4 → #23.
@@ -997,7 +1205,8 @@ dopo l'uso, <span class="c-hot">passano all'avversario</span> — un duello eleg
   <div class="note win"><span class="n-tag">✦ why this game is in the showcase</span>Onitama starts from a
     decent record, so its retrieval gain is real but undramatic — and that's the honest framing. Its job
     isn't a big number: it's the <strong>guarantee behind every number elsewhere</strong>. When Terraforming
-    Mars jumps #45 → #1, this is how you know nothing was invented along the way.</div>`
+    Mars jumps #45 → #1 (re-measured on today's 501-game index: avg #19 → #4), this is how you know
+    nothing was invented along the way.</div>`
 }
 ];
 
@@ -1078,7 +1287,7 @@ pipeline  embed_text ≈ 1200 chars · vino <span class="c-warn">✗</span> · t
 const STORIES = [
   {id:"terraforming-mars", icon:"🚀", game:"Terraforming Mars", demo:"here we demonstrate: the recovery",
    hook:"Shape the embedded text and a buried game becomes findable — a thin record goes from invisible to #1, same embedder, same query.",
-   headline:"rank #45 → #1 of 50", kind:"win", steps:TM_STEPS,
+   headline:"rank #45 → #1 of 50", rescale:"re-measured today, 501 games: avg #19 → #4", kind:"win", steps:TM_STEPS,
    end:`Full walkthrough, exact fixtures and measurement protocol: <a href="${REPO}docs/showcase/terraforming-mars.md">docs/showcase/terraforming-mars.md</a>`},
   {id:"onitama", icon:"🔬", game:"Onitama", demo:"here we demonstrate: the guarantee",
    hook:"Why you can trust the recovery: every added fact carries a verbatim quote verified in its source page — a plausible guess with no quote is dropped, not embedded.",
@@ -1115,10 +1324,11 @@ function drawPipeRail(){
   STORIES.forEach((s,i)=>{
     const b = document.createElement("button");
     b.className = "sess"; b.setAttribute("role","tab");
+    const rescale = s.rescale ? `<br><span style="font-family:var(--mono);font-size:.62rem;color:var(--faint)">${esc(s.rescale)}</span>` : "";
     b.innerHTML = `<span class="sid">${s.icon} ${esc(s.game)}</span>
       <span class="demotag">${esc(s.demo)}</span>
       <span class="shook">${esc(s.hook)}</span>
-      <span class="smeta"><span class="${s.kind==="flag"?"flag":"win"}">${s.kind==="flag"?"⚠":"✦"} ${esc(s.headline)}</span><br>
+      <span class="smeta"><span class="${s.kind==="flag"?"flag":"win"}">${s.kind==="flag"?"⚠":"✦"} ${esc(s.headline)}</span>${rescale}<br>
       <span class="watch">▶ follow — ${s.steps.length} steps</span></span>`;
     b.addEventListener("click",()=>openStory(i));
     r.appendChild(b);
@@ -1187,6 +1397,7 @@ document.getElementById("glossToggle").addEventListener("change",e=>{
 /* boot — EN subtitles default on */
 document.getElementById("glossToggle").checked = true;
 document.body.classList.add("gloss");
+document.getElementById("tierBlurb").innerHTML = TIER_BLURB[ACTIVE_TIER];
 drawRail(); drawPipeRail();
 </script>
 </body>

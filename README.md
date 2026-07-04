@@ -31,7 +31,7 @@ from them.
 
 | | Measured | Proof |
 |---|---|---|
-| A thin record made findable | rank **#45 → #1** of 50 — same embedder, same query, only the embedded text changes | [demo](https://msporchia.github.io/board-game-rag-seller/demo/) · [walkthrough](docs/showcase/terraforming-mars.md) |
+| A thin record made findable | rank **#45 → #1** of 50 (same embedder, only the embedded text changes); re-measured on today's 501-game index: avg **#19 → #4** | [demo](https://msporchia.github.io/board-game-rag-seller/demo/) · [walkthrough](docs/showcase/terraforming-mars.md) |
 | One measured day, frozen rulers | ranking quality (mean NDCG) **0.386 → 0.726**; conversational recall **0.545 → 0.818** | [experiments ledger](docs/experiments.md) |
 | Invented recommendations | **structurally impossible** — grounding is enforced in code, not asked of the model | [ADR-0002](docs/adr/0002-grounding-enforced-in-code.md) |
 
@@ -157,9 +157,11 @@ on identical inputs; the noise is measured too.)*
 > grounding invariants, the strategy routing, the policy middleware, the three engines and their
 > eval suites — every claim linked to its class and its test.
 >
-> ⚡ **Watch it sell:** [four unedited sessions on the live 501-game index in the interactive
+> ⚡ **Watch it sell:** [unedited sessions on the live 501-game index in the interactive
 > demo](https://msporchia.github.io/board-game-rag-seller/demo/) — every search the agent
-> composed, the flaws annotated with their tickets · [written version](docs/showcase/live-session.md).
+> composed, the flaws annotated with their tickets · [written version, two tiers: the free
+> local model, and the same engine selling with **Claude Sonnet 5** at the
+> wheel](docs/showcase/live-session.md).
 
 ---
 

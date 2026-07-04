@@ -156,8 +156,10 @@ A **real** turn from the agent run (case `infeasibile-recupero`, lifted verbatim
 
 The same customer run through **two engines side by side** — including the convergence case the
 deterministic pipeline can't crack — is in [`showcase/chat.md`](showcase/chat.md). And beyond the
-eval bench: [**four live sessions on the full 501-game index**](showcase/live-session.md) —
-unedited takes, regenerable with one command, every flaw annotated with its ticket.
+eval bench: [**live sessions on the full 501-game index**](showcase/live-session.md) —
+unedited takes, regenerable with one command, every flaw annotated with its ticket, and the
+same sessions re-recorded with **Claude Sonnet 5** at the wheel (the frontier tier): the
+model-bound flaws vanish with the swap alone.
 
 ## Known limits, tracked 🚧
 

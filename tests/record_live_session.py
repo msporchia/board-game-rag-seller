@@ -52,13 +52,37 @@ SESSIONS = {
 
 class LiveSessionRecorder:
     """Drives one scripted session through the real agent engine and captures every layer:
-    the message, the searches the agent ran, the grounded hits, and the reply."""
+    the message, the searches the agent ran, the grounded hits, and the reply.
 
-    def __init__(self):
-        self.engine = AgenticChat(advisor=ChatAdvisor())
+    With `exchange_dir` set, every LLM role (tool loop + pitch) is played by an external
+    responder through the file-exchange harness instead of the local Ollama model — the
+    "frontier tier" recording: same engine, same live index, same customer script; only the
+    model at the wheel changes."""
+
+    def __init__(self, exchange_dir: str | None = None, timeout: float = 3600.0):
+        if exchange_dir:
+            from pathlib import Path as _Path
+
+            from app.chat.models.reply import ChatReply
+            from tests.eval.ChatConversation.simulation.exchange_dir import ExchangeDir
+            from tests.eval.ChatConversation.simulation.file_exchange_agent_llm import (
+                FileExchangeAgentLLM)
+            from tests.eval.ChatConversation.simulation.file_exchange_llm import FileExchangeLLM
+
+            exchange = ExchangeDir(_Path(exchange_dir))
+            advisor = ChatAdvisor(llm=FileExchangeLLM(exchange, "pitch", ChatReply,
+                                                      timeout=timeout))
+            self.engine = AgenticChat(advisor=advisor,
+                                      llm=FileExchangeAgentLLM(exchange, timeout=timeout))
+            self.model = "external responder (file exchange)"
+        else:
+            self.engine = AgenticChat(advisor=ChatAdvisor())
+            self.model = None
 
     def record(self, name: str, turns: list[str]) -> dict:
         record = {"session": name, "engine": "agent", "turns": []}
+        if self.model:
+            record["model"] = self.model
         for i, message in enumerate(turns, 1):
             response = self.engine.reply(message, session_id=name)
             searches = [dict(s) for s in self.engine.last_turn_searches]
@@ -79,14 +103,20 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--session", choices=list(SESSIONS))
     ap.add_argument("--all", action="store_true")
+    ap.add_argument("--exchange", metavar="DIR",
+                    help="record with an external responder through the file-exchange harness "
+                         "(the frontier-tier take) instead of the local Ollama model")
+    ap.add_argument("--suffix", default="",
+                    help="output filename suffix, e.g. '-frontier' → <name>-frontier.json")
+    ap.add_argument("--timeout", type=float, default=3600.0)
     args = ap.parse_args()
     names = list(SESSIONS) if args.all else [args.session or "coppia-serale"]
     OUT_DIR.mkdir(parents=True, exist_ok=True)
-    recorder = LiveSessionRecorder()
+    recorder = LiveSessionRecorder(exchange_dir=args.exchange, timeout=args.timeout)
     for name in names:
         print(f"=== {name}")
         record = recorder.record(name, SESSIONS[name])
-        out = OUT_DIR / f"{name}.json"
+        out = OUT_DIR / f"{name}{args.suffix}.json"
         out.write_text(json.dumps(record, ensure_ascii=False, indent=2))
         print(f"  saved {out}")
 

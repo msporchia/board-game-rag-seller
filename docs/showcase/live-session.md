@@ -1,11 +1,17 @@
 # 🎬 Live sessions — the real seller, on the real index
 
-> Four **unedited sessions against the full 501-game index** — `engine=agent` (qwen2.5:7b
-> driving `search_catalog`), bge-m3 embeddings, the SEL-145 cooperative policy under the hard
-> filter. Recorded in-process by [`tests/record_live_session.py`](../../tests/record_live_session.py),
-> which captures what an HTTP transcript cannot: **the searches the agent actually ran**.
-> Nothing below is piloted, re-rolled or edited — each session is one take, flaws included,
-> and each flaw carries its annotation and its ticket.
+> Unedited sessions against the full 501-game index, recorded in-process by
+> [`tests/record_live_session.py`](../../tests/record_live_session.py) — which captures what an
+> HTTP transcript cannot: **the searches the agent actually ran**. Nothing below is piloted,
+> re-rolled or edited — each session is one take, flaws included, each flaw with its ticket.
+>
+> Two tiers, same engine, same catalog, same customer scripts:
+> - **Local tier** — `qwen2.5:7b` at the wheel: free, on-device, shippable today. It works;
+>   it is not particularly fluent, and its flaws are annotated below.
+> - **[Frontier tier](#the-frontier-tier--same-engine-same-catalog-a-top-model-at-the-wheel)**
+>   — **Claude Sonnet 5** at the wheel (via the file-exchange responder harness): *this is how
+>   the same engine sells with a top model.* The model swap is one seam — that is the point of
+>   the provider-swappable design.
 
 **How to read a turn** — every turn shows the full chain:
 
@@ -127,18 +133,65 @@ documented limit the
 
 ---
 
-## What the four takes demonstrate — and what they don't
+## The frontier tier — same engine, same catalog, a top model at the wheel
 
-- **Demonstrated:** real searches on the real catalog, visible per turn (query + structured
-  filters + hits); constraints becoming filters; the cooperative axis working through curated
-  data; the SEL-147 floor turning model silence into grounded proposals; a described-not-named
-  game found first out of 501.
-- **Kept honest:** a named title missed (② T1), an invented filter caught *by the search log
-  itself* (② T2), pitch wording slips on the 7B — each mapped to its ticket or backlog lever,
-  none edited out. All three are **model-bound, and that is now measured, not claimed**: on the
-  eval bench, the same engine with Claude Sonnet 5 answering every LLM role (via the responder
-  harness, same oracle) scores **15/15** with zero invented filters and zero silent turns
-  ([ledger](../experiments.md) row 14).
+The two sessions below are the SAME customer scripts, the SAME live 501-game index, the SAME
+`AgenticChat` engine — the only change is who answers the LLM prompts: **Claude Sonnet 5**,
+through the file-exchange responder harness (`--exchange`; the transport is a file exchange
+rather than an API call — the API integration is SEL-110). Every weakness annotated in the
+local takes disappears on its own, with no code change:
+
+### ①-bis `coppia-serale` — frontier take
+
+**🧑 T3** «…adorano i giochi cooperativi, dove si vince o si perde insieme. c'è qualcosa di cooperativo che funzioni bene in due?»
+- 🔎 «gioco cooperativo, si vince o si perde tutti insieme contro il g…» · `players=[2], duration≤60, cooperative=True` → 5 hit
+- 🃏 **Pandemic: La Caduta di Roma** (1-5 · 60′ · coop ✅) · **Unlock! Heroic Adventures** (coop ✅) · **Yokai** (2-4 · 20′ · coop ✅)
+- 🤖 «Ottima notizia: il cooperativo funziona benissimo anche in due […] **Pandemic: La Caduta di Roma** li mette fianco a fianco a difendere l'impero da invasioni e crisi […] È il classico *"o vinciamo o perdiamo insieme"* che stavano cercando. […] **Yokai** è più breve e leggero, circa 20 minuti […] un cooperativo veloce da rifare più volte in una serata.» *(co-op works beautifully in two — Pandemic: Fall of Rome puts them side by side defending the empire; Yokai is the quick one you replay all evening.)*
+
+No silence, no safety net needed: the model composed the query AND all three structured
+filters (`players`, `duration`, `cooperative`) from the conversation on its own — the turn the
+local model needed the SEL-147 floor for.
+
+**🧑 T4** «…e se invece volessi qualcosa di cooperativo per quando invitano altri amici, tipo in cinque?»
+- 🔎 «gioco cooperativo per gruppo numeroso…» · `players=[5], cooperative=True` → 5 hit
+- 🃏 **Magic Maze** · **Massive Darkness** · **Pandemic: La Caduta di Roma** (tutti coop ✅)
+- 🤖 «**Magic Maze** è perfetto per cinque: si esplora un centro commerciale in tempo reale muovendo tutti gli eroi insieme, **ma senza parlare tra voi**, in appena 15 minuti di caos organizzato che fa ridere e sudare allo stesso tempo.» *(you all move the heroes together in real time — but you're not allowed to talk: 15 minutes of organised chaos.)*
+
+That «senza parlare tra voi» is Magic Maze's *actual* signature rule — the pitch sells the
+real game, not a generic blurb.
+
+### ②-bis `cliente-deciso` — frontier take (the weak local session, redeemed)
+
+**🧑 T1** «buongiorno, avete Carcassonne? vorrei regalarlo a mia sorella, mi serve per stasera»
+- 🔎 **«Carcassonne»** · *(no filters)* → 5 hit
+- 🃏 **Carcassonne — Nuova Edizione** (2-5 · 45′) · **Carcassonne: La Torre** (espansione)
+- 🤖 «Ottima scelta per un regalo dell'ultimo minuto, ce l'abbiamo pronto in negozio! **Carcassonne** nella sua Nuova Edizione è esattamente quello che cercava […] perfetto da scartare stasera stessa. Se vuole arricchire il regalo, **Carcassonne: La Torre** è l'espansione ideale da abbinare.» *(great last-minute gift, we have it in store — and The Tower expansion pairs perfectly if you want to enrich the gift.)*
+
+The local take searched a paraphrase and missed the named title; the frontier model simply
+**searched the title verbatim** — and upsold the expansion. The invented `cooperative=True`
+filter of the local T2 is gone too: the follow-up search is exactly what was asked
+(«gioco moderno di piazzamento tessere…», no fabricated constraints → Azul: Summer Pavilion,
+Bärenpark, Fairy Tile).
+
+*(The other two archetypes' frontier takes are recorded the same way —
+`python -m tests.record_live_session --exchange … --suffix=-frontier`.)*
+
+---
+
+## What the takes demonstrate — and what they don't
+
+- **Demonstrated (local tier):** real searches on the real catalog, visible per turn (query +
+  structured filters + hits); constraints becoming filters; the cooperative axis working
+  through curated data; the SEL-147 floor turning model silence into grounded proposals; a
+  described-not-named game found first out of 501 — free, on-device.
+- **Kept honest (local tier):** a named title missed (② T1), an invented filter caught *by the
+  search log itself* (② T2), pitch wording slips on the 7B — each mapped to its ticket or
+  backlog lever, none edited out.
+- **Demonstrated (frontier tier):** every one of those flaws disappears with the model swap
+  alone — title searched verbatim, no invented constraints, all three coop filters composed
+  unprompted, pitches grounded in each game's real signature details. Consistent with the eval
+  bench, where the same swap scores **15/15** ([ledger](../experiments.md) rows 14 and 16).
+  The local 7B is the bottleneck; the engine is the product.
 
 *Regenerate the raw sessions anytime:
 `docker compose exec seller-api python -m tests.record_live_session --all`

@@ -85,10 +85,9 @@ trade is invisible (there's no rich text to lose); on a rich one it's a real reg
 This is where the engineering discipline shows. The failure isn't a footnote — it's wired into
 the test suite:
 
-1. **A test asserts the *fixed* behaviour, marked `xfail`** —
-   `test_phase3_retrieval::test_synth_does_not_degrade_rich_dto`. It's red today and will turn
-   green when Synth stops compressing. The suite *expects* the bug until it's fixed, so a real
-   fix is provable and a regression can't sneak back.
+1. **A test asserts the *fixed* behaviour** — born as an `xfail` pin,
+   `test_phase3_retrieval::test_synth_does_not_degrade_rich_dto`: red for as long as the bug
+   lived, so a real fix would be provable and a regression can't sneak back.
 2. **The cause is written down**, with the measured numbers, in
    [`e2e-findings.md`](../enrichment/e2e-findings.md) §1.
 3. **The fix direction is scoped**: calibrate Synth's budget to the embedder's real useful
@@ -97,7 +96,19 @@ the test suite:
 And a note on **how much it matters**: per the project's *first-screen* philosophy, the vector
 search is a coarse filter (return ~10–20 of N), and a later LLM step re-reads the candidates in
 full. Some lost keywords (e.g. `oceani`) aren't realistic user queries, so losing them costs
-little. But `toscana` / `vino` on Viticulture **are** common queries — so this one counts, and
-stays open.
+little. But `toscana` / `vino` on Viticulture **are** common queries — so this one counted.
+
+## Epilogue (2026-07-03): the pin turned green — by measurement, not by decree
+
+Two measured levers later, the regression is gone: the **bge-m3 embedder** (adopted on the same
+frozen rulers, [ledger](../experiments.md) rows 1-3) and the **SEL-144 synth recalibration**
+(budget 700 → 1600 at the measured semantic sweet spot, a concept-checklist prompt — rows 5-9).
+On the e2e scorecard Viticulture now ranks avg **1.0**, level with the baseline; the once-red
+pin **passes** and the `xfail` marker has been removed: the same test now stands as a plain
+green guard, so if any future change compresses rich records again, this page gets its sequel.
+
+That is the full arc this walkthrough was written to demonstrate: **caught by the harness →
+pinned red → erased by measured levers → guarded green.** The loss was real, the fix is
+measured, and neither was taken on faith.
 
 → Back to the [pipeline overview](../enrichment/README.md) · the [other walkthroughs](README.md).

@@ -35,8 +35,9 @@ from them.
 | One measured day, frozen rulers | ranking quality (mean NDCG) **0.386 → 0.726**; conversational recall **0.545 → 0.818** | [experiments ledger](docs/experiments.md) |
 | Invented recommendations | **structurally impossible** — grounding is enforced in code, not asked of the model | [ADR-0002](docs/adr/0002-grounding-enforced-in-code.md) |
 
-*An R&D repo that hides its losses isn't one. The same rulers also recorded an honest regression
-we kept visible (**#4 → #23**, [pinned by a red test](docs/showcase/viticulture.md)) and falsified
+*An R&D repo that hides its losses isn't one. The same rulers also caught an honest regression
+(**#4 → #23**), [pinned it with a red test](docs/showcase/viticulture.md) until two measured
+levers erased it — the pin is a green guard now — and falsified
 two comfortable hypotheses — one ledger row per change, each with its re-runnable command, in
 [`docs/experiments.md`](docs/experiments.md).*
 
@@ -61,7 +62,8 @@ for its source**; the lever: **retrieval quality is decided by the text you embe
 enrichment pipeline (Curator → Web → Synth → Compose) turns uneven records into dense, factual,
 cited text before embedding — adding signal, never inventing — and the effect is measured
 end-to-end on frozen corpora: **#45 → #1** on the thin record, a verbatim-quote gate that drops
-plausible fabrications, and one honest regression kept visible (#4 → #23).
+plausible fabrications, and one honest regression caught, pinned red, and erased by measured
+levers (#4 → #23 → fixed; the pin stays as a green guard).
 
 ```mermaid
 flowchart TB
@@ -146,8 +148,10 @@ non-convergences disappear, zero turns without a tool call, fallback rate 0
 ([ledger](docs/experiments.md) row 14, caveats included: single run, a ceiling — not a local
 config). **The local 7B is the bottleneck, not the engine.**
 
-*(Single runs are samples, not verdicts — the same 15 cases scored 0.60/0.80/0.87 on identical
-inputs; the noise is measured too.)*
+*(The bench is adversarial by design — constraint reversals, distractor traps, infeasible
+requests that must end in an honest refusal: rates earned on the nasty cases, not on easy
+customers. And single runs are samples, not verdicts — the same 15 cases scored 0.60/0.80/0.87
+on identical inputs; the noise is measured too.)*
 
 > 📖 **The full story — [`docs/conversational-seller.md`](docs/conversational-seller.md)**: the
 > grounding invariants, the strategy routing, the policy middleware, the three engines and their

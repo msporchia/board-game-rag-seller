@@ -116,6 +116,14 @@ Same retriever, same 47 distractors, two indexes identical except for this game'
 | *"gioco gestionale spaziale di strategia"* | #47 | **#26** |
 | *"gioco di corporazioni che colonizzano lo spazio"* | #47 | **#1** 🚀 |
 
+> **Era note (2026-07-03):** these ranks were measured with the `nomic-embed-text` embedder on
+> the deliberately stripped record — the piloted thin-record scenario this walkthrough exists
+> for. Under the since-adopted `bge-m3` the same stripped-source gap shrinks to avg rank
+> **2.33 → 1.33** (a strong embedder reads the informative name + tags on its own), which
+> narrows enrichment's unique ground to what no embedder can do: truly opaque records, mechanic
+> axes via structured fields, provenance. Chronology: [`experiments.md`](../experiments.md)
+> rows 4-6.
+
 From invisible to the top of the first screen — purely by **giving the embedder a better text
 to embed**. No change of embedding model, no change of query. That is representation
 engineering, and it is exactly the case that dominates a real catalog.

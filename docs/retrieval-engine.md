@@ -107,7 +107,7 @@ text changes:
 |---|------|----------------------|----------------|
 | 🚀 | [**Terraforming Mars**](showcase/terraforming-mars.md) | the recovery: a thin entry made findable | rank **#45 → #1** of 50 |
 | 🔬 | [**Onitama**](showcase/onitama.md) | the guarantee: recovery you can *trust* | fabrication → discarded |
-| ⚖️ | [**Viticulture**](showcase/viticulture.md) | the honest loss, kept visible | rank **#4 → #23** |
+| ⚖️ | [**Viticulture**](showcase/viticulture.md) | the honest loss: caught, pinned red, erased by measured levers | rank **#4 → #23 → fixed** (the pin is a green guard) |
 
 What happens to each game, in plain words:
 

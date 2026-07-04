@@ -4,7 +4,14 @@ What running the real pipeline end to end surfaced (not opinion: measured by the
 on a Qdrant collection of ~50 games with the oracle queries). Produced and gated by
 `tests/e2e/enrichment` (see its README). Update when these change.
 
-## 1. The Synth compresses too much and loses recall on rich DTOs  ⚠️ open
+## 1. The Synth compresses too much and loses recall on rich DTOs  ✅ closed 2026-07-03
+
+> **Closure:** erased by two measured levers — the bge-m3 embedder (ledger rows 1-3) and the
+> SEL-144 synth recalibration (budget 700→1600 + concept-checklist prompt, rows 5-9). The
+> Viticulture pin (`test_synth_does_not_degrade_rich_dto`) now PASSES and its `xfail` marker
+> has been removed: it stands as a green guard. Full arc:
+> [`showcase/viticulture.md`](../showcase/viticulture.md). The original finding below is kept
+> as written — it is the record of how the bug was caught.
 
 **Observation.** On a game with an already-rich product sheet (e.g. Viticulture), the full
 pipeline places the game **worse** than the deterministic baseline (`rule`, compose only) on some

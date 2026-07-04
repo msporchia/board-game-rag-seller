@@ -109,9 +109,13 @@ breaker is designed but not built yet (see [`idee.md`](idee.md)).
 | piloted | code loop, model reformulates | 0.80 · −18% tok | June bench, re-run pending |
 | agent · `qwen2.5:7b` | the model itself, via a tool | **0.733** | both cooperative cases pass |
 
-Case-pass is honestly noisy run-to-run (the same 15 cases scored 0.60/0.80/0.87 on identical
-inputs) — single runs are samples, not verdicts. And this isn't a leaderboard but a
-**quality/cost curve**: the agent converts the most but costs the most per chat, the pipeline is
+Read the rates knowing what the bench is: **adversarial by design**. The 15 cases are the
+nasty customers — constraint *reversals* mid-conversation, distractor traps, infeasible requests
+that must produce an honest refusal (not a plausible invention), a forced-proposal deadline. An
+engine could score high on easy customers and prove nothing; these rates are earned where it
+hurts — and on the same nasty cases the measured ceiling is **15/15**. Case-pass is honestly
+noisy run-to-run (the same 15 cases scored 0.60/0.80/0.87 on identical inputs) — single runs are
+samples, not verdicts. And this isn't a leaderboard but a **quality/cost curve**: the agent converts the most but costs the most per chat, the pipeline is
 the floor you can afford at volume. Which arm a storefront runs is an economic call, swapped by
 `CHAT_ENGINE` behind one contract.
 

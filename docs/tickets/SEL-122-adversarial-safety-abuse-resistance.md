@@ -94,6 +94,12 @@ becomes its own `SEL` ticket if it warrants work:
   plain-text rule (cross-ref SEL-108 unicode normalization).
 - **Quick-reply / policy-name / customer-context tampering** from the wire (BFF) — the fields the
   frontend controls.
+- **Information disclosure** — low harm by design: no secrets (the rules are public, internal
+  `id_product` are meaningless outside). The one variant that *would* matter — internal commercial
+  data (margin/cost) in the prompt — is designed out: margins are computed behind a hard API
+  outside the LLM's reach, and only a **relative priority score (1–5, ranked across games)** ever
+  reaches the model. So a leak is irrelevant-to-near-irrelevant, and the residual work is only to
+  *enforce* that boundary (no raw commercial field in the prompt context), not to filter output.
 - **PII in the turn** and **toxic/unsafe output** — content handling we do nothing about today.
 - **Model-specific jailbreaks across the tier** — the weak 8B, the strong local model, and the
   frontier model fail differently; a red-team that passes on one may not on another.

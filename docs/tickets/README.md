@@ -12,6 +12,9 @@ engineering tickets. Most items are distilled from `docs/idee.md`, `docs/note.md
 | ID | Title | Area | Type | Priority | Status |
 |----|-------|------|------|----------|--------|
 | [SEL-122](SEL-122-adversarial-safety-abuse-resistance.md) | Adversarial safety / abuse-resistance: threat model, role separation, red-team eval | chat/agent | Security | Medium | In progress |
+| [SEL-148](SEL-148-chat-cost-hard-limit.md) | Chat cost control: daily hard-limit + per-session budget (kill-switch before a paid tier goes live) | api/chat | Security | High | Open |
+| [SEL-149](SEL-149-cost-dashboard.md) | Cost & usage dashboard — aggregate the per-call token traces into a spend view | observability | Feature | Medium | Open |
+| [SEL-150](SEL-150-cost-per-conversion.md) | Cost per conversion — tie spend to cart/order outcomes, ROI per engine/model | observability | Research | Medium | Open |
 | [SEL-146](SEL-146-cooperative-verdict-revisit.md) | Revisit the cooperative verdict — the SEL-145 policy is a stopgap (recall lost on untagged co-ops) | enricher + rag | Research | High | Open |
 | [SEL-143](SEL-143-cooperative-fabricated-from-unknown-reference.md) | Intent fabricates a hard `cooperative` verdict for an unknown reference game | chat / retrieval | Bug | High | Open |
 | [SEL-101](SEL-101-langfuse-tracing.md) | Wire Langfuse tracing into the running stack | observability | Tech-debt | High | Open |

@@ -34,15 +34,21 @@ class FakeRetriever:
 
 
 class FakeStructuredLLM:
-    """`.invoke()` ignores the prompt and returns a preset ChatReply (or raises)."""
+    """`.invoke()` ignores the prompt and returns a preset ChatReply (or raises).
+
+    `pitch` hands a role-split `[SystemMessage, HumanMessage]` list (SEL-122); we record the
+    rendered text so the existing "substring in calls[0]" assertions keep reading the model-facing
+    content, while the adversarial tests inspect the role split via `advisor._prompt` directly.
+    """
 
     def __init__(self, reply: ChatReply | None = None, raises: bool = False):
         self.reply = reply
         self.raises = raises
         self.calls: list[str] = []
 
-    def invoke(self, prompt: str) -> ChatReply:
-        self.calls.append(prompt)
+    def invoke(self, prompt) -> ChatReply:
+        self.calls.append(prompt if isinstance(prompt, str)
+                          else "\n".join(m.content for m in prompt))
         if self.raises:
             raise RuntimeError("LLM transport failure")
         return self.reply

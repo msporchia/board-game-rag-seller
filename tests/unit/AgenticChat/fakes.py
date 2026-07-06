@@ -65,12 +65,17 @@ class FakeBatchRetriever:
 
 
 class FakePitchLLM:
-    """`.invoke()` returns a preset ChatReply; records the prompts it saw."""
+    """`.invoke()` returns a preset ChatReply; records the rendered prompt text.
+
+    `ChatAdvisor.pitch` hands a role-split `[SystemMessage, HumanMessage]` list (SEL-122); we join
+    the contents so the "substring in calls[0]" assertions keep reading the model-facing text.
+    """
 
     def __init__(self, reply: ChatReply):
         self.reply = reply
         self.calls: list[str] = []
 
-    def invoke(self, prompt: str) -> ChatReply:
-        self.calls.append(prompt)
+    def invoke(self, prompt) -> ChatReply:
+        self.calls.append(prompt if isinstance(prompt, str)
+                          else "\n".join(m.content for m in prompt))
         return self.reply

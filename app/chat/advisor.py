@@ -27,6 +27,7 @@ behavior), like the enrichment prompts.
 """
 
 
+from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_ollama import ChatOllama
 
 from app.chat import prompts
@@ -84,13 +85,23 @@ class ChatAdvisor:
 
     def _prompt(self, message: str, hits: list[GameHit], *, strategy: str | None = None,
                 expertise_level: str | None = None, history: str | None = None,
-                extra_blocks: list[str] | None = None, customer_block: str | None = None) -> str:
-        """Fixed + dynamic prompt structure (docs/note.md).
+                extra_blocks: list[str] | None = None,
+                customer_block: str | None = None) -> list:
+        """Fixed + dynamic prompt structure (docs/note.md), split into roles (SEL-122).
 
-        Without the Phase 5 keywords this is exactly the Phase 4 prompt. With them, the persona
-        block carries the expertise communication rules, the strategy block carries the selling
-        strategy of this turn, and the conversation so far gives the model context — the rigid
-        anti-hallucination rules at the bottom are IDENTICAL on both paths.
+        Instruction/data separation: every INSTRUCTION and every piece of TRUSTED data (persona,
+        the retrieved catalog, active-policy blocks, customer context, grounding rules, response
+        format, this turn's strategy) lives in the SystemMessage; the untrusted customer turn is
+        the sole HumanMessage. The role boundary is the delimiter — the customer's text is never
+        interpolated among the rules, so a turn that says "ignore the rules" is presented as data in
+        its own role rather than mixed into the instructions. This is a hardening step, not a
+        guarantee the model obeys (SEL-122 tracks the wider analysis). The rule text itself is
+        unchanged; only the routing into roles is new.
+
+        Without the Phase 5 keywords the system block is exactly the Phase 4 prompt. With them, the
+        persona block carries the expertise communication rules, the strategy block carries the
+        selling strategy of this turn, and the conversation so far gives the model context — the
+        rigid anti-hallucination rules are IDENTICAL on both paths.
 
         `extra_blocks` are instruction blocks contributed by the active policies (PolicySet,
         docs/idee.md §O): they reshape the prose, never the grounding rules below.
@@ -103,11 +114,8 @@ class ChatAdvisor:
         policy_text = "\n".join(b for b in (extra_blocks or []) if b)
         sales_block = f"\nPOLICY ATTIVE:\n{policy_text}\n" if policy_text else ""
         client_block = f"\nCONTESTO CLIENTE:\n{customer_block}\n" if customer_block else ""
-        return f"""{persona}
+        system = f"""{persona}
 {conversation}
-RICHIESTA DEL CLIENTE:
-{message}
-
 GIOCHI DISPONIBILI (gli UNICI che puoi proporre):
 {catalog}
 {client_block}{sales_block}
@@ -116,6 +124,7 @@ GIOCHI DISPONIBILI (gli UNICI che puoi proporre):
 
 {prompts.RESPONSE_FORMAT}
 {strategy_block}"""
+        return [SystemMessage(content=system), HumanMessage(content=message)]
 
     # ---- API ------------------------------------------------------------------
 
@@ -165,11 +174,11 @@ GIOCHI DISPONIBILI (gli UNICI che puoi proporre):
             return ChatResponse(message=_NO_MATCH, games=[], quick_replies=[])
 
         customer_block = customer_context.framing_block(hits) if customer_context else None
-        prompt = self._prompt(message, hits, strategy=strategy,
-                              expertise_level=expertise_level, history=history,
-                              extra_blocks=extra_blocks, customer_block=customer_block)
+        messages = self._prompt(message, hits, strategy=strategy,
+                                expertise_level=expertise_level, history=history,
+                                extra_blocks=extra_blocks, customer_block=customer_block)
         try:
-            reply: ChatReply = (llm or self._llm).invoke(prompt)
+            reply: ChatReply = (llm or self._llm).invoke(messages)
         except Exception:  # noqa: BLE001  LLM/transport failure → deterministic fallback, never 500
             log.warning("pitch_llm_failed", fallback="deterministic_pitch")
             return self._fallback(hits)

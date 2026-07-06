@@ -5,11 +5,13 @@ Lightweight ticket log for the seller (board-game RAG) service. One file per tic
 engineering tickets. Most items are distilled from `docs/idee.md`, `docs/note.md` and
 `docs/stato.md`.
 
-**In progress:** none. `SEL-142` (cooperative fix) is resolved — see **Resolved** below; it spawned
-`SEL-120`, `SEL-143` and `SEL-121`, all open.
+**In progress:** `SEL-122` (adversarial safety — role separation + red-team eval). `SEL-142`
+(cooperative fix) is resolved — see **Resolved** below; it spawned `SEL-120`, `SEL-143` and
+`SEL-121`, all open.
 
 | ID | Title | Area | Type | Priority | Status |
 |----|-------|------|------|----------|--------|
+| [SEL-122](SEL-122-adversarial-safety-abuse-resistance.md) | Adversarial safety / abuse-resistance: threat model, role separation, red-team eval | chat/agent | Security | Medium | In progress |
 | [SEL-146](SEL-146-cooperative-verdict-revisit.md) | Revisit the cooperative verdict — the SEL-145 policy is a stopgap (recall lost on untagged co-ops) | enricher + rag | Research | High | Open |
 | [SEL-143](SEL-143-cooperative-fabricated-from-unknown-reference.md) | Intent fabricates a hard `cooperative` verdict for an unknown reference game | chat / retrieval | Bug | High | Open |
 | [SEL-101](SEL-101-langfuse-tracing.md) | Wire Langfuse tracing into the running stack | observability | Tech-debt | High | Open |

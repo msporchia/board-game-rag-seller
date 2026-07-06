@@ -6,7 +6,9 @@ from app.chat.models.customer_context import CustomerContext
 
 
 class ChatRequest(BaseModel):
-    message: str = Field(..., description="the user's free-text turn")
+    # `max_length` is an abuse guard (SEL-122): a customer turn is a sentence or two, not a payload
+    # for prompt-stuffing. Bounded here so an oversized body is rejected before it reaches the model.
+    message: str = Field(..., max_length=2000, description="the user's free-text turn")
     # Quick-reply clicks. Phase 4 (stateless) appends them to the retrieval query; Phase 5
     # (with `session_id`) parses them into real hybrid-search filters merged into the session.
     choices: list[str] = []
